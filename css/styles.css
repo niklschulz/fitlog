@@ -1,0 +1,30 @@
+/* Ergänzungen, die Tailwinds Utility-Klassen nicht abdecken */
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Zahlen-Inputs: kein Spinner, größere Schrift für schnelles Ablesen */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.nav-btn {
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.nav-btn.active {
+  color: #22c55e;
+}
+
+/* Kurzes Tap-Feedback, da kein haptisches Feedback über Web-APIs verfügbar ist */
+.tap-feedback:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}

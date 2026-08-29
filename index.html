@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fitlog</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1115">
+
+<!-- iOS Home-Screen-Standalone-Modus -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fitlog">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="stylesheet" href="css/styles.css">
+
+<!-- Tailwind Play CDN: bewusst kein Build-Schritt (s. Konzept-Dokument).
+     Erstinstallation braucht Internet, danach cacht der Service Worker das Skript. -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0f1115',
+          surface: '#181b21',
+          accent: '#22c55e',
+        },
+      },
+    },
+  };
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/dexie@4.0.8/dist/dexie.min.js"></script>
+</head>
+<body class="bg-bg text-white">
+  <div id="app" class="min-h-screen flex flex-col">
+    <main id="view-container" class="flex-1 overflow-y-auto px-4 pb-24"></main>
+
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-surface border-t border-white/10 flex safe-bottom">
+      <button data-view="training" class="nav-btn active tap-feedback flex-1 flex flex-col items-center gap-1 py-3 text-white/60 text-xs font-medium min-h-[44px]">
+        Training
+      </button>
+      <button data-view="exercises" class="nav-btn tap-feedback flex-1 flex flex-col items-center gap-1 py-3 text-white/60 text-xs font-medium min-h-[44px]">
+        Übungen
+      </button>
+      <button data-view="routines" class="nav-btn tap-feedback flex-1 flex flex-col items-center gap-1 py-3 text-white/60 text-xs font-medium min-h-[44px]">
+        Routinen
+      </button>
+      <button data-view="history" class="nav-btn tap-feedback flex-1 flex flex-col items-center gap-1 py-3 text-white/60 text-xs font-medium min-h-[44px]">
+        Verlauf
+      </button>
+    </nav>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
