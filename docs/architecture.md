@@ -72,6 +72,8 @@ IndexedDB bleibt auch nach Einführung eines Syncs die primäre Datenquelle ("So
 
 Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (privates Mesh-VPN, kein offener Router-Port). **Konkrete Infrastruktur-Details (Tailnet-Name, Geräte-Hostnames, IP-Adressen, Ports, SSH-Zugang) werden bewusst nicht in diesem öffentlichen Repo dokumentiert**, sondern im separaten privaten Repo `fitlog-infra`. Grund: dieses Repo ist public.
 
+**Nutzertrennung**: Die App wird künftig von mehreren Personen genutzt; deren Daten müssen server-seitig getrennt bleiben. Geplanter Mechanismus: Bearer-Token pro Person (vom Pi per CLI-Skript generiert, einmalig im neuen "Profil"-Tab hinterlegt), keine Passwörter/Sessions — die eigentliche Zugriffskontrolle läuft über die Tailscale-Netzwerkgrenze, der Token dient nur der Zuordnung. Details und Begründung: [ADR 0006](decisions/0006-token-basierte-nutzertrennung.md). Der Profil-Tab existiert bereits im Frontend (lokal gespeichert über `localStorage`), auch wenn der Sync selbst mangels Backend noch inaktiv ist.
+
 ## Bekannte Abweichungen vom ursprünglichen Konzept
 
 - **Gewicht-Eingabe**: `inputmode="decimal"` statt `inputmode="numeric"` — Scheiben-Abstufungen wie 82,5 kg brauchen eine Kommastelle, die bei `numeric` auf dem iOS-Tastenfeld fehlt. Wiederholungen bleiben bei `numeric`.

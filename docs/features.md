@@ -31,6 +31,9 @@ Start optional mit Routine (Übungen der Routine werden als Chips vorgeschlagen,
 ### Verlauf (`js/views/history.js`)
 Liste vergangener Trainings (Datum, Dauer, Routine, Satzanzahl), neueste zuerst. Ein laufendes Training zeigt "läuft" statt Dauer und lässt sich auch von hier beenden. Detailansicht: Tap auf einen Satz öffnet Inline-Bearbeitung (Gewicht/Wiederholungen ändern oder löschen). Sätze lassen sich auch nachträglich zu bereits abgeschlossenen Trainings hinzufügen (inkl. Progressive-Overload-Vorbefüllung). Training löschen kaskadiert auf alle zugehörigen Sätze.
 
+### Profil (`js/views/profile.js`) — Vorbereitung für späteren Sync
+Fünfter Tab, ganz rechts. Zwei Felder: **Username** (Freitext, rein zur eigenen Orientierung, keine serverseitige Prüfung) und **Token** (maskiertes Feld mit Sichtbarkeits-Toggle, vom Pi-CLI-Skript erhalten). Beide Werte werden lokal über `localStorage` gespeichert (`js/profile.js`), nicht in der Dexie-Datenbank — sind reine Geräte-Konfiguration, keine Trainingsdaten. **Der eigentliche Sync findet noch nicht statt** (kein Backend vorhanden), das Tracking funktioniert unabhängig vom Profil-Status vollständig offline weiter. Hintergrund: [ADR 0006](decisions/0006-token-basierte-nutzertrennung.md).
+
 ## Lösch-Verhalten (Kurzfassung)
 
 Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) für die vollständige Begründung.

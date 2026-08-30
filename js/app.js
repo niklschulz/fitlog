@@ -3,8 +3,9 @@ import * as training from './views/training.js';
 import * as exercises from './views/exercises.js';
 import * as routines from './views/routines.js';
 import * as history from './views/history.js';
+import * as profile from './views/profile.js';
 
-const views = { training, exercises, routines, history };
+const views = { training, exercises, routines, history, profile };
 
 const viewContainer = document.getElementById('view-container');
 const navButtons = document.querySelectorAll('.nav-btn');

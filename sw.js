@@ -1,6 +1,6 @@
 // App-Shell-Caching für vollständige Offline-Nutzung (s. Konzept Abschnitt 6).
 // Cache-Name bei Änderungen an der Datei-Liste hochzählen, damit Clients aktualisieren.
-const CACHE_NAME = 'fitlog-v8';
+const CACHE_NAME = 'fitlog-v10';
 
 const APP_SHELL = [
   './',
@@ -10,10 +10,12 @@ const APP_SHELL = [
   './js/app.js',
   './js/db.js',
   './js/utils.js',
+  './js/profile.js',
   './js/views/training.js',
   './js/views/exercises.js',
   './js/views/routines.js',
   './js/views/history.js',
+  './js/views/profile.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
