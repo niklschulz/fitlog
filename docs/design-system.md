@@ -24,7 +24,7 @@ Lebende Referenz für alle visuellen Tokens und Komponenten-Muster in Fitlog. En
 |---|---|---|
 | `text-kpi` | 34px / 700 / line-height 1.1 | Große Kennzahlen (aktuell nirgends im Produkt verwendet, s. "Nicht umgesetzt" unten) |
 | `text-screen-title` | 21px / 700 | Screen-Überschriften (`<h1>` auf jedem Tab) |
-| `text-card-title` | 16px / 600 | Karten-/Listenzeilen-Titel (Übungsname, Routinenname, Datum im Verlauf) |
+| `text-card-title` | 16px / 600 | Karten-/Listenzeilen-Titel (Übungsname, Routinenname, Kalendertag-Datum im Workout-Tab) |
 | `text-body` | 14px / 400 | Standard-Fließtext |
 | `text-label` | 11.5px / 600 / letter-spacing 0.6px | Kleine Labels — kombiniert mit `uppercase` für Sektions-Überschriften ("ÜBUNGEN", "SÄTZE"), ohne `uppercase` für Formularfeld-Labels und Fußnoten |
 | `font-sans` | `-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif` | Global auf `<body>` — auf iOS ohnehin identisch mit dem Systemfont, hier explizit dokumentiert statt implizit |
@@ -35,13 +35,13 @@ Lebende Referenz für alle visuellen Tokens und Komponenten-Muster in Fitlog. En
 
 | Tailwind-Klasse | Wert | Verwendung |
 |---|---|---|
-| `rounded-card` | 18px | Größere Container: Formulare, Panels, größere Listenzeilen (Übungen, Routinen, Trainings im Verlauf) |
+| `rounded-card` | 18px | Größere Container: Formulare, Panels, größere Listenzeilen (Übungen, Routinen, aufklappbare Übungs-Roster-Einträge im Workout-Tab) |
 | `rounded-btn` | 13px | Buttons, Inputs, kompakte Listenzeilen (Sätze, Routine-Übungen-Zeilen) |
 | `rounded-sheet` | 26px | Definiert, aktuell **nicht verwendet** (kein Bottom-Sheet im Produkt, s. unten) |
 | `rounded-badge` | 11px | Definiert, aktuell **nicht verwendet** (keine Badges im Produkt) |
 | `rounded-full` | Tailwind-Standard | Pillenförmige Elemente: Bottom-Nav, Exercise-Chips, "+ Weitere Übung" |
 
-Die Wahl "Karte vs. Button" für Listenzeilen ist keine strikte Regel aus dem Briefing, sondern eine Auslegung: größere, mehrzeilige oder umfangreichere Zeilen (Übungsliste, Routinenliste, Trainingsverlauf-Liste) bekommen `rounded-card`, kompaktere einzeilige Zeilen (Satz-Einträge, Routine-Übungen im Editor) `rounded-btn`.
+Die Wahl "Karte vs. Button" für Listenzeilen ist keine strikte Regel aus dem Briefing, sondern eine Auslegung: größere, mehrzeilige oder umfangreichere Zeilen (Übungsliste, Routinenliste, Übungs-Roster im Workout-Tab) bekommen `rounded-card`, kompaktere einzeilige Zeilen (Satz-Einträge, Routine-Übungen im Editor, Kalender-Tage) `rounded-btn`.
 
 ## Abstände
 
@@ -65,14 +65,14 @@ Freischwebende Bottom-Nav (`#bottom-nav` in `index.html`): `fixed left-4 right-4
 
 **Bewusst nur die Bottom-Nav, sonst nichts:** Karten, Buttons und Modals bleiben deckend (`bg-surface`/`bg-base`, kein Blur). Kein SVG-Filter-basierter Verzerrungseffekt (echtes Liquid Glass aus SwiftUI/UIKit) — Safari/iOS unterstützt nur `backdrop-filter: blur()`, keine SVG-Refraktion; das native Aussehen wird über Blur + Transparenz + Specular-Highlight angenähert, nicht pixelgenau nachgebaut.
 
-**Icons:** Fünf eigene, minimale Outline-SVGs (Hantel/Training, Liste/Übungen, Kalender/Routinen, Uhr/Verlauf, Person/Profil) direkt inline in `index.html`, `stroke-width="1.75"`, `22×22px`. Bewusst **nicht** aus einer Bibliothek wie Lucide kopiert (Briefing verlangt explizit offene/eigene Icons, keine Assets der Referenz-App) — stattdessen selbst im gleichen minimalistischen Outline-Stil konstruiert, um jede Lizenz-/Fidelity-Frage zu vermeiden.
+**Icons:** Vier eigene, minimale Outline-SVGs in der Nav (Hantel/Workout, Liste/Übungen, Kalender/Routinen, Person/Profil) direkt inline in `index.html`, `stroke-width="1.75"`, `22×22px`. Der Kalender-Umriss wird ein zweites Mal (kleiner) für den erweiterten-Datums-Picker-Button im Workout-Tab wiederverwendet (`js/views/workout.js`). Das ursprünglich fünfte Icon (Uhr/Verlauf) ist mit dem Verlauf-Tab entfallen, s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md). Bewusst **nicht** aus einer Bibliothek wie Lucide kopiert (Briefing verlangt explizit offene/eigene Icons, keine Assets der Referenz-App) — stattdessen selbst im gleichen minimalistischen Outline-Stil konstruiert, um jede Lizenz-/Fidelity-Frage zu vermeiden.
 
 Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-area-inset-bottom))`, damit Inhalte nicht hinter der freischwebenden Nav verschwinden.
 
 ## Komponenten-Muster
 
-- **Primärer Button:** `bg-accent text-base font-bold rounded-btn` (z. B. "Training starten", "Speichern")
-- **Sekundärer Button:** `bg-raised text-ink font-semibold rounded-btn` (z. B. "Training beenden")
+- **Primärer Button:** `bg-accent text-base font-bold rounded-btn` (z. B. "Speichern", "Profil hinzufügen")
+- **Sekundärer Button** (`bg-raised text-ink font-semibold rounded-btn`): Muster definiert (`raised`-Token auch für den aktiven Nav-Tab-Hintergrund genutzt), aktuell aber **kein Button im Produkt, der es verwendet** — der bisherige Anwendungsfall ("Training beenden") ist mit [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) entfallen
 - **Destruktiver Button:** `bg-red-600 text-white font-bold rounded-btn` (z. B. "Profil entfernen") — unverändert, nicht Teil der Token-Spezifikation
 - **Destruktiver Link (inline):** `text-red-400 text-body`, kein Hintergrund (z. B. "Übung löschen", "✕" zum Satz-Löschen)
 - **Karte/Formular:** `bg-surface rounded-card p-4`
@@ -87,7 +87,7 @@ Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme"
 - **Segmented Control** — keine Stelle im Produkt, die ein Segment-Toggle braucht
 - **Bottom-Sheet** — alle "Panels" in Fitlog sind inline-expandierende Bereiche, keine echten Sheets von unten. `rounded-sheet`-Token ist vorbereitet, falls später eins gebraucht wird
 - **Diagramme** (Gitterlinien, Balken/Linien) — Fitlog hat keine Charts
-- **Checkmark-Auswahllisten** — kommt der Exercise-Chip-Auswahl in `training.js` am nächsten (farblich markiert statt Checkmark), aber keine eigene Komponente
+- **Checkmark-Auswahllisten** — kommt der Routine-Auswahl im Workout-Tab (`workout.js`) am nächsten (farblich markierter Listeneintrag statt Checkmark), aber keine eigene Komponente
 - **Große Kennzahl (`text-kpi`)** — Token ist definiert, aber aktuell nirgends verwendet (kein Statistik-Screen vorhanden)
 
 Falls diese Screens/Komponenten später tatsächlich gebaut werden, sind die zugehörigen Tokens (`rounded-sheet`, `rounded-badge`, `text-kpi`) bereits vorbereitet.

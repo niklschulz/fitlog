@@ -20,9 +20,10 @@ fitlog/
 ├── css/styles.css         Ergänzungen, die Tailwind nicht abdeckt (Safe-Area, Font-Faces)
 ├── js/
 │   ├── db.js              Dexie-Schema + alle Datenbank-Operationen (CRUD, Kaskaden)
+│   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
-│   └── views/              Ein Modul pro Tab (training.js, exercises.js, routines.js, history.js),
+│   └── views/              Ein Modul pro Tab (workout.js, exercises.js, routines.js, profile.js),
 │                           jedes exportiert render(container)
 └── icons/                  App-Icons (generiert, s. unten)
 ```
@@ -33,15 +34,16 @@ Jede View in `js/views/*.js` folgt demselben Muster: ein modul-lokaler `state`, 
 
 ## Datenmodell
 
-Fünf Dexie-Tabellen, alle mit UUID-`id` und ISO-Timestamps:
+Sechs Dexie-Tabellen (Schema-Version 2), alle mit UUID-`id`:
 
 - **exercises** — `id, name, createdAt, updatedAt`
 - **routines** — `id, name, createdAt, updatedAt`
-- **routineExercises** — Verknüpfungstabelle Routine↔Übung: `id, routineId, exerciseId, order`
-- **workouts** — `id, routineId (nullable), startedAt, finishedAt (nullable), createdAt, updatedAt`
+- **routineExercises** — Verknüpfungstabelle Routine↔Übung (Vorlage): `id, routineId, exerciseId, order`
+- **workouts** — `id, routineId (nullable), date ('YYYY-MM-DD'), createdAt, updatedAt`. Höchstens ein Workout pro Kalendertag (`date`), unabhängig davon ob Vergangenheit/Gegenwart/Zukunft. Kein `startedAt`/`finishedAt` mehr — kein Konzept von "Training beenden", jeder Tag bleibt dauerhaft bearbeitbar. Begründung: [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md)
+- **workoutExercises** — welche Übungen zu einem konkreten Workout gehören, unabhängig davon ob schon Sätze existieren: `id, workoutId, exerciseId, order, sourceRoutineId (nullable), startedAt (nullable), createdAt, updatedAt`. `startedAt` wird einmalig beim ersten Satz für diese Übung gesetzt — Grundlage der dynamischen Sortierung (begonnene Übungen zuerst nach Startzeitpunkt, dann unbegonnene nach `order`). `sourceRoutineId` unterscheidet routinen-stammende (werden bei Routine-Wechsel/-Entfernen aufgeräumt, solange unbegonnen) von manuell hinzugefügten Übungen (`null`, bleiben davon unberührt)
 - **sets** — `id, workoutId, exerciseId, weight, reps, createdAt, updatedAt`
 
-Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md).
+Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um `workoutExercises`).
 
 ## PWA-Mechanik
 
@@ -79,4 +81,3 @@ Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (priv
 ## Bekannte Abweichungen vom ursprünglichen Konzept
 
 - **Gewicht-Eingabe**: `inputmode="decimal"` statt `inputmode="numeric"` — Scheiben-Abstufungen wie 82,5 kg brauchen eine Kommastelle, die bei `numeric` auf dem iOS-Tastenfeld fehlt. Wiederholungen bleiben bei `numeric`.
-- **Satz-Bearbeitung im Verlauf**: Tap-to-Edit mit sichtbarem Stift-Icon statt Long-Press — zuverlässiger auf Touch, genauso klar erkennbar.

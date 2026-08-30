@@ -1,6 +1,6 @@
 # Fitlog
 
-Offline-fähige Fitness-Tracker-PWA für iPhone (Home-Screen-App). Übungen anlegen, Routinen zusammenstellen, Training tracken, Verlauf einsehen — läuft vollständig im Browser, keine Server-Anbindung im MVP.
+Offline-fähige Fitness-Tracker-PWA für iPhone (Home-Screen-App). Übungen anlegen, Routinen zusammenstellen, Workouts kalendertagesweise tracken — läuft vollständig im Browser, keine Server-Anbindung im MVP.
 
 Live: https://niklschulz.github.io/fitlog/
 

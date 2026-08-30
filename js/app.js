@@ -1,11 +1,10 @@
 import { db } from './db.js';
-import * as training from './views/training.js';
+import * as workout from './views/workout.js';
 import * as exercises from './views/exercises.js';
 import * as routines from './views/routines.js';
-import * as history from './views/history.js';
 import * as profile from './views/profile.js';
 
-const views = { training, exercises, routines, history, profile };
+const views = { workout, exercises, routines, profile };
 
 const viewContainer = document.getElementById('view-container');
 const navButtons = document.querySelectorAll('.nav-btn');
@@ -23,7 +22,7 @@ navButtons.forEach((btn) => {
 });
 
 db.open()
-  .then(() => showView('training'))
+  .then(() => showView('workout'))
   .catch((err) => {
     console.error('Fitlog: IndexedDB konnte nicht geöffnet werden', err);
     viewContainer.innerHTML = `

@@ -4,6 +4,16 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Added / Changed (Workout-Tab, Abschnitt 10)
+- Training-Tab durch neuen **Workout-Tab** ersetzt: Kalenderzeile (±2 Wochen um den ausgewählten Tag, automatisch zentriert, grüner Punkt an dokumentierten Tagen), natives Datums-Picker für Tage außerhalb des Fensters, Routine wählen/wechseln/entfernen als Popup-Liste, aufklappbares Übungs-Roster mit dynamischer Sortierung (begonnene Übungen zuerst nach Bearbeitungszeitpunkt, s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md))
+- Datenmodell: `workouts` bekommt ein `date`-Feld (Kalendertag statt Session-Start), neue Tabelle `workoutExercises` als Übungs-Roster pro Workout (Dexie-Schema auf Version 2)
+- Lösch-Kaskaden erweitert: `deleteExercise`/`deleteRoutine` räumen jetzt auch unbegonnene `workoutExercises`-Einträge auf
+
+### Removed (Workout-Tab, Abschnitt 10)
+- **Verlauf-Tab entfernt** — der Kalender im Workout-Tab übernimmt diese Aufgabe (Entscheidung des Nutzers, ging über das Briefing hinaus)
+- **Kein "Training beenden" mehr** — jeder Tag bleibt dauerhaft offen/bearbeitbar, `startedAt`/`finishedAt` auf `workouts` werden nicht mehr verwendet (Entscheidung des Nutzers)
+- `startWorkout`, `finishWorkout`, `updateSet` aus `db.js` entfernt (Grundannahmen entfallen bzw. keine Aufrufstelle mehr). Als Konsequenz: nachträgliches Bearbeiten eines bereits erfassten Satz-Werts ist aktuell nicht mehr möglich (nur Hinzufügen/Löschen)
+
 ### Added (Zoom deaktiviert)
 - Pinch- und Doppeltipp-Zoom unterbunden für ein native-app-ähnlicheres Bediengefühl: `touch-action: manipulation` auf `html`/`body` (Scrollen bleibt erlaubt), Viewport-Meta-Tag um `maximum-scale=1, user-scalable=no` ergänzt als Absicherung für andere Browser. Separat: globale `input { font-size: 16px }`-Regel gegen das automatische iOS-Zoom-in beim Fokussieren kleiner Eingabefelder. Bewusster Accessibility-Trade-off für privaten, kleinen Nutzerkreis, s. [architecture.md](architecture.md#pwa-mechanik)
 
