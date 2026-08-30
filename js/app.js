@@ -36,8 +36,34 @@ db.open()
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => {
-      console.error('Fitlog: Service Worker Registrierung fehlgeschlagen', err);
-    });
+    navigator.serviceWorker
+      .register('./sw.js')
+      .then((registration) => {
+        // iOS-Standalone-PWAs prüfen von sich aus viel seltener auf Updates
+        // als ein normaler Safari-Tab – bei jedem Start explizit erzwingen.
+        registration.update();
+      })
+      .catch((err) => {
+        console.error('Fitlog: Service Worker Registrierung fehlgeschlagen', err);
+      });
+  });
+
+  // Wird der Tab/die App wieder sichtbar (z. B. aus dem Hintergrund geholt),
+  // ebenfalls auf ein Update prüfen.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      navigator.serviceWorker.getRegistration().then((registration) => registration?.update());
+    }
+  });
+
+  // Sobald ein neuer Service Worker aktiv wird (dank skipWaiting +
+  // clients.claim in sw.js passiert das automatisch), einmalig neu laden,
+  // damit die neue Version sofort sichtbar ist statt erst beim übernächsten
+  // App-Start.
+  let refreshingAfterUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshingAfterUpdate) return;
+    refreshingAfterUpdate = true;
+    window.location.reload();
   });
 }

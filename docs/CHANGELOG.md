@@ -4,6 +4,9 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Fixed (neu)
+- Home-Bildschirm-App (standalone) hat neue Versionen nie von selbst übernommen, obwohl ein normaler Safari-Tab sie sofort zeigte. Ursache: iOS prüft bei standalone-PWAs deutlich seltener auf Service-Worker-Updates. Behoben durch expliziten `registration.update()`-Aufruf bei App-Start/`visibilitychange` plus automatischem Reload bei `controllerchange`. Lokal mit simuliertem Update verifiziert. **Hinweis**: Diese Änderung muss selbst erst einmal manuell (über Safari) auf die Geräte kommen, bevor sie für künftige Updates automatisch greift.
+
 ### Added
 - Dokumentationsstruktur (`docs/`, ADRs, dieses Changelog, `README.md`, `CLAUDE.md`)
 - Privates Repo `fitlog-infra` für Netzwerk-/Infrastruktur-Doku angelegt (getrennt vom öffentlichen `fitlog`-Repo)
