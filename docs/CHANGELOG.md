@@ -4,6 +4,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Fixed / Added (Kalender-Inhaltsausrichtung, Icon-Animation)
+- Montag-/Sonntag-**Inhalt** (Wochentag-Text, Tageszahl) war innerhalb seiner Spalte zentriert und wirkte dadurch eingerückt, obwohl die Spalte selbst schon pixelgenau lag — erste Spalte jetzt linksbündig, letzte rechtsbündig
+- Chevron-zu-X-Morph-Animation für das Dropdown-Icon der Routine-Auswahl (zwei Balken schieben sich beim Öffnen zusammen, beim Schließen wieder auseinander, synchron mit der Popup-Animation)
+- Details: [design-system.md](design-system.md#navigation)
+
 ### Fixed (Kalender-Randausrichtung)
 - Montag/Sonntag lagen nur in der zuletzt sichtbaren Woche pixelgenau an "Workout"-Überschrift bzw. Kalender-Icon an — in den übrigen Wochen 16px zu weit links, weil `scrollIntoView`/`scroll-snap` das eigene Container-Padding ignorierten. Behoben mit `scroll-padding` (`scroll-px-4`) statt einer JS-Heuristik; `gap` zwischen Wochenblöcken durch einen expliziten Abstandshalter-Div ersetzt (Safari/WebKit spielt `gap` + `scroll-snap` nicht immer zuverlässig zusammen). Für alle drei Wochen einzeln auf 0px Abweichung verifiziert. Details: [design-system.md](design-system.md#navigation)
 

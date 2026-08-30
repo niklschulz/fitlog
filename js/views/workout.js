@@ -192,14 +192,20 @@ function renderCalendarStrip(weeks, datesWithSets) {
     (week) => `
     <div class="calendar-week grid grid-cols-7 flex-shrink-0 w-full snap-start" data-week-start="${week[0]}">
       ${week
-        .map((d) => {
+        .map((d, dayIndex) => {
           const { weekday, day } = formatDayLabel(d);
           const isSelected = d === state.selectedDate;
           const isToday = d === today;
           const hasDot = datesWithSets.has(d);
           const dayNumClasses = isSelected ? 'bg-accent text-base' : isToday ? 'text-accent' : 'text-ink';
+          // Erste Spalte (Montag) linksbündig mit der "Workout"-Überschrift,
+          // letzte Spalte (Sonntag) rechtsbündig mit dem Kalender-Icon -
+          // die Spaltenbreite selbst liegt bereits pixelgenau an (Grid),
+          // aber ihr Inhalt war bislang zentriert und wirkte dadurch
+          // eingerückt.
+          const alignClass = dayIndex === 0 ? 'items-start' : dayIndex === 6 ? 'items-end' : 'items-center';
           return `
-          <button data-date="${d}" class="calendar-day-btn tap-feedback flex flex-col items-center gap-1.5 py-1 min-h-[44px]">
+          <button data-date="${d}" class="calendar-day-btn tap-feedback flex flex-col ${alignClass} gap-1.5 py-1 min-h-[44px]">
             <span class="text-label uppercase ${isSelected ? 'text-ink' : 'text-muted'}">${weekday}</span>
             <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${dayNumClasses}">${day}</span>
             <span class="w-1.5 h-1.5 rounded-full ${hasDot ? 'bg-accent' : 'bg-transparent'}"></span>
@@ -220,20 +226,26 @@ function renderCalendarStrip(weeks, datesWithSets) {
   `;
 }
 
-const CHEVRON_DOWN_ICON = `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-muted flex-shrink-0">
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-`;
-
-const CLOSE_ICON = `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-muted flex-shrink-0">
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-`;
+// Chevron-zu-X-Icon aus zwei Balken, die zwischen einer Chevron- und einer
+// X-Formation hin- und herschieben (s. .dropdown-chevron-icon in
+// css/styles.css). Die Animationsklasse hängt direkt an
+// state.routinePickerOpen/-Closing statt an einem separaten "hat sich
+// gerade geändert"-Flag: Während der Picker offen ist, führt jede
+// Nutzer-Interaktion zwangsläufig zu einem Schließen (Backdrop blockiert
+// den Rest der Seite), es gibt also keinen Zwischenzustand, in dem ein
+// erneutes Paint fälschlich eine Animation replayen würde.
+function renderDropdownIcon(open, closing) {
+  const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
+  return `
+    <span class="dropdown-chevron-icon ${stateClass} flex-shrink-0" aria-hidden="true">
+      <span class="bar bar-a"></span>
+      <span class="bar bar-b"></span>
+    </span>
+  `;
+}
 
 // Dropdown-Pill, die den Routine-Picker als Overlay öffnet (verdrängt den
-// übrigen Inhalt nicht, s. wireEvents/Backdrop). Pfeil wechselt bei
+// übrigen Inhalt nicht, s. wireEvents/Backdrop). Pfeil morpht bei
 // geöffnetem Picker zu einem X, das ihn wieder schließt.
 async function renderRoutineSection(workout, routine) {
   const label = !workout || !workout.routineId ? 'Routine wählen' : routine ? routine.name : 'Gelöschte Routine';
@@ -243,7 +255,7 @@ async function renderRoutineSection(workout, routine) {
     <div class="relative">
       <button id="routine-dropdown-btn" class="tap-feedback w-full bg-surface rounded-full pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
         <span class="text-card-title truncate">${escapeHtml(label)}</span>
-        ${visible ? CLOSE_ICON : CHEVRON_DOWN_ICON}
+        ${renderDropdownIcon(state.routinePickerOpen, state.routinePickerClosing)}
       </button>
       ${visible ? await renderRoutinePicker(workout) : ''}
     </div>
