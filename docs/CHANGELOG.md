@@ -14,7 +14,10 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Fixed
 - Profil-Formular ließ sich komplett leer speichern (fehlende `required`-Attribute)
 - Sichtbarkeits-Toggle fürs Token-Feld baute den Screen bei jedem Klick aus dem `localStorage` statt aus den aktuell getippten Werten neu auf, wodurch ungespeicherte Eingaben verloren gingen — Toggle komplett entfernt, Token ist jetzt unmaskiert
-- "Profil entfernen"-Button hatte keinen Effekt (Bestätigungsdialog blockierte augenscheinlich die erwartete Reaktion) — Bestätigung entfernt, Klick wirkt jetzt direkt; Styling an "Profil hinzufügen" angeglichen (rot statt grün)
+- Styling von "Profil entfernen" an "Profil hinzufügen" angeglichen (voller Button statt Textlink, rot statt grün)
+
+### Korrigierte Fehldiagnose
+- "Profil entfernen" wirkte beim Testen funktionslos — kurzzeitig wurde deswegen der Bestätigungsdialog entfernt. Ursache war aber kein Bug: `confirm()` wird in der automatisierten Browser-Testumgebung sofort mit "Abbrechen" beantwortet, ohne dass ein Dialog sichtbar wird. In einem echten, von einem Menschen bedienten Browser (z. B. Safari auf dem iPhone) funktioniert `confirm()` normal. Bestätigungsdialog wieder eingebaut, jetzt korrekt mit simuliertem "OK" verifiziert.
 
 ### Removed
 - Home-Tab mit tageszeitabhängigem Spruch (deterministisch ausgewählt, Playfair-Display-Font lokal eingebunden) — vollständig implementiert, dann auf ausdrücklichen Wunsch per `git revert` wieder entfernt. Kein funktionaler Nutzen für den aktuellen Scope.

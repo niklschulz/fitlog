@@ -125,6 +125,7 @@ function wireEvents() {
   });
 
   currentContainer.querySelector('#remove-profile-btn')?.addEventListener('click', () => {
+    if (!confirm('Profil wirklich entfernen? Der Token muss danach erneut eingegeben werden.')) return;
     clearProfile();
     state.mode = 'empty';
     paint();
