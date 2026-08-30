@@ -4,6 +4,22 @@
   padding-top: env(safe-area-inset-top);
 }
 
+/* Pinch- und Doppeltipp-Zoom deaktivieren, Scrollen bleibt erlaubt.
+   Das viewport-Meta-Tag allein reicht nicht mehr (moderne Safari-Versionen
+   ignorieren user-scalable=no aus Barrierefreiheits-Gründen bewusst) -
+   touch-action ist der zuverlässige Weg, das Meta-Tag bleibt als
+   Absicherung für andere Browser/ältere Safari-Versionen erhalten. */
+html,
+body {
+  touch-action: manipulation;
+}
+
+/* iOS zoomt automatisch hinein, sobald ein Input mit Schriftgröße < 16px
+   fokussiert wird - unabhängig von obigem touch-action. */
+input {
+  font-size: 16px;
+}
+
 /* Zahlen-Inputs: kein Spinner, größere Schrift für schnelles Ablesen */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

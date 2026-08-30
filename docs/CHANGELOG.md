@@ -4,6 +4,9 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Added (Zoom deaktiviert)
+- Pinch- und Doppeltipp-Zoom unterbunden für ein native-app-ähnlicheres Bediengefühl: `touch-action: manipulation` auf `html`/`body` (Scrollen bleibt erlaubt), Viewport-Meta-Tag um `maximum-scale=1, user-scalable=no` ergänzt als Absicherung für andere Browser. Separat: globale `input { font-size: 16px }`-Regel gegen das automatische iOS-Zoom-in beim Fokussieren kleiner Eingabefelder. Bewusster Accessibility-Trade-off für privaten, kleinen Nutzerkreis, s. [architecture.md](architecture.md#pwa-mechanik)
+
 ### Added (Scrim hinter Glass-Nav)
 - Abdunkelnder Verlaufs-Layer (`.nav-scrim`) zwischen Scroll-Inhalt und Bottom-Nav ergänzt, damit die durchscheinende Bar auch vor hellem/unruhigem Inhalt lesbar bleibt — eigenständig vom `backdrop-filter` der Bar, `pointer-events: none`, explizites Z-Index-Layering (Inhalt < Scrim < Nav). Details: [design-system.md](design-system.md#navigation)
 
