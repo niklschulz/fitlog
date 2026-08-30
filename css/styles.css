@@ -73,3 +73,37 @@ input[type="number"]::-webkit-outer-spin-button {
   transform: scale(0.96);
   opacity: 0.85;
 }
+
+/* Routine-Picker-Overlay: poppt beim Öffnen aus der Dropdown-Pille heraus
+   und beim Schließen wieder hinein (js/views/workout.js hält die
+   Animationsdauer per ROUTINE_PICKER_CLOSE_ANIMATION_MS synchron). */
+.routine-picker-popup {
+  transform-origin: top center;
+  animation: routine-picker-pop-in 150ms ease-out;
+}
+
+.routine-picker-popup.closing {
+  animation: routine-picker-pop-out 150ms ease-in forwards;
+}
+
+@keyframes routine-picker-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes routine-picker-pop-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-6px);
+  }
+}

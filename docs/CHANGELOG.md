@@ -4,6 +4,13 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Changed (Workout-Tab Feinschliff Runde 3)
+- Kalenderzeile zeigt nur noch ±1 Woche (Vorwoche/Folgewoche) statt ±2 Wochen
+- Kalenderzeile von Flex-Prozent-Basis auf Wochenblöcke (CSS Grid) umgestellt — behebt einen angeschnitten sichtbaren nächsten Montag am rechten Rand (Rundungsfehler der vorherigen Prozent-Basis-Berechnung)
+- Größerer Abstand (`gap-6`) zwischen den Wochenblöcken zur besseren Orientierung beim Wechsel zwischen Sonntag und Montag
+- Routine-Popup poppt jetzt beim Öffnen aus der Dropdown-Pille heraus und beim Schließen wieder hinein (CSS-Keyframe-Animation, zweistufiges Schließen in `workout.js` für eine echte Exit-Animation trotz Full-Rerender-Modell)
+- Details: [design-system.md](design-system.md#navigation)
+
 ### Changed (Workout-Tab Feinschliff Runde 2)
 - Heute-Markierung im Kalender: Tageszahl wird grün, wenn heute nicht ausgewählt ist; bei Auswahl bleibt es beim Accent-Badge mit dunkler Zahl
 - Kalenderzeile rastet jetzt pro voller Mo-So-Woche ein (`scroll-snap-align` nur auf Montags-Buttons) statt frei zu scrollen
