@@ -62,7 +62,9 @@
   <div id="app" class="min-h-screen flex flex-col">
     <main id="view-container" class="flex-1 overflow-y-auto px-4 pb-[calc(88px+env(safe-area-inset-bottom))] safe-top"></main>
 
-    <nav id="bottom-nav" class="fixed left-4 right-4 bottom-[calc(8px+env(safe-area-inset-bottom))] rounded-full flex px-1.5 py-1.5 gap-1">
+    <div class="nav-scrim" aria-hidden="true"></div>
+
+    <nav id="bottom-nav" class="z-20 fixed left-4 right-4 bottom-[calc(8px+env(safe-area-inset-bottom))] rounded-full flex px-1.5 py-1.5 gap-1">
       <button data-view="training" class="nav-btn active tap-feedback flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-full text-muted min-h-[44px]">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-[22px] h-[22px]">
           <path d="M6.5 9v6M4 10.5v3M17.5 9v6M20 10.5v3M8.5 12h7" />
