@@ -15,3 +15,7 @@ export function getProfile() {
 export function saveProfile({ username, token }) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ username, token }));
 }
+
+export function clearProfile() {
+  localStorage.removeItem(STORAGE_KEY);
+}
