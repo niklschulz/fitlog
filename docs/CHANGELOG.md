@@ -4,6 +4,13 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Changed (Workout-Tab Feinschliff Runde 2)
+- Heute-Markierung im Kalender: Tageszahl wird grün, wenn heute nicht ausgewählt ist; bei Auswahl bleibt es beim Accent-Badge mit dunkler Zahl
+- Kalenderzeile rastet jetzt pro voller Mo-So-Woche ein (`scroll-snap-align` nur auf Montags-Buttons) statt frei zu scrollen
+- "Routinen"-Link neben der Routine-Auswahl entfernt
+- Routine-Picker ist jetzt ein echtes Overlay (verdrängt den restigen Inhalt nicht mehr nach unten), schließt per Backdrop-Klick oder per X-Icon (ersetzt den Chevron bei geöffnetem Picker) statt über einen "Abbrechen"-Button; "Alle Routinen anzeigen" als neuer Eintrag innerhalb des Popups
+- Details: [design-system.md](design-system.md#navigation)
+
 ### Changed (Workout-Tab UI-Feinschliff nach Referenz-Screenshots)
 - Kalenderzeile ohne Einzel-Pill-Hintergrund pro Tag: nur die ausgewählte Tageszahl bekommt ein Accent-Badge, Wochentag als reiner Text. `scroll-snap` sorgt für ein Wochen-Swipe-Gefühl bei weiterhin durchgehendem ±2-Wochen-Scroll
 - Relative Datumsbezeichnung ("Heute"/"Gestern"/"Morgen, {Datum}") statt durchgängig vollem Wochentag

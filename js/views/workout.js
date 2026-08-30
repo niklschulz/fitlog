@@ -45,6 +45,16 @@ function daysBetween(fromStr, toStr) {
   return Math.round((to - from) / 86400000);
 }
 
+// Montag der Woche, die dateStr enthält (ISO-Wochenstart).
+function mondayOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const dow = date.getDay(); // 0=So..6=Sa
+  const diff = dow === 0 ? -6 : 1 - dow;
+  date.setDate(date.getDate() + diff);
+  return toISODate(date);
+}
+
 function formatDayLabel(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
@@ -78,8 +88,11 @@ async function getDatesWithSets(dates) {
 // --- Paint ---
 
 async function paint() {
+  // Wochen-ausgerichteter Bereich (5 volle Mo-So-Wochen um die Auswahl),
+  // damit die Kalenderzeile pro Woche einrastet statt pro Einzeltag.
+  const startMonday = mondayOf(addDays(state.selectedDate, -14));
   const dates = [];
-  for (let i = -14; i <= 14; i++) dates.push(addDays(state.selectedDate, i));
+  for (let i = 0; i < 35; i++) dates.push(addDays(startMonday, i));
   const datesWithSets = await getDatesWithSets(dates);
 
   const workout = await getWorkoutByDate(state.selectedDate);
@@ -127,9 +140,7 @@ async function paint() {
 
       ${renderCalendarStrip(dates, datesWithSets)}
 
-      ${renderRoutineSection(workout, routine)}
-
-      ${state.routinePickerOpen ? await renderRoutinePicker(workout) : ''}
+      ${await renderRoutineSection(workout, routine)}
 
       ${renderExerciseRoster(entries, nameById, setsByExercise, expandedLastSet)}
 
@@ -144,29 +155,39 @@ async function paint() {
 
   // Erst im nächsten Frame scrollen - direkt nach dem innerHTML-Update hat
   // der Browser das Layout des Scroll-Containers noch nicht fertig berechnet.
+  // Ziel ist der Wochenanfang (Montag) der ausgewählten Woche, links
+  // ausgerichtet, damit die volle Mo-So-Woche sichtbar ist.
   requestAnimationFrame(() => {
-    const selectedDayBtn = currentContainer.querySelector('.calendar-day-btn[data-date="' + state.selectedDate + '"]');
-    selectedDayBtn?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    const weekStart = mondayOf(state.selectedDate);
+    const mondayBtn = currentContainer.querySelector('.calendar-day-btn[data-date="' + weekStart + '"]');
+    mondayBtn?.scrollIntoView({ block: 'nearest', inline: 'start' });
   });
 }
 
-// Kalenderzeile ohne Einzel-Pill-Hintergrund je Tag (an Referenz angelehnt):
-// Wochentag als schlichter Text, nur die Tageszahl des ausgewählten Tages
-// bekommt ein kleines rundes Accent-Badge. scroll-snap sorgt dafür, dass
-// sich die Zeile wie ein Wochen-Swipe anfühlt, technisch bleibt es aber ein
-// durchgehender ±2-Wochen-Scroll (Abschnitt 10).
+// Kalenderzeile ohne Einzel-Pill-Hintergrund je Tag: Wochentag als schlichter
+// Text, nur die Tageszahl des ausgewählten Tages bekommt ein Accent-Badge
+// (bleibt dabei dunkel/schwarz). Der heutige Tag wird, wenn nicht
+// ausgewählt, durch eine grün eingefärbte Tageszahl markiert. snap-start
+// nur auf den Montags-Buttons sorgt dafür, dass die Zeile pro volle Woche
+// einrastet statt pro Einzeltag, obwohl technisch ein durchgehender
+// Wochen-ausgerichteter Bereich gescrollt wird (s. Abschnitt 10).
 function renderCalendarStrip(dates, datesWithSets) {
+  const today = todayISODate();
+
   return `
     <div class="flex snap-x snap-mandatory overflow-x-auto -mx-4 px-4">
       ${dates
-        .map((d) => {
+        .map((d, i) => {
           const { weekday, day } = formatDayLabel(d);
           const isSelected = d === state.selectedDate;
+          const isToday = d === today;
           const hasDot = datesWithSets.has(d);
+          const isMonday = i % 7 === 0;
+          const dayNumClasses = isSelected ? 'bg-accent text-base' : isToday ? 'text-accent' : 'text-ink';
           return `
-          <button data-date="${d}" class="calendar-day-btn tap-feedback snap-start flex-shrink-0 basis-[14.2857%] flex flex-col items-center gap-1.5 py-1 min-h-[44px]">
+          <button data-date="${d}" class="calendar-day-btn tap-feedback ${isMonday ? 'snap-start' : ''} flex-shrink-0 basis-[14.2857%] flex flex-col items-center gap-1.5 py-1 min-h-[44px]">
             <span class="text-label uppercase ${isSelected ? 'text-ink' : 'text-muted'}">${weekday}</span>
-            <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${isSelected ? 'bg-accent text-base' : 'text-ink'}">${day}</span>
+            <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${dayNumClasses}">${day}</span>
             <span class="w-1.5 h-1.5 rounded-full ${hasDot ? 'bg-accent' : 'bg-transparent'}"></span>
           </button>
         `;
@@ -176,20 +197,32 @@ function renderCalendarStrip(dates, datesWithSets) {
   `;
 }
 
-// Dropdown-Pill (öffnet den Routine-Picker) + Link zum Routinen-Tab, an
-// Referenz angelehnt statt separater "Wechseln"/"Entfernen"-Buttons.
-function renderRoutineSection(workout, routine) {
+const CHEVRON_DOWN_ICON = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-muted flex-shrink-0">
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+`;
+
+const CLOSE_ICON = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-muted flex-shrink-0">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+`;
+
+// Dropdown-Pill, die den Routine-Picker als Overlay öffnet (verdrängt den
+// übrigen Inhalt nicht, s. wireEvents/Backdrop). Pfeil wechselt bei
+// geöffnetem Picker zu einem X, das ihn wieder schließt.
+async function renderRoutineSection(workout, routine) {
   const label = !workout || !workout.routineId ? 'Routine wählen' : routine ? routine.name : 'Gelöschte Routine';
+  const open = state.routinePickerOpen;
 
   return `
-    <div class="flex items-center gap-2">
-      <button id="routine-dropdown-btn" class="tap-feedback flex-1 bg-surface rounded-full pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
+    <div class="relative">
+      <button id="routine-dropdown-btn" class="tap-feedback w-full bg-surface rounded-full pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
         <span class="text-card-title truncate">${escapeHtml(label)}</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-muted flex-shrink-0">
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        ${open ? CLOSE_ICON : CHEVRON_DOWN_ICON}
       </button>
-      <button id="go-to-routines-btn" class="tap-feedback text-accent text-body font-medium px-2 min-h-[44px] flex-shrink-0">Routinen</button>
+      ${open ? await renderRoutinePicker(workout) : ''}
     </div>
   `;
 }
@@ -198,7 +231,8 @@ async function renderRoutinePicker(workout) {
   const routines = await db.routines.orderBy('name').toArray();
 
   return `
-    <div class="bg-surface rounded-card p-3 flex flex-col gap-2">
+    <div id="routine-picker-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-surface rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
       ${
         workout?.routineId
           ? `<button id="clear-routine-option-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-base text-red-400 text-body">
@@ -209,7 +243,7 @@ async function renderRoutinePicker(workout) {
       ${
         routines.length === 0
           ? `<p class="text-body text-muted py-2">Noch keine Routinen vorhanden.</p>`
-          : `<ul class="flex flex-col gap-1">
+          : `<ul class="flex flex-col gap-1 max-h-64 overflow-y-auto">
               ${routines
                 .map(
                   (r) => `
@@ -224,7 +258,9 @@ async function renderRoutinePicker(workout) {
                 .join('')}
             </ul>`
       }
-      <button id="cancel-routine-picker-btn" class="tap-feedback text-muted text-body py-1 min-h-[44px] text-left">Abbrechen</button>
+      <button id="go-to-routines-option-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-accent text-body font-medium">
+        Alle Routinen anzeigen
+      </button>
     </div>
   `;
 }
@@ -332,13 +368,13 @@ function wireEvents() {
     paint();
   });
 
-  currentContainer.querySelector('#go-to-routines-btn')?.addEventListener('click', () => {
-    document.querySelector('[data-view="routines"]')?.click();
-  });
-
-  currentContainer.querySelector('#cancel-routine-picker-btn')?.addEventListener('click', () => {
+  currentContainer.querySelector('#routine-picker-backdrop')?.addEventListener('click', () => {
     state.routinePickerOpen = false;
     paint();
+  });
+
+  currentContainer.querySelector('#go-to-routines-option-btn')?.addEventListener('click', () => {
+    document.querySelector('[data-view="routines"]')?.click();
   });
 
   currentContainer.querySelector('#clear-routine-option-btn')?.addEventListener('click', async () => {
