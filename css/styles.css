@@ -1,9 +1,5 @@
 /* Ergänzungen, die Tailwinds Utility-Klassen nicht abdecken */
 
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }
@@ -20,7 +16,8 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .nav-btn.active {
-  color: #22c55e;
+  background-color: #2A2A2A; /* raised */
+  color: #A3E635; /* accent */
 }
 
 /* Kurzes Tap-Feedback, da kein haptisches Feedback über Web-APIs verfügbar ist */

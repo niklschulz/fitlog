@@ -48,23 +48,23 @@ async function renderList() {
   return `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between gap-3">
-        <h1 class="text-2xl font-bold">Routinen</h1>
-        <button id="add-routine-btn" class="tap-feedback bg-accent text-bg font-semibold rounded-lg px-4 py-2 min-h-[44px]">
+        <h1 class="text-screen-title">Routinen</h1>
+        <button id="add-routine-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn px-4 py-2 min-h-[44px]">
           + Neue Routine
         </button>
       </div>
 
       ${
         list.length === 0
-          ? `<p class="text-white/60 text-center py-12">Noch keine Routinen angelegt.</p>`
+          ? `<p class="text-body text-muted text-center py-12">Noch keine Routinen angelegt.</p>`
           : `<ul class="flex flex-col gap-2">
               ${list
                 .map(
                   (r, i) => `
                 <li>
-                  <button data-id="${r.id}" class="routine-item tap-feedback w-full text-left bg-surface rounded-lg px-4 py-3 min-h-[44px] flex items-center justify-between">
-                    <span>${escapeHtml(r.name)}</span>
-                    <span class="text-white/40 text-sm">${counts[i]} Übung${counts[i] === 1 ? '' : 'en'}</span>
+                  <button data-id="${r.id}" class="routine-item tap-feedback w-full text-left bg-surface rounded-btn px-4 py-3 min-h-[44px] flex items-center justify-between">
+                    <span class="text-card-title">${escapeHtml(r.name)}</span>
+                    <span class="text-muted text-body">${counts[i]} Übung${counts[i] === 1 ? '' : 'en'}</span>
                   </button>
                 </li>
               `
@@ -81,23 +81,23 @@ async function renderList() {
 function renderNameForm() {
   return `
     <div class="py-4 flex flex-col gap-4">
-      <h1 class="text-2xl font-bold">Neue Routine</h1>
-      <form id="routine-name-form" class="flex flex-col gap-3 bg-surface rounded-lg p-4">
-        <label class="text-sm text-white/60" for="routine-name">Name</label>
+      <h1 class="text-screen-title">Neue Routine</h1>
+      <form id="routine-name-form" class="flex flex-col gap-3 bg-surface rounded-card p-4">
+        <label class="text-label text-muted" for="routine-name">Name</label>
         <input
           id="routine-name"
           name="name"
           type="text"
           autocomplete="off"
           placeholder="z. B. Push Day"
-          class="bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
+          class="bg-base rounded-btn px-3 py-3 text-ink min-h-[44px]"
           required
         />
         <div class="flex gap-3">
-          <button type="submit" class="tap-feedback flex-1 bg-accent text-bg font-semibold rounded-lg py-3 min-h-[44px]">
+          <button type="submit" class="tap-feedback flex-1 bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
             Weiter
           </button>
-          <button type="button" id="cancel-routine-btn" class="tap-feedback px-4 py-3 text-white/60 min-h-[44px]">
+          <button type="button" id="cancel-routine-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">
             Abbrechen
           </button>
         </div>
@@ -123,10 +123,10 @@ async function renderEditor() {
       const exercise = exercises[i];
       const label = exercise ? escapeHtml(exercise.name) : 'Gelöschte Übung';
       return `
-        <li class="bg-surface rounded-lg px-3 py-2 flex items-center gap-2">
-          <span class="flex-1 ${exercise ? '' : 'text-white/40 italic'}">${label}</span>
-          <button data-entry="${entry.id}" data-dir="up" class="reorder-btn tap-feedback min-w-[44px] min-h-[44px] text-white/60 disabled:opacity-20" ${i === 0 ? 'disabled' : ''}>▲</button>
-          <button data-entry="${entry.id}" data-dir="down" class="reorder-btn tap-feedback min-w-[44px] min-h-[44px] text-white/60 disabled:opacity-20" ${i === entries.length - 1 ? 'disabled' : ''}>▼</button>
+        <li class="bg-surface rounded-btn px-3 py-2 flex items-center gap-2">
+          <span class="flex-1 text-body ${exercise ? '' : 'text-muted italic'}">${label}</span>
+          <button data-entry="${entry.id}" data-dir="up" class="reorder-btn tap-feedback min-w-[44px] min-h-[44px] text-muted disabled:opacity-20" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button data-entry="${entry.id}" data-dir="down" class="reorder-btn tap-feedback min-w-[44px] min-h-[44px] text-muted disabled:opacity-20" ${i === entries.length - 1 ? 'disabled' : ''}>▼</button>
           <button data-entry="${entry.id}" class="remove-entry-btn tap-feedback min-w-[44px] min-h-[44px] text-red-400">✕</button>
         </li>
       `;
@@ -136,8 +136,8 @@ async function renderEditor() {
   return `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center gap-3">
-        <button id="back-to-list-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-white/60">←</button>
-        <h1 class="text-2xl font-bold flex-1 truncate">${escapeHtml(routine.name)}</h1>
+        <button id="back-to-list-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted">←</button>
+        <h1 class="text-screen-title flex-1 truncate">${escapeHtml(routine.name)}</h1>
       </div>
 
       <form id="rename-routine-form" class="flex gap-3">
@@ -147,29 +147,29 @@ async function renderEditor() {
           type="text"
           autocomplete="off"
           value="${escapeHtml(routine.name)}"
-          class="flex-1 bg-surface border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
+          class="flex-1 bg-surface rounded-btn px-3 py-3 text-ink min-h-[44px]"
           required
         />
-        <button type="submit" class="tap-feedback bg-accent text-bg font-semibold rounded-lg px-4 min-h-[44px]">
+        <button type="submit" class="tap-feedback bg-accent text-base font-semibold rounded-btn px-4 min-h-[44px]">
           Speichern
         </button>
       </form>
 
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
-          <h2 class="text-sm text-white/60 uppercase tracking-wide">Übungen</h2>
+          <h2 class="text-label text-muted uppercase">Übungen</h2>
           <button id="add-exercise-to-routine-btn" class="tap-feedback text-accent font-semibold min-h-[44px] px-2">
             + Übung hinzufügen
           </button>
         </div>
         ${
           entries.length === 0
-            ? `<p class="text-white/60 text-center py-8">Noch keine Übungen in dieser Routine.</p>`
+            ? `<p class="text-body text-muted text-center py-8">Noch keine Übungen in dieser Routine.</p>`
             : `<ul class="flex flex-col gap-2">${rows}</ul>`
         }
       </div>
 
-      <button id="delete-routine-btn" class="tap-feedback text-red-400 text-sm py-2 min-h-[44px] mt-4">
+      <button id="delete-routine-btn" class="tap-feedback text-red-400 text-body py-2 min-h-[44px] mt-4">
         Routine löschen
       </button>
     </div>
@@ -188,21 +188,21 @@ async function renderPicker() {
   return `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center gap-3">
-        <button id="back-to-editor-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-white/60">←</button>
-        <h1 class="text-2xl font-bold flex-1 truncate">Übung hinzufügen</h1>
+        <button id="back-to-editor-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted">←</button>
+        <h1 class="text-screen-title flex-1 truncate">Übung hinzufügen</h1>
       </div>
 
       ${
         allExercises.length === 0
-          ? `<p class="text-white/60 text-center py-12">Es gibt noch keine Übungen. Lege zuerst welche im Tab "Übungen" an.</p>`
+          ? `<p class="text-body text-muted text-center py-12">Es gibt noch keine Übungen. Lege zuerst welche im Tab "Übungen" an.</p>`
           : available.length === 0
-            ? `<p class="text-white/60 text-center py-12">Alle vorhandenen Übungen sind bereits Teil dieser Routine.</p>`
+            ? `<p class="text-body text-muted text-center py-12">Alle vorhandenen Übungen sind bereits Teil dieser Routine.</p>`
             : `<ul class="flex flex-col gap-2">
                 ${available
                   .map(
                     (ex) => `
                   <li>
-                    <button data-id="${ex.id}" class="pick-exercise-btn tap-feedback w-full text-left bg-surface rounded-lg px-4 py-3 min-h-[44px]">
+                    <button data-id="${ex.id}" class="pick-exercise-btn tap-feedback w-full text-left bg-surface rounded-btn px-4 py-3 min-h-[44px] text-card-title">
                       ${escapeHtml(ex.name)}
                     </button>
                   </li>

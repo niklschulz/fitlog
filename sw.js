@@ -1,6 +1,6 @@
 // App-Shell-Caching für vollständige Offline-Nutzung (s. Konzept Abschnitt 6).
 // Cache-Name bei Änderungen an der Datei-Liste hochzählen, damit Clients aktualisieren.
-const CACHE_NAME = 'fitlog-v17';
+const CACHE_NAME = 'fitlog-v20';
 
 const APP_SHELL = [
   './',
@@ -32,10 +32,15 @@ const CDN_SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      await cache.addAll(APP_SHELL);
+      // cache.addAll() macht normale fetch()-Aufrufe, die dem Browser-eigenen
+      // HTTP-Cache unterliegen - ohne cache:'reload' könnte ein Update sonst
+      // stellenweise veraltete Dateien aus dem HTTP-Cache übernehmen, statt
+      // wirklich alles frisch vom Server zu holen.
+      const requests = APP_SHELL.map((url) => new Request(url, { cache: 'reload' }));
+      await cache.addAll(requests);
       await Promise.all(
         CDN_SHELL.map((url) =>
-          fetch(url, { mode: 'no-cors' })
+          fetch(url, { mode: 'no-cors', cache: 'reload' })
             .then((response) => cache.put(url, response))
             .catch((err) => console.error('Fitlog SW: CDN-Precache fehlgeschlagen', url, err))
         )

@@ -48,9 +48,9 @@ Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) für die vollständige Begr�
 ## UI/UX-Leitplanken
 
 - Mobile-first, Touch-Targets mind. 44×44px
-- Dunkles Theme (`#0f1115`), Akzentfarbe Grün (`#22c55e`) — fest, kein Light/Dark-Toggle im MVP
+- Dunkles Theme, Akzentfarbe Limette-Grün — fest, kein Light/Dark-Toggle im MVP. Vollständige Farbpalette, Typografie- und Radius-Tokens: [design-system.md](design-system.md)
 - Bestätigungsdialog vor jedem Löschen (`window.confirm`, ausreichend für den MVP-Umfang)
-- Bottom-Tab-Navigation: Training, Übungen, Routinen, Verlauf
+- Freischwebende, pillenförmige Bottom-Tab-Navigation mit Icons: Training, Übungen, Routinen, Verlauf, Profil
 
 ## Vorgemerkte, noch nicht spezifizierte Erweiterungen
 

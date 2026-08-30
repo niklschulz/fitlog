@@ -29,7 +29,7 @@ db.open()
     viewContainer.innerHTML = `
       <div class="flex flex-col items-center justify-center h-full text-center gap-2 py-16">
         <p class="text-red-400 font-semibold">Datenbank konnte nicht geöffnet werden.</p>
-        <p class="text-white/60 text-sm">${err.message ?? err}</p>
+        <p class="text-muted text-body">${err.message ?? err}</p>
       </div>
     `;
   });

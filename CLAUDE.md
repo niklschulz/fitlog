@@ -1,6 +1,6 @@
 # Fitlog – Hinweise für Claude Code
 
-Offline-fähige Fitness-Tracker-PWA. Bevor du Änderungen machst: [`docs/architecture.md`](docs/architecture.md) und [`docs/features.md`](docs/features.md) lesen — die enthalten den aktuellen Stand, nicht raten oder aus dem Code allein rekonstruieren.
+Offline-fähige Fitness-Tracker-PWA. Bevor du Änderungen machst: [`docs/architecture.md`](docs/architecture.md), [`docs/features.md`](docs/features.md) und für alles Visuelle [`docs/design-system.md`](docs/design-system.md) lesen — die enthalten den aktuellen Stand, nicht raten oder aus dem Code allein rekonstruieren.
 
 ## Wichtigste Regel: Public/Private-Trennung
 
@@ -15,7 +15,8 @@ Offline-fähige Fitness-Tracker-PWA. Bevor du Änderungen machst: [`docs/archite
 ## Feste Konventionen in diesem Projekt
 
 - Kein Build-Schritt, kein `npm install` — Vanilla JS (ES-Module) + Tailwind Play CDN + Dexie, beide per CDN-`<script>`-Tag eingebunden
-- **`CACHE_NAME` in `sw.js` bei jeder Änderung an einer gecachten Datei hochzählen** — sonst bekommen Nutzer wegen der Cache-first-Strategie die alte Version weiter ausgeliefert. Beim lokalen Testen nach einer Änderung immer Service Worker + Caches im Browser leeren, bevor man verifiziert (alte Registrierungen sonst irreführend)
+- **Design-Tokens** (Farben, Radien, Typografie) liegen im inline `tailwind.config`-Objekt in `index.html`, nicht in einer `tailwind.config.js` — es gibt keine solche Datei in diesem Projekt (kein Build-Schritt). Neue/geänderte Tokens dort eintragen und in [design-system.md](docs/design-system.md) nachführen
+- **`CACHE_NAME` in `sw.js` bei jeder Änderung an einer gecachten Datei hochzählen** — sonst bekommen Nutzer wegen der Cache-first-Strategie die alte Version weiter ausgeliefert. Beim lokalen Testen nach einer Änderung immer Service Worker + Caches im Browser leeren, bevor man verifiziert (alte Registrierungen sonst irreführend). Beim SW-Install selbst wird jede App-Shell-Datei mit `cache: 'reload'` geholt (nicht einfach `cache.addAll(APP_SHELL)` mit URLs) — sonst kann der normale Browser-HTTP-Cache veraltete Dateien liefern, obwohl der Service-Worker-Cache-Name sich geändert hat. Nicht durch die einfachere URL-Variante ersetzen
 - Jede View folgt dem Pattern `render(container)` → `paint()` → `wireEvents()`, s. [architecture.md](docs/architecture.md#view-pattern)
 - Löschen/Entfernen von irgendetwas (Übungen, Routinen, Trainings, Sätze, Profil): immer Bestätigungsdialog (`confirm()`). Kaskaden-Regeln für Trainingsdaten stehen in [ADR 0004](docs/decisions/0004-loesch-kaskaden.md) — nicht ohne Rücksprache ändern
 - **`confirm()`/`alert()`/`prompt()` beim Testen in der Browser-Pane**: Diese werden dort automatisiert sofort mit "Abbrechen" beantwortet, ohne dass ein Dialog sichtbar wird (kein Mensch, der klickt) — wirkt wie ein funktionsloser Button, ist aber kein Bug. Vor dem Testen `window.confirm = () => true` (bzw. `false` für den Abbrechen-Fall) setzen, um das reale Verhalten zu simulieren

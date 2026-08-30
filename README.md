@@ -8,6 +8,7 @@ Live: https://niklschulz.github.io/fitlog/
 
 - [`docs/architecture.md`](docs/architecture.md) — Tech-Stack, PWA-Mechanik, Datenmodell, Sync-Strategie
 - [`docs/features.md`](docs/features.md) — Funktionsumfang, User Flows, MVP-Scope
+- [`docs/design-system.md`](docs/design-system.md) — Farben, Typografie, Radien, Abstände, Komponenten-Muster
 - [`docs/decisions/`](docs/decisions) — Architecture Decision Records (Warum X statt Y)
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — Chronologische Änderungshistorie
 

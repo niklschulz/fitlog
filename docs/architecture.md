@@ -45,7 +45,7 @@ Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kas
 
 ## PWA-Mechanik
 
-- **Manifest** (`manifest.json`): `display: standalone`, Icons, Theme-Farbe `#0f1115`
+- **Manifest** (`manifest.json`): `display: standalone`, Icons, Theme-Farbe `#121212` (s. [design-system.md](design-system.md) für die vollständige Farbpalette)
 - **iOS-Sonderfall**: `apple-mobile-web-app-capable` + `apple-touch-icon` zusätzlich zum Manifest nötig, da iOS das Web-App-Manifest für den Standalone-Modus nicht vollständig respektiert
 - **Safe-Area**: `viewport-fit=cover` + `env(safe-area-inset-*)` in CSS, für Notch/Dynamic-Island/Home-Indicator. Muss an jedem Screen-Rand, der Inhalt zeigen könnte, explizit angewendet werden (`.safe-top`, `.safe-bottom`) — wird nicht automatisch vererbt
 - **Service Worker** (`sw.js`): Cache-first für alle GET-Requests. Cached sowohl lokale Dateien (`cache.addAll`) als auch die beiden Cross-Origin-CDN-Skripte (Tailwind, Dexie) einzeln im `no-cors`-Modus, da `cache.addAll` im `cors`-Modus an fehlenden CORS-Headern von `cdn.tailwindcss.com` scheitert

@@ -16,10 +16,10 @@ async function paint() {
   currentContainer.innerHTML = `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between gap-3">
-        <h1 class="text-2xl font-bold">Übungen</h1>
+        <h1 class="text-screen-title">Übungen</h1>
         ${
           editingId === null
-            ? `<button id="add-exercise-btn" class="tap-feedback bg-accent text-bg font-semibold rounded-lg px-4 py-2 min-h-[44px]">
+            ? `<button id="add-exercise-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn px-4 py-2 min-h-[44px]">
                 + Neue Übung
               </button>`
             : ''
@@ -38,8 +38,8 @@ function renderForm(list) {
   const name = editing ? editing.name : '';
 
   return `
-    <form id="exercise-form" class="flex flex-col gap-3 bg-surface rounded-lg p-4">
-      <label class="text-sm text-white/60" for="exercise-name">Name</label>
+    <form id="exercise-form" class="flex flex-col gap-3 bg-surface rounded-card p-4">
+      <label class="text-label text-muted" for="exercise-name">Name</label>
       <input
         id="exercise-name"
         name="name"
@@ -47,20 +47,20 @@ function renderForm(list) {
         autocomplete="off"
         value="${escapeHtml(name)}"
         placeholder="z. B. Kniebeuge"
-        class="bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
+        class="bg-base rounded-btn px-3 py-3 text-ink min-h-[44px]"
         required
       />
       <div class="flex gap-3">
-        <button type="submit" class="tap-feedback flex-1 bg-accent text-bg font-semibold rounded-lg py-3 min-h-[44px]">
+        <button type="submit" class="tap-feedback flex-1 bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
           Speichern
         </button>
-        <button type="button" id="cancel-exercise-btn" class="tap-feedback px-4 py-3 text-white/60 min-h-[44px]">
+        <button type="button" id="cancel-exercise-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">
           Abbrechen
         </button>
       </div>
       ${
         editing
-          ? `<button type="button" id="delete-exercise-btn" class="tap-feedback text-red-400 text-sm py-2 min-h-[44px]">
+          ? `<button type="button" id="delete-exercise-btn" class="tap-feedback text-red-400 text-body py-2 min-h-[44px]">
               Übung löschen
             </button>`
           : ''
@@ -71,7 +71,7 @@ function renderForm(list) {
 
 function renderList(list) {
   if (list.length === 0) {
-    return `<p class="text-white/60 text-center py-12">Noch keine Übungen angelegt.</p>`;
+    return `<p class="text-body text-muted text-center py-12">Noch keine Übungen angelegt.</p>`;
   }
 
   return `
@@ -80,7 +80,7 @@ function renderList(list) {
         .map(
           (ex) => `
         <li>
-          <button data-id="${ex.id}" class="exercise-item tap-feedback w-full text-left bg-surface rounded-lg px-4 py-3 min-h-[44px]">
+          <button data-id="${ex.id}" class="exercise-item tap-feedback w-full text-left bg-surface rounded-btn px-4 py-3 min-h-[44px] text-card-title">
             ${escapeHtml(ex.name)}
           </button>
         </li>
