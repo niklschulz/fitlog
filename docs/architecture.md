@@ -56,6 +56,16 @@ Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kas
 
 Icons werden nicht mit einem Grafikprogramm erstellt, sondern durch ein kleines Node-Skript (kein ImageMagick/PIL auf dem Zielsystem verfügbar), das PNG-Bytes direkt über Node's eingebautes `zlib` erzeugt (manueller PNG-Chunk-Writer + CRC32). Das Skript selbst ist nicht Teil des Repos (liegt im Scratchpad der Session, in der es erstellt wurde) — bei Bedarf neu erstellen oder Icons durch ein reguläres Grafikprogramm ersetzen.
 
+## Nicht-funktionale Anforderungen
+
+- **Offline-Fähigkeit (zentrale Anforderung)**: App muss vollständig funktionsfähig sein, ohne dass je eine Internetverbindung bestanden hat (Erstinstallation ausgenommen, s. [ADR 0002](decisions/0002-tailwind-play-cdn.md)). Alle Kernfunktionen laufen ausschließlich gegen IndexedDB, ohne Netzwerk-Abhängigkeit.
+- **HTTPS-Voraussetzung**: Service Worker funktionieren nur über HTTPS (oder `localhost` lokal) — GitHub Pages liefert das automatisch.
+- **Performance**: App-Start aus dem Cache (offline) soll praktisch verzögerungsfrei sein. Vanilla JS ohne Framework-Overhead erreicht das ohne gesonderte Optimierung.
+- **Datenpersistenz/Robustheit**: Kein Datenverlust bei normalem Gebrauch (regelmäßige Nutzung verhindert iOS-Cache-Löschen nach Inaktivität). Kein Verlassen auf Netzwerk für Datenintegrität, da kein Backend existiert.
+- **Browser-/Geräte-Scope**: Ausschließlich Safari auf iOS (Home-Screen-Standalone-Modus) — keine Cross-Browser- oder Desktop-Kompatibilität nötig oder getestet.
+- **Wartbarkeit**: Code soll auch ohne tiefe Programmierkenntnisse grob nachvollziehbar bleiben (mit ausschlaggebend für [ADR 0001](decisions/0001-vanilla-js-ohne-framework.md)).
+- **Bewusst nicht relevant für den MVP**: Skalierung bei großen Datenmengen (Single-User, für IndexedDB unkritisch), Sicherheit/Authentifizierung (keine Netzwerk-Kommunikation, daher keine Angriffsfläche in dem Sinne — ändert sich, sobald der Sync kommt).
+
 ## Sync & Infrastruktur (geplant, noch nicht gebaut)
 
 IndexedDB bleibt auch nach Einführung eines Syncs die primäre Datenquelle ("Source of Truth") — ein späteres Backend ist reines Backup-/Persistenz-Ziel, keine Voraussetzung für die App-Nutzung. Geplanter Mechanismus: Sync über `online`/`offline`-Browser-Events, kein manueller Button. Safari unterstützt keine Background Sync API, Sync funktioniert daher nur bei aktiv geöffneter App.
