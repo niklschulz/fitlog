@@ -43,7 +43,7 @@ function renderView(profile) {
       Wird für den späteren Sync zum eigenen Server verwendet. Sync ist aktuell noch nicht aktiv – das Training-Tracking funktioniert unabhängig davon vollständig offline weiter.
     </p>
 
-    <button id="remove-profile-btn" class="tap-feedback text-red-400 text-sm py-2 min-h-[44px]">
+    <button id="remove-profile-btn" class="tap-feedback bg-red-600 text-white font-bold rounded-lg py-3 min-h-[44px]">
       Profil entfernen
     </button>
   `;
@@ -125,7 +125,6 @@ function wireEvents() {
   });
 
   currentContainer.querySelector('#remove-profile-btn')?.addEventListener('click', () => {
-    if (!confirm('Profil wirklich entfernen? Der Token muss danach erneut eingegeben werden.')) return;
     clearProfile();
     state.mode = 'empty';
     paint();
