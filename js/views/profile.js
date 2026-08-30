@@ -2,11 +2,11 @@ import { getProfile, saveProfile } from '../profile.js';
 import { escapeHtml } from '../utils.js';
 
 let currentContainer = null;
-let state = { tokenVisible: false, justSaved: false };
+let state = { justSaved: false };
 
 export function render(container) {
   currentContainer = container;
-  state = { tokenVisible: false, justSaved: false };
+  state = { justSaved: false };
   paint();
 }
 
@@ -28,25 +28,22 @@ function paint() {
             value="${escapeHtml(username)}"
             placeholder="z. B. Niklas"
             class="bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
+            required
           />
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-sm text-white/60" for="profile-token">Token</label>
-          <div class="flex gap-2">
-            <input
-              id="profile-token"
-              name="token"
-              type="${state.tokenVisible ? 'text' : 'password'}"
-              autocomplete="off"
-              value="${escapeHtml(token)}"
-              placeholder="Vom Server-Setup erhalten"
-              class="flex-1 bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
-            />
-            <button type="button" id="toggle-token-visibility-btn" class="tap-feedback px-4 min-h-[44px] min-w-[44px] text-white/60 bg-bg border border-white/10 rounded-lg">
-              ${state.tokenVisible ? '🙈' : '👁'}
-            </button>
-          </div>
+          <input
+            id="profile-token"
+            name="token"
+            type="text"
+            autocomplete="off"
+            value="${escapeHtml(token)}"
+            placeholder="Vom Server-Setup erhalten"
+            class="bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
+            required
+          />
         </div>
 
         <p class="text-xs text-white/40 leading-relaxed">
@@ -66,15 +63,11 @@ function paint() {
 }
 
 function wireEvents() {
-  currentContainer.querySelector('#toggle-token-visibility-btn')?.addEventListener('click', () => {
-    state.tokenVisible = !state.tokenVisible;
-    paint();
-  });
-
   currentContainer.querySelector('#profile-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = e.target.elements.username.value.trim();
     const token = e.target.elements.token.value.trim();
+    if (!username || !token) return;
     saveProfile({ username, token });
     state.justSaved = true;
     paint();
