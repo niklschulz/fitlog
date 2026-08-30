@@ -171,38 +171,51 @@ async function paint() {
 // prozentuale Flex-Aufteilung, die durch Rundung ein Stück des nächsten
 // Montags sichtbar ließ). Jeder Wochenblock ist genau einen Bildschirm
 // breit und der einzige Snap-Punkt (snap-start), wodurch die Zeile pro
-// voller Woche einrastet statt pro Einzeltag. Zwischen den Wochenblöcken
-// sitzt ein größerer Abstand (gap-6) als Orientierungshilfe zwischen
-// Sonntag und Montag.
+// voller Woche einrastet statt pro Einzeltag - Montag landet dadurch in
+// jeder Woche exakt linksbündig mit der "Workout"-Überschrift, Sonntag
+// exakt rechtsbündig mit dem Kalender-Icon.
+//
+// Der Abstand zwischen den Wochen (Orientierungshilfe zwischen Sonntag
+// und Montag) läuft bewusst NICHT über die Flex-`gap`-Eigenschaft, da
+// `gap` + `scroll-snap` in Safari/WebKit nicht immer zuverlässig
+// zusammenspielen (bekannte Cross-Browser-Inkonsistenz) und dadurch die
+// exakte Links-/Rechtsbündigkeit einer eingerasteten Woche verschieben
+// konnte. Stattdessen ein expliziter, unsichtbarer Abstandshalter
+// zwischen den Wochenblöcken - ein normales Flex-Kind ohne snap-Bezug,
+// das die Snap-Position der Wochenblöcke selbst nicht beeinflussen kann.
+const WEEK_GAP_PX = 24;
+
 function renderCalendarStrip(weeks, datesWithSets) {
   const today = todayISODate();
 
-  return `
-    <div class="flex gap-6 snap-x snap-mandatory overflow-x-auto -mx-4 px-4">
-      ${weeks
-        .map(
-          (week) => `
-        <div class="calendar-week grid grid-cols-7 flex-shrink-0 w-full snap-start" data-week-start="${week[0]}">
-          ${week
-            .map((d) => {
-              const { weekday, day } = formatDayLabel(d);
-              const isSelected = d === state.selectedDate;
-              const isToday = d === today;
-              const hasDot = datesWithSets.has(d);
-              const dayNumClasses = isSelected ? 'bg-accent text-base' : isToday ? 'text-accent' : 'text-ink';
-              return `
-              <button data-date="${d}" class="calendar-day-btn tap-feedback flex flex-col items-center gap-1.5 py-1 min-h-[44px]">
-                <span class="text-label uppercase ${isSelected ? 'text-ink' : 'text-muted'}">${weekday}</span>
-                <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${dayNumClasses}">${day}</span>
-                <span class="w-1.5 h-1.5 rounded-full ${hasDot ? 'bg-accent' : 'bg-transparent'}"></span>
-              </button>
-            `;
-            })
-            .join('')}
-        </div>
-      `
-        )
+  const weekBlocks = weeks.map(
+    (week) => `
+    <div class="calendar-week grid grid-cols-7 flex-shrink-0 w-full snap-start" data-week-start="${week[0]}">
+      ${week
+        .map((d) => {
+          const { weekday, day } = formatDayLabel(d);
+          const isSelected = d === state.selectedDate;
+          const isToday = d === today;
+          const hasDot = datesWithSets.has(d);
+          const dayNumClasses = isSelected ? 'bg-accent text-base' : isToday ? 'text-accent' : 'text-ink';
+          return `
+          <button data-date="${d}" class="calendar-day-btn tap-feedback flex flex-col items-center gap-1.5 py-1 min-h-[44px]">
+            <span class="text-label uppercase ${isSelected ? 'text-ink' : 'text-muted'}">${weekday}</span>
+            <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${dayNumClasses}">${day}</span>
+            <span class="w-1.5 h-1.5 rounded-full ${hasDot ? 'bg-accent' : 'bg-transparent'}"></span>
+          </button>
+        `;
+        })
         .join('')}
+    </div>
+  `
+  );
+
+  const spacer = `<div class="flex-shrink-0" style="width: ${WEEK_GAP_PX}px" aria-hidden="true"></div>`;
+
+  return `
+    <div class="flex snap-x snap-mandatory overflow-x-auto -mx-4 px-4 scroll-px-4">
+      ${weekBlocks.join(spacer)}
     </div>
   `;
 }

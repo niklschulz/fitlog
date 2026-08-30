@@ -4,6 +4,9 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Fixed (Kalender-Randausrichtung)
+- Montag/Sonntag lagen nur in der zuletzt sichtbaren Woche pixelgenau an "Workout"-Überschrift bzw. Kalender-Icon an — in den übrigen Wochen 16px zu weit links, weil `scrollIntoView`/`scroll-snap` das eigene Container-Padding ignorierten. Behoben mit `scroll-padding` (`scroll-px-4`) statt einer JS-Heuristik; `gap` zwischen Wochenblöcken durch einen expliziten Abstandshalter-Div ersetzt (Safari/WebKit spielt `gap` + `scroll-snap` nicht immer zuverlässig zusammen). Für alle drei Wochen einzeln auf 0px Abweichung verifiziert. Details: [design-system.md](design-system.md#navigation)
+
 ### Changed (Workout-Tab Feinschliff Runde 3)
 - Kalenderzeile zeigt nur noch ±1 Woche (Vorwoche/Folgewoche) statt ±2 Wochen
 - Kalenderzeile von Flex-Prozent-Basis auf Wochenblöcke (CSS Grid) umgestellt — behebt einen angeschnitten sichtbaren nächsten Montag am rechten Rand (Rundungsfehler der vorherigen Prozent-Basis-Berechnung)
