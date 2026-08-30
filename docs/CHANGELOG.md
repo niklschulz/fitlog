@@ -4,6 +4,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Fixed (Kalender-Layout korrigiert, X-Icon vergrößert)
+- Vorheriger Ausrichtungs-Fix (items-start/items-end auf gleich breiten Grid-Spalten) war funktional 0px daneben, aber optisch falsch — brach die Zentrierung von Wochentag-Text und Tageszahl zueinander. Richtig gelöst mit `flex justify-between`: alle 7 Tage bleiben einheitlich in sich zentriert, werden als Ganzes gleichmäßig über die Breite verteilt (Montag/Sonntag landen dadurch automatisch an den Rändern). Verifiziert: 0px Randabweichung **und** exakt gleicher Abstand zwischen allen Tagen
+- X-Balken des Dropdown-Icons vergrößert (7px→10px), Zentrierung von festem `margin-left` auf `translateX(-50%)` umgestellt, damit sie der jetzt mitanimierten Balkenbreite folgt
+- Details: [design-system.md](design-system.md#navigation)
+
 ### Fixed / Added (Kalender-Inhaltsausrichtung, Icon-Animation)
 - Montag-/Sonntag-**Inhalt** (Wochentag-Text, Tageszahl) war innerhalb seiner Spalte zentriert und wirkte dadurch eingerückt, obwohl die Spalte selbst schon pixelgenau lag — erste Spalte jetzt linksbündig, letzte rechtsbündig
 - Chevron-zu-X-Morph-Animation für das Dropdown-Icon der Routine-Auswahl (zwei Balken schieben sich beim Öffnen zusammen, beim Schließen wieder auseinander, synchron mit der Popup-Animation)

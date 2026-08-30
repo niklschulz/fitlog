@@ -166,14 +166,17 @@ async function paint() {
   });
 }
 
-// Kalenderzeile als Abfolge von Wochenblöcken (je 7 Tage im CSS-Grid,
-// gleichmäßig über die volle Breite verteilt - robuster als eine
-// prozentuale Flex-Aufteilung, die durch Rundung ein Stück des nächsten
-// Montags sichtbar ließ). Jeder Wochenblock ist genau einen Bildschirm
-// breit und der einzige Snap-Punkt (snap-start), wodurch die Zeile pro
-// voller Woche einrastet statt pro Einzeltag - Montag landet dadurch in
-// jeder Woche exakt linksbündig mit der "Workout"-Überschrift, Sonntag
-// exakt rechtsbündig mit dem Kalender-Icon.
+// Kalenderzeile als Abfolge von Wochenblöcken. Jeder Wochenblock ist genau
+// einen Bildschirm breit und der einzige Snap-Punkt (snap-start), wodurch
+// die Zeile pro voller Woche einrastet statt pro Einzeltag. Innerhalb eines
+// Blocks sitzen die 7 Tage per `flex justify-between` (nicht als
+// Grid-Spalten mit gestrecktem Inhalt!) - jeder Tag ist ein eigenständiger,
+// an seinem Inhalt (Wochentag-Text + Tageszahl, zueinander zentriert)
+// bemessener Block, `justify-between` verteilt diese 7 Blöcke mit
+// gleichmäßigem Abstand über die volle Breite und drückt dabei automatisch
+// den ersten (Montag) an den linken und den letzten (Sonntag) an den
+// rechten Rand - exakt linksbündig mit der "Workout"-Überschrift bzw.
+// rechtsbündig mit dem Kalender-Icon.
 //
 // Der Abstand zwischen den Wochen (Orientierungshilfe zwischen Sonntag
 // und Montag) läuft bewusst NICHT über die Flex-`gap`-Eigenschaft, da
@@ -190,22 +193,16 @@ function renderCalendarStrip(weeks, datesWithSets) {
 
   const weekBlocks = weeks.map(
     (week) => `
-    <div class="calendar-week grid grid-cols-7 flex-shrink-0 w-full snap-start" data-week-start="${week[0]}">
+    <div class="calendar-week flex justify-between flex-shrink-0 w-full snap-start" data-week-start="${week[0]}">
       ${week
-        .map((d, dayIndex) => {
+        .map((d) => {
           const { weekday, day } = formatDayLabel(d);
           const isSelected = d === state.selectedDate;
           const isToday = d === today;
           const hasDot = datesWithSets.has(d);
           const dayNumClasses = isSelected ? 'bg-accent text-base' : isToday ? 'text-accent' : 'text-ink';
-          // Erste Spalte (Montag) linksbündig mit der "Workout"-Überschrift,
-          // letzte Spalte (Sonntag) rechtsbündig mit dem Kalender-Icon -
-          // die Spaltenbreite selbst liegt bereits pixelgenau an (Grid),
-          // aber ihr Inhalt war bislang zentriert und wirkte dadurch
-          // eingerückt.
-          const alignClass = dayIndex === 0 ? 'items-start' : dayIndex === 6 ? 'items-end' : 'items-center';
           return `
-          <button data-date="${d}" class="calendar-day-btn tap-feedback flex flex-col ${alignClass} gap-1.5 py-1 min-h-[44px]">
+          <button data-date="${d}" class="calendar-day-btn tap-feedback flex flex-col items-center gap-1.5 py-1 min-h-[44px]">
             <span class="text-label uppercase ${isSelected ? 'text-ink' : 'text-muted'}">${weekday}</span>
             <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${dayNumClasses}">${day}</span>
             <span class="w-1.5 h-1.5 rounded-full ${hasDot ? 'bg-accent' : 'bg-transparent'}"></span>

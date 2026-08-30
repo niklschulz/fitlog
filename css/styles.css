@@ -109,11 +109,13 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* Chevron-zu-X-Icon der Routine-Dropdown-Pille: zwei diagonale Balken, die
-   in Ruhestellung einen Chevron nach unten bilden (Balken treffen sich
-   unten mittig) und beim Öffnen zur Mitte zusammenschieben, wo sie sich zu
-   einem X überlagern. Nur left wird animiert, die Rotation bleibt gleich -
-   dadurch ist die Bewegung ein einfaches, sauber interpolierbares
-   "Zusammenschieben" statt einer komplexen Pfad-Morphung. */
+   in Ruhestellung einen (kleineren) Chevron nach unten bilden (Balken
+   treffen sich unten mittig) und beim Öffnen zur Mitte zusammenschieben,
+   wo sie sich zu einem (bewusst größeren, gut sichtbaren) X überlagern.
+   Zentrierung läuft über translateX(-50%) statt einem festen
+   margin-left, damit auch die Balkenbreite selbst mitanimiert werden kann
+   (X-Balken sind länger als die Chevron-Balken), ohne dass der
+   Zentrierungs-Offset dabei aus dem Ruder läuft. */
 .dropdown-chevron-icon {
   position: relative;
   width: 16px;
@@ -123,22 +125,22 @@ input[type="number"]::-webkit-outer-spin-button {
 .dropdown-chevron-icon .bar {
   position: absolute;
   top: 8px;
-  width: 7px;
-  height: 1.5px;
-  margin-top: -0.75px;
-  margin-left: -3.5px;
+  height: 1.75px;
+  margin-top: -0.875px;
   border-radius: 1px;
   background: #9B9BA1; /* muted */
 }
 
 .dropdown-chevron-icon .bar-a {
   left: 6px;
-  transform: rotate(45deg);
+  width: 7px;
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .dropdown-chevron-icon .bar-b {
   left: 10px;
-  transform: rotate(-45deg);
+  width: 7px;
+  transform: translateX(-50%) rotate(-45deg);
 }
 
 .dropdown-chevron-icon.is-open .bar-a {
@@ -158,21 +160,21 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 @keyframes chevron-bar-a-close {
-  from { left: 6px; }
-  to { left: 8px; }
+  from { left: 6px; width: 7px; }
+  to { left: 8px; width: 10px; }
 }
 
 @keyframes chevron-bar-b-close {
-  from { left: 10px; }
-  to { left: 8px; }
+  from { left: 10px; width: 7px; }
+  to { left: 8px; width: 10px; }
 }
 
 @keyframes chevron-bar-a-open {
-  from { left: 8px; }
-  to { left: 6px; }
+  from { left: 8px; width: 10px; }
+  to { left: 6px; width: 7px; }
 }
 
 @keyframes chevron-bar-b-open {
-  from { left: 8px; }
-  to { left: 10px; }
+  from { left: 8px; width: 10px; }
+  to { left: 10px; width: 7px; }
 }
