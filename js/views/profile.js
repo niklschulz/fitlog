@@ -68,7 +68,6 @@ function renderForm() {
           name="username"
           type="text"
           autocomplete="off"
-          placeholder="z. B. Niklas"
           class="bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
           required
         />
@@ -81,7 +80,6 @@ function renderForm() {
           name="token"
           type="text"
           autocomplete="off"
-          placeholder="Vom Server-Setup erhalten"
           class="bg-bg border border-white/10 rounded-lg px-3 py-3 text-white min-h-[44px]"
           required
         />
