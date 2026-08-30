@@ -49,7 +49,19 @@ Kein eigenes Spacing-Token nötig: Tailwinds Standard-Spacing-Skala (0.25rem-Sch
 
 ## Navigation
 
-Freischwebende Bottom-Nav (`#bottom-nav` in `index.html`): `fixed left-4 right-4 bottom-[calc(8px+env(safe-area-inset-bottom))]`, `bg-surface`, `rounded-full`. Aktiver Tab bekommt über `.nav-btn.active` (in `css/styles.css`, da Tailwinds Play-CDN keine eigene `:has()`-freie Möglichkeit bietet, JS-gesetzte Klassen mit zwei Eigenschaften gleichzeitig zu verknüpfen) `background-color: #2A2A2A` + `color: #A3E635`. Inaktive Tabs: `text-muted`, kein Hintergrund.
+Freischwebende Bottom-Nav (`#bottom-nav` in `index.html`): `fixed left-4 right-4 bottom-[calc(8px+env(safe-area-inset-bottom))]`, `rounded-full`. Aktiver Tab bekommt über `.nav-btn.active` (in `css/styles.css`, da Tailwinds Play-CDN keine eigene `:has()`-freie Möglichkeit bietet, JS-gesetzte Klassen mit zwei Eigenschaften gleichzeitig zu verknüpfen) einen eigenen Hintergrund + `color: #A3E635`. Inaktive Tabs: `text-muted`, kein Hintergrund.
+
+**Glass-Effekt (2026-08-30, Ergänzung):** Statt der anfänglich flächigen `bg-surface`-Füllung hat ausschließlich die Bottom-Nav eine an Liquid Glass angelehnte, durchscheinende Gestaltung — als dediziertes CSS in `css/styles.css` (`#bottom-nav`), nicht als Tailwind-Utility, da die Kombination aus mehrschichtigem `box-shadow` und vorangestelltem `-webkit-backdrop-filter` so klarer bleibt:
+
+| Eigenschaft | Wert |
+|---|---|
+| `background` | `rgba(30, 30, 30, 0.55)` (halbtransparente `bg-surface`) |
+| `backdrop-filter` / `-webkit-backdrop-filter` | `blur(20px) saturate(160%)` |
+| `border` | `1px solid rgba(255, 255, 255, 0.12)` |
+| `box-shadow` | `inset 0 1px 0 rgba(255,255,255,0.15)` (Glaskante oben) + `0 8px 24px rgba(0,0,0,0.35)` (Schwebe-Schatten) |
+| Aktiver Tab | `background-color: rgba(42, 42, 42, 0.6)` statt deckendem `bg-raised` |
+
+**Bewusst nur die Bottom-Nav, sonst nichts:** Karten, Buttons und Modals bleiben deckend (`bg-surface`/`bg-base`, kein Blur). Kein SVG-Filter-basierter Verzerrungseffekt (echtes Liquid Glass aus SwiftUI/UIKit) — Safari/iOS unterstützt nur `backdrop-filter: blur()`, keine SVG-Refraktion; das native Aussehen wird über Blur + Transparenz + Specular-Highlight angenähert, nicht pixelgenau nachgebaut.
 
 **Icons:** Fünf eigene, minimale Outline-SVGs (Hantel/Training, Liste/Übungen, Kalender/Routinen, Uhr/Verlauf, Person/Profil) direkt inline in `index.html`, `stroke-width="1.75"`, `22×22px`. Bewusst **nicht** aus einer Bibliothek wie Lucide kopiert (Briefing verlangt explizit offene/eigene Icons, keine Assets der Referenz-App) — stattdessen selbst im gleichen minimalistischen Outline-Stil konstruiert, um jede Lizenz-/Fidelity-Frage zu vermeiden.
 

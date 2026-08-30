@@ -4,6 +4,9 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Changed (Glass-Effekt Bottom-Nav)
+- Bottom-Navigation von deckendem `bg-surface` auf halbtransparenten Liquid-Glass-Look umgestellt (`backdrop-filter: blur(20px) saturate(160%)`, transparenter Hintergrund, Glaskanten-Rand, Specular-Highlight per `box-shadow`). Ausschließlich die Nav betroffen, alle anderen Komponenten bleiben deckend. Details: [design-system.md](design-system.md#navigation)
+
 ### Changed (Design-Überarbeitung)
 - Komplettes visuelles Redesign nach Briefing (Farben, Typografie, Radien, Abstände, Navigation) — reine Optik, keine Funktions-/Datenmodell-Änderung. Neue Palette (`#121212`/`#1E1E1E`/`#2A2A2A`/`#A3E635`/`#F5F5F5`/`#9B9BA1`), Bottom-Nav jetzt freischwebende Pillenform mit eigenen Icons statt vollflächigem Balken mit Text-only-Tabs, keine sichtbaren Trennlinien mehr (Abgrenzung nur über Hintergrundkontrast). Tokens zentral im inline `tailwind.config` in `index.html` (kein `tailwind.config.js`, s. ADR 0002). Details, Token-Tabellen und bewusst nicht umgesetzte Komponenten (Bottom-Sheet, Segmented Control, Charts — keine Entsprechung im aktuellen Funktionsumfang): [design-system.md](design-system.md)
 - `manifest.json` Theme-/Background-Farbe an die neue Palette angeglichen (`#121212`)
