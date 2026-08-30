@@ -4,6 +4,14 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Changed (Workout-Tab UI-Feinschliff nach Referenz-Screenshots)
+- Kalenderzeile ohne Einzel-Pill-Hintergrund pro Tag: nur die ausgewählte Tageszahl bekommt ein Accent-Badge, Wochentag als reiner Text. `scroll-snap` sorgt für ein Wochen-Swipe-Gefühl bei weiterhin durchgehendem ±2-Wochen-Scroll
+- Relative Datumsbezeichnung ("Heute"/"Gestern"/"Morgen, {Datum}") statt durchgängig vollem Wochentag
+- Routine-Auswahl als Dropdown-Pill + separater "Routinen"-Link (navigiert zum Routinen-Tab) statt "Wechseln"/"Entfernen"-Buttons; "Routine entfernen" jetzt als Option im Popup
+- Nummerierte Sätze in der aufgeklappten Übungs-Karte
+- "+ Übung hinzufügen" als dezenter, zentrierter Icon-Link statt voller Button — bleibt weiterhin reiner Platzhalter ohne Funktion
+- Bewusst ignoriert: Statistics-/Premium-Tab, KI-Routine-Generierung/Wochenplanung, Zitat des Tages, Schloss-/Weight-Badge, Ziel-Satz-Zeile — keine dieser Funktionen existiert in Fitlog, letztere beide sind laut Konzept-Erweiterung Abschnitt 10 explizit ausgeschlossen. Details: [design-system.md](design-system.md#komponenten-muster)
+
 ### Added / Changed (Workout-Tab, Abschnitt 10)
 - Training-Tab durch neuen **Workout-Tab** ersetzt: Kalenderzeile (±2 Wochen um den ausgewählten Tag, automatisch zentriert, grüner Punkt an dokumentierten Tagen), natives Datums-Picker für Tage außerhalb des Fensters, Routine wählen/wechseln/entfernen als Popup-Liste, aufklappbares Übungs-Roster mit dynamischer Sortierung (begonnene Übungen zuerst nach Bearbeitungszeitpunkt, s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md))
 - Datenmodell: `workouts` bekommt ein `date`-Feld (Kalendertag statt Session-Start), neue Tabelle `workoutExercises` als Übungs-Roster pro Workout (Dexie-Schema auf Version 2)

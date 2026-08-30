@@ -79,6 +79,15 @@ Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-ar
 - **Input:** `bg-base rounded-btn px-3 py-3 text-ink`, kein Border
 - **Chip (Auswahl):** `rounded-full px-4 py-2`, ausgewählt `bg-accent text-base`, unausgewählt `bg-surface text-ink`
 - **Listenzeile:** `bg-surface rounded-card` (bzw. `rounded-btn` bei kompakten Zeilen) `px-4 py-3`
+- **Nummerierter Satz-Eintrag:** kleiner Kreis `w-6 h-6 rounded-full bg-base text-label text-muted` mit der Satz-Nummer, davor Gewicht × Wiederholungen, dahinter Löschen (`✕`)
+- **Dropdown-Pill (Auswahl mit Popup):** `bg-surface rounded-full`, Label links, Chevron-Down-Icon rechts (z. B. Routine-Auswahl im Workout-Tab) — öffnet ein Popup im `Karte/Formular`-Stil darunter, keine eigene Bottom-Sheet-Komponente
+- **Dezenter Icon-Link (Platzhalter):** `opacity-60`, zentriert, kleiner Kreis-Outline mit "+" davor (z. B. "Übung hinzufügen") — für Aktionen ohne (noch) echte Funktion, bewusst kein volles Button-Styling, um nicht wie eine funktionierende primäre Aktion zu wirken
+
+**Workout-Tab-Feinschliff nach Referenz-Screenshots (2026-08-30):** Auf Wunsch wurden Teile des Workout-Tab-UI an Screenshots einer Referenz-App angeglichen — ausschließlich Layout/Optik, keine der dort zusätzlich sichtbaren Funktionen (Statistics-/Premium-Tab, KI-Routine-Generierung, Wochenplanung, Zitat des Tages, Schloss-/Weight-Badge, Ziel-Satz-Zeile "3 Sätze × 8 Wiederholungen") wurden übernommen — letztere beide sind ohnehin explizit in Abschnitt 10 der Konzept-Erweiterung ausgeschlossen ("Dauerhaft nicht vorgesehen"). Übernommen:
+- **Kalenderzeile ohne Einzel-Pill:** kein `bg-surface` mehr pro Tag — Wochentag als reiner Text (`text-label uppercase`, `text-ink` wenn ausgewählt sonst `text-muted`), nur die Tageszahl des ausgewählten Tages bekommt ein kleines quadratisches Accent-Badge (`w-8 h-8 rounded-lg bg-accent`). `scroll-snap-type: x mandatory` mit `basis-[14.2857%]` pro Tag füllt genau 7 Tage pro Bildschirmbreite, fühlt sich dadurch wie ein Wochen-Swipe an, bleibt technisch aber der durchgehende ±2-Wochen-Scroll aus Abschnitt 10
+- **Relative Datumsbezeichnung:** "Heute"/"Gestern"/"Morgen, {Datum}" für nahe Tage, sonst voller Wochentag — statt durchgängig vollem Wochentag
+- **Routine-Auswahl als Dropdown-Pill + separater "Routinen"-Link** statt der bisherigen "Wechseln"/"Entfernen"-Textbuttons. Der Link navigiert real zum bestehenden Routinen-Tab (`document.querySelector('[data-view="routines"]').click()` aus `workout.js` heraus). Die im Screenshot nicht sichtbare, aber laut Abschnitt 10 nötige "Routine entfernen"-Funktion wurde als zusätzliche Option ("Keine Routine (entfernen)") oben im Popup ergänzt, wenn eine Routine aktiv ist
+- **Nummerierte Sätze** in der aufgeklappten Übungs-Karte
 
 ## Bewusst nicht umgesetzt
 
