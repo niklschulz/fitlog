@@ -1,6 +1,6 @@
 // App-Shell-Caching für vollständige Offline-Nutzung (s. Konzept Abschnitt 6).
 // Cache-Name bei Änderungen an der Datei-Liste hochzählen, damit Clients aktualisieren.
-const CACHE_NAME = 'fitlog-v9';
+const CACHE_NAME = 'fitlog-v8';
 
 const APP_SHELL = [
   './',
@@ -10,8 +10,6 @@ const APP_SHELL = [
   './js/app.js',
   './js/db.js',
   './js/utils.js',
-  './js/quotes.js',
-  './js/views/home.js',
   './js/views/training.js',
   './js/views/exercises.js',
   './js/views/routines.js',
@@ -19,7 +17,6 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  './fonts/playfair-display-600.woff2',
 ];
 
 // Cross-Origin-CDN-Skripte liefern keine Access-Control-Allow-Origin-Header,

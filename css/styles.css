@@ -1,13 +1,5 @@
 /* Ergänzungen, die Tailwinds Utility-Klassen nicht abdecken */
 
-@font-face {
-  font-family: 'Playfair Display';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('../fonts/playfair-display-600.woff2') format('woff2');
-}
-
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
