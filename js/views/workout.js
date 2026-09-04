@@ -501,7 +501,7 @@ async function renderRoutinePicker(workout) {
     <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-surface rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
       ${
         routines.length === 0
-          ? `<p class="text-body text-muted py-2">Noch keine Routinen vorhanden.</p>`
+          ? `<p class="text-body text-muted px-3 py-2">Noch keine Routinen vorhanden.</p>`
           : `<ul class="flex flex-col gap-1 max-h-64 overflow-y-auto">
               ${routines
                 .map(

@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (kurz danach)
+
+### Fixed (Routine-Picker: Leerstand-Text ausgerichtet)
+- "Noch keine Routinen vorhanden." hatte kein horizontales Padding, "Alle Routinen anzeigen" darunter dagegen `px-3` — Text begann 12px weiter links. Beide beginnen jetzt auf derselben Linie
+- Details: [design-system.md](design-system.md#navigation) (Vierzehnte Iteration)
+
 ## 2026-09-04 (noch später)
 
 ### Changed (Heutiger Tag im großen Kalender immer nur umrandet)

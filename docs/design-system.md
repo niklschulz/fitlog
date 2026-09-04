@@ -147,6 +147,8 @@ Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-ar
 
 **Dreizehnte Iteration – "Heute" immer nur umrandet, nie gefüllt (2026-09-04):** Auf Nutzer-Wunsch bekommt der heutige Tag im großen Kalender jetzt in jedem Fall nur den ungefüllten Kreis (Rand) — auch wenn er zugleich ausgewählt ist oder bereits Sätze dokumentiert sind. Damit dreht sich die in der Achten Iteration festgelegte Priorität um: vorher hatten Auswahl/Dokumentation Vorrang vor der Heute-Markierung (führte z. B. dazu, dass der heutige, bereits dokumentierte Tag denselben gefüllten Kreis zeigte wie jeder andere dokumentierte Tag), jetzt hat "heute" in der Darstellung des großen Kalenders unbedingten Vorrang vor beidem. Betrifft nur den großen Kalender — die kleine Kalenderzeile (eigenes, quadratisches Badge statt Kreis) bleibt unverändert.
 
+**Vierzehnte Iteration – Leerstand-Text im Routine-Picker ausgerichtet (2026-09-04):** Der Hinweistext "Noch keine Routinen vorhanden." im Routine-Picker-Popup hatte kein horizontales Padding, "Alle Routinen anzeigen" darunter (als Button) dagegen `px-3` — der Text begann dadurch 12px weiter links als der Button-Text. Angeglichen: Text bekommt jetzt ebenfalls `px-3`, beide beginnen auf derselben Linie (0px Abweichung verifiziert).
+
 ## Bewusst nicht umgesetzt
 
 Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme") wurden folgende in der Spezifikation beschriebene Komponenten **nicht** gebaut, weil es im aktuellen Fitlog-Funktionsumfang keine Entsprechung gibt:
