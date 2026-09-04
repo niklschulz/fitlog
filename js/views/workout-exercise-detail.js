@@ -172,9 +172,13 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
         ${rows
           .map((set, i) => {
             const isSelected = set && state.selectedSetId === set.id;
+            // Kreis bleibt bei Auswahl unverändert (kein eigener grauer
+            // Fond mehr) - die Auswahl wird ausschließlich über das
+            // bildschirmbreite Hervorhebungs-Band (highlighted) angezeigt,
+            // ein zusätzlich eingefärbter Kreis wirkte wie ein
+            // überflüssiges zweites Element.
             return renderSetTimelineRow(i + 1, renderSetContent(set), {
               isLast: i === rows.length - 1,
-              circleClasses: isSelected ? 'bg-raised text-ink' : 'bg-base text-muted',
               liClasses: set ? 'set-row' : 'empty-set-row',
               liAttrs: set ? `data-set="${set.id}"` : 'data-row-empty="true"',
               highlighted: isSelected,

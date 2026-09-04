@@ -2,6 +2,20 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (Auswahl-Hervorhebung final, Teil 3)
+
+### Fixed (Kreis, Band und Text exakt zueinander zentriert)
+- Kreis (24px), Hervorhebungs-Band und Text waren weiterhin leicht (unter 2px) zueinander versetzt — Ursache: Kreis und Textzeile hatten unterschiedliche Höhen, beide aber oben bündig ausgerichtet
+- Inhalts-Bereich steckt jetzt strukturell in einer ebenfalls exakt 24px hohen Box (statt einem beliebigen Höhen-Zuschlag zu folgen) — Kreis, Band und Text liegen dadurch exakt (0px Abweichung, mit `getBoundingClientRect()` verifiziert) auf derselben Mittelachse
+- Details: [design-system.md](design-system.md#navigation) (Zweiundzwanzigste Iteration)
+
+## 2026-09-04 (Auswahl-Hervorhebung final, Teil 2)
+
+### Fixed (Band dicker, kein zusätzlicher grauer Kreis mehr)
+- Hervorhebungs-Band saß zu knapp am Text, jetzt mit 8px zusätzlichem Raum oben und unten
+- Nummern-Kreis bleibt bei Auswahl unverändert (kein zusätzlicher `bg-raised`-Fond mehr) — Auswahl wird ausschließlich über das Band angezeigt
+- Details: [design-system.md](design-system.md#navigation) (Einundzwanzigste Iteration)
+
 ## 2026-09-04 (Auswahl-Hervorhebung final)
 
 ### Fixed (Zeilen-Sprung beim Auswählen behoben, Hervorhebung bildschirmbreit)

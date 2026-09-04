@@ -11,17 +11,23 @@ export function escapeHtml(str) {
 // der Übungs-Detailseite (s. design-system.md, Siebzehnte Iteration).
 //
 // `highlighted` zeichnet ein randloses, bildschirmbreites Hervorhebungs-Band
-// hinter Kreis und Inhalt (Neunzehnte/Zwanzigste Iteration). Bewusst als
-// `position: absolute`-Element umgesetzt statt als Hintergrundfarbe auf der
-// Zeile selbst: Der Inhalts-Bereich hat unten zusätzlichen Platz (`pb-4`)
-// für die Verbindungslinie zum nächsten Kreis - eine Hintergrundfarbe direkt
-// auf der Zeile würde diesen Platz mit einfärben und dadurch nicht mittig
-// zur Schrift wirken (`bottom-4` schneidet hier exakt auf Höhe der
-// Textzeile ab). Da das Band völlig aus dem Layout-Fluss herausgenommen
-// ist, verändert Ein-/Ausblenden nie die Zeilenhöhe - kein "Springen"
-// benachbarter Zeilen beim Auswählen. `-inset-x-4` gleicht das seitliche
-// Container-Padding aus, damit das Band bis an den Bildschirmrand reicht;
-// `-z-10` hält es hinter Kreis/Linie/Text (die als normale, nicht
+// hinter Kreis und Inhalt (Neunzehnte bis Zweiundzwanzigste Iteration).
+// Bewusst als `position: absolute`-Element umgesetzt statt als
+// Hintergrundfarbe auf der Zeile selbst: Der Inhalts-Bereich hat unten
+// zusätzlichen Platz (`pb-4`) für die Verbindungslinie zum nächsten Kreis -
+// eine Hintergrundfarbe direkt auf der Zeile würde diesen Platz mit
+// einfärben. Der Inhalt steckt deshalb in einer `h-6`-Box (exakt so hoch
+// wie der Nummern-Kreis daneben) statt einfach nur der Textzeile selbst zu
+// folgen - Text und Kreis sind dadurch beide exakt 24px hoch und
+// zueinander zentriert (vorher lag der Text, da niedriger als der Kreis,
+// beim Antippen sichtbar nicht mittig zum Kreis). `top-0 bottom-4` legt
+// das Band exakt auf diese 24px-Box (die reservierten 16px `pb-4` bleiben
+// für die Verbindungslinie frei) - Kreis, Band und Text landen dadurch alle
+// auf derselben Mittellinie. Da das Band völlig aus dem Layout-Fluss
+// herausgenommen ist, verändert Ein-/Ausblenden nie die Zeilenhöhe - kein
+// "Springen" benachbarter Zeilen beim Auswählen. `-inset-x-4` gleicht das
+// seitliche Container-Padding aus, damit das Band bis an den Bildschirmrand
+// reicht; `-z-10` hält es hinter Kreis/Linie/Text (die als normale, nicht
 // positionierte Flex-Kinder sonst dahinter verschwinden würden).
 export function renderSetTimelineRow(number, contentHtml, { isLast = false, circleClasses = 'bg-base text-muted', liClasses = '', liAttrs = '', highlighted = false } = {}) {
   return `
@@ -31,7 +37,9 @@ export function renderSetTimelineRow(number, contentHtml, { isLast = false, circ
         <span class="w-6 h-6 rounded-full flex items-center justify-center text-label flex-shrink-0 ${circleClasses}">${number}</span>
         ${!isLast ? '<div class="w-0.5 flex-1 bg-white/10 mt-1"></div>' : ''}
       </div>
-      <div class="flex-1 pb-4 flex items-center gap-6 text-body">${contentHtml}</div>
+      <div class="flex-1 pb-4">
+        <div class="h-6 flex items-center gap-6 text-body">${contentHtml}</div>
+      </div>
     </li>
   `;
 }
