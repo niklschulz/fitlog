@@ -32,6 +32,8 @@ fitlog/
 
 Jede View in `js/views/*.js` folgt demselben Muster: ein modul-lokaler `state`, eine `render(container)`-Funktion (Einstiegspunkt vom Router), eine interne `paint()`, die den Container neu befüllt, und `wireEvents()`, das nach jedem Paint die Event-Listener neu bindet (da `innerHTML` die alten DOM-Knoten ersetzt). Kein virtuelles DOM, kein Diffing — bei der Datenmenge einer Einzelnutzer-Fitness-App unproblematisch.
 
+Optionaler zweiter Export: `unmount()`. `app.js`'s `showView()` ruft ihn (falls vorhanden) auf der bisherigen View auf, bevor zur neuen gewechselt wird — für Aufräumarbeiten, die über den Container hinausgehen (globale Locks, `document`-weite Listener, ausstehende Timeouts). Aktuell nur von `workout.js` genutzt (Body-Scroll-Sperre/Nav-z-index des Kalender-Sheets, s. [design-system.md](design-system.md#navigation), Zwölfte Iteration) — die meisten Views brauchen das nicht, da bloßes Ersetzen von `innerHTML` beim nächsten `render()` ausreicht.
+
 **Ausnahme**: Der große Kalender im Workout-Tab (Bottom-Sheet, [ADR 0009](decisions/0009-grosser-kalender-vollstaendiges-rendern.md)) rendert seinen gesamten Inhalt beim Öffnen einmalig über den normalen `paint()`-Zyklus, manipuliert das DOM aber während zweier Interaktionen bewusst direkt statt über `paint()`: dem Drag-to-Dismiss-Gesture am Ziehgriff (muss 1:1 dem Finger folgen) und — historisch — dem inzwischen wieder entfernten Lazy-Nachladen weiterer Monate beim Scrollen ([ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md), verursachte spürbares Ruckeln und wurde durch vollständiges Vorab-Rendern ersetzt).
 
 ## Datenmodell

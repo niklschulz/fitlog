@@ -34,6 +34,22 @@ export async function render(container) {
   await paint();
 }
 
+// Wird von app.js aufgerufen, bevor zu einer anderen View gewechselt wird
+// (s. showView()). Nötig, seit die Bottom-Nav bei offenem Kalender-Sheet
+// nutzbar ist (s. raiseNavAboveCalendarSheet): Ein Tab-Wechsel während
+// offenem/schließendem Sheet würde sonst dauerhaft die Body-Scroll-Sperre
+// und den angehobenen Nav-z-index hinterlassen - und ein noch ausstehender
+// Schließen-Timeout würde nachträglich paint() auf dem inzwischen von der
+// neuen View belegten Container aufrufen.
+export function unmount() {
+  if (pendingCalendarSheetCloseTimeout) {
+    clearTimeout(pendingCalendarSheetCloseTimeout);
+    pendingCalendarSheetCloseTimeout = null;
+  }
+  unlockBodyScroll();
+  resetNavZIndex();
+}
+
 // --- Datums-Hilfsfunktionen (lokale Zeitzone, kein UTC-Shift) ---
 
 function addDays(dateStr, delta) {
@@ -200,6 +216,21 @@ function unlockBodyScroll() {
     document.removeEventListener('touchmove', calendarSheetTouchBlocker);
     calendarSheetTouchBlocker = null;
   }
+}
+
+// Die Bottom-Nav liegt normalerweise unterhalb des Kalender-Sheets
+// (z-20 vs. z-50/51) und wäre dadurch komplett verdeckt. Während das Sheet
+// offen ist, wird ihr z-index per Inline-Style gezielt angehoben (höhere
+// Priorität als jede Klassen-Regel, unabhängig von der CSS-Ladereihenfolge
+// zwischen Tailwind und styles.css) - bewusst nur für die Dauer des
+// Sheet-Lebenszyklus und nicht dauerhaft, damit andere Overlays (z. B. der
+// Routine-Picker) weiterhin unbeeinflusst über der Nav liegen.
+function raiseNavAboveCalendarSheet() {
+  document.getElementById('bottom-nav')?.style.setProperty('z-index', '55');
+}
+
+function resetNavZIndex() {
+  document.getElementById('bottom-nav')?.style.removeProperty('z-index');
 }
 
 // --- Paint ---
@@ -409,7 +440,7 @@ async function renderCalendarSheet() {
         </div>
         <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end text-label font-semibold text-accent px-2 py-2 min-h-[44px]">Heute</button>
       </div>
-      <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+24px)] flex flex-col gap-6">
+      <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-6">
         ${monthSections}
       </div>
     </div>
@@ -583,6 +614,7 @@ async function openCalendarSheet() {
   state.calendarSheetOpen = true;
   state.calendarSheetClosing = false;
   lockBodyScroll();
+  raiseNavAboveCalendarSheet();
   // paint() muss vor dem Scroll-Versuch fertig sein - es lädt die
   // Kalenderdaten asynchron (getDatesWithSetsInRange), das innerHTML steht
   // also erst nach dem await tatsächlich im DOM.
@@ -606,17 +638,28 @@ async function openCalendarSheet() {
 const CALENDAR_SHEET_CLOSE_ANIMATION_MS = 200;
 
 function finalizeCalendarSheetClose() {
+  pendingCalendarSheetCloseTimeout = null;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
   unlockBodyScroll();
+  resetNavZIndex();
   paint();
 }
+
+// Hält die ID des ausstehenden Abschluss-Timeouts fest (Schließen-Animation
+// noch nicht fertig). Muss in unmount() abgebrochen werden können: Wechselt
+// der Nutzer den Tab, während die Animation noch läuft (jetzt möglich, da
+// die Nav währenddessen nutzbar ist, s. raiseNavAboveCalendarSheet), würde
+// der verzögerte finalizeCalendarSheetClose()-Aufruf sonst noch nachträglich
+// paint() auf dem inzwischen von einer anderen View belegten Container
+// aufrufen und deren Inhalt überschreiben.
+let pendingCalendarSheetCloseTimeout = null;
 
 function closeCalendarSheet() {
   if (!state.calendarSheetOpen || state.calendarSheetClosing) return;
   state.calendarSheetClosing = true;
   paint();
-  setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
+  pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
 }
 
 // Drag-to-Dismiss am Ziehgriff: Der Griff selbst wird per Pointer Events
@@ -667,7 +710,7 @@ function wireCalendarSheetDrag() {
     if (delta > CALENDAR_SHEET_DRAG_CLOSE_THRESHOLD_PX) {
       sheetEl.style.transform = 'translateY(100%)';
       backdropEl.style.opacity = '0';
-      setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
+      pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
     } else {
       sheetEl.style.transform = 'translateY(0)';
       backdropEl.style.opacity = '1';
@@ -703,10 +746,13 @@ function wireEvents() {
     closeCalendarSheet();
   });
 
+  // Springt nur innerhalb des großen Kalenders zum heutigen Monat, wählt
+  // den Tag NICHT aus und schließt das Sheet nicht - anders als ein Tap auf
+  // einen Tag, der sofort navigiert. Reine Scroll-Hilfe.
   currentContainer.querySelector('#calendar-sheet-today-btn')?.addEventListener('click', () => {
-    state.selectedDate = todayISODate();
-    state.expandedExerciseId = null;
-    closeCalendarSheet();
+    const todayMonth = yearMonthOf(todayISODate());
+    const monthEl = currentContainer.querySelector(`.calendar-sheet-month[data-year-month="${todayMonth}"]`);
+    monthEl?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   });
 
   wireCalendarSheetDrag();

@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (nach Mitternacht)
+
+### Changed ("Heute"-Button, Bottom-Nav bei offenem Kalender-Sheet)
+- "Heute"-Button im Kalender-Sheet scrollt jetzt nur noch zum aktuellen Monat, statt zusätzlich den Tag auszuwählen und das Sheet zu schließen (mit sanfter Scroll-Animation statt hartem Sprung)
+- Bottom-Nav bleibt sichtbar und bedienbar, während das Sheet offen ist, statt komplett vom Backdrop verdeckt zu werden (gezielter, nur während des Sheet-Lebenszyklus gesetzter z-index) — Kalender bekommt dafür zusätzlichen unteren Freiraum (denselben Wert, den die Nav app-weit schon reserviert)
+- Neuer optionaler `unmount()`-View-Hook (`workout.js`, aufgerufen von `app.js`s `showView()`): notwendig, weil jetzt auch bei offenem Kalender-Sheet der Tab gewechselt werden kann — ohne den Hook blieben Body-Scroll-Sperre und Nav-z-index sonst hängen, und ein ausstehender Schließen-Timeout hätte nachträglich eine andere View überschrieben
+- Details: [design-system.md](design-system.md#navigation) (Zwölfte Iteration), [architecture.md](architecture.md#view-pattern)
+
 ## 2026-09-04 (spät Nacht)
 
 ### Fixed (Kalender-Sheet: doppeltes Safe-Area-Padding zurückgenommen)

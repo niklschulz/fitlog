@@ -9,7 +9,18 @@ const views = { workout, exercises, routines, profile };
 const viewContainer = document.getElementById('view-container');
 const navButtons = document.querySelectorAll('.nav-btn');
 
+let currentViewName = null;
+
 function showView(name) {
+  // Optionaler Aufräum-Hook: Views ohne eigenen globalen Zustand (Locks,
+  // Timeouts, Listener außerhalb ihres eigenen Containers) brauchen kein
+  // unmount() zu exportieren - nur workout.js tut das aktuell (Kalender-
+  // Sheet-Body-Lock).
+  if (currentViewName && currentViewName !== name) {
+    views[currentViewName].unmount?.();
+  }
+  currentViewName = name;
+
   views[name].render(viewContainer);
   navButtons.forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.view === name);
