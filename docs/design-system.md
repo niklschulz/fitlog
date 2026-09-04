@@ -138,6 +138,8 @@ Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-ar
 - In der Test-Umgebung nach dem Fix verifiziert: Sheet sitzt exakt bei `bottom: 0`, Scroll-Ausrichtung zum Zielmonat auf 0px genau (vorher, mangels Reproduzierbarkeit, nur die Layout-*Logik* geprüft, jetzt das tatsächliche Verhalten)
 - `height: 88dvh`/`padding-top: env(safe-area-inset-top)` aus der Neunten Iteration bleiben als zusätzliche Absicherung bestehen, waren aber vermutlich nie die eigentliche Ursache
 
+**Elfte Iteration – doppeltes Safe-Area-Padding zurückgenommen (2026-09-04, nach erneutem Test):** Die Zehnte Iteration hat den unteren grauen Balken korrekt behoben, aber ein neues Problem sichtbar gemacht: Das Sheet selbst startete jetzt an der richtigen Höhe (deutlich unterhalb der Dynamic Island, wie beabsichtigt), aber innerhalb des Sheets klaffte ein unnötig großer Leerraum zwischen der oberen Kante und der Kopfzeile (Ziehgriff/"Heute"). Ursache: Das `padding-top: max(8px, env(safe-area-inset-top))` aus der Neunten Iteration zählte die Insel-Aussparung ein zweites Mal — das Sheet lag ja bereits vollständig unterhalb der Insel, das zusätzliche Padding schob die Kopfzeile unnötig um eine weitere Insel-Höhe nach unten. Zurückgesetzt auf ein normales, festes `pt-3` (12px, wie an anderen Stellen der App üblich) statt der `env()`-Berechnung.
+
 ## Bewusst nicht umgesetzt
 
 Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme") wurden folgende in der Spezifikation beschriebene Komponenten **nicht** gebaut, weil es im aktuellen Fitlog-Funktionsumfang keine Entsprechung gibt:

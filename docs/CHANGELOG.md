@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (spät Nacht)
+
+### Fixed (Kalender-Sheet: doppeltes Safe-Area-Padding zurückgenommen)
+- Der Body-Lock-Fix hat den unteren grauen Balken korrekt behoben, aber ein neues Problem sichtbar gemacht: großer Leerraum zwischen oberer Sheet-Kante und Kopfzeile
+- Ursache: `padding-top: max(8px, env(safe-area-inset-top))` zählte die Dynamic-Island-Aussparung doppelt — das Sheet startete ja bereits unterhalb der Insel, das zusätzliche Padding schob die Kopfzeile um eine weitere Insel-Höhe nach unten
+- Zurückgesetzt auf festes `pt-3` (12px) statt der `env()`-Berechnung
+- Details: [design-system.md](design-system.md#navigation) (Elfte Iteration)
+
 ## 2026-09-04 (Nacht)
 
 ### Fixed (Kalender-Sheet: eigentliche Ursache des Safe-Area-Bugs gefunden)
