@@ -4,6 +4,9 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ## 2026-08-30
 
+### Changed (Routine entfernen per Toggle)
+- Separaten "Keine Routine (entfernen)"-Button im Routine-Picker entfernt — erneuter Klick auf die bereits ausgewählte Routine (✓) entfernt sie jetzt stattdessen. Mit bereits begonnener Übung getestet: bleibt beim Entfernen korrekt erhalten. Details: [design-system.md](design-system.md#navigation)
+
 ### Fixed (Kalender-Layout korrigiert, X-Icon vergrößert)
 - Vorheriger Ausrichtungs-Fix (items-start/items-end auf gleich breiten Grid-Spalten) war funktional 0px daneben, aber optisch falsch — brach die Zentrierung von Wochentag-Text und Tageszahl zueinander. Richtig gelöst mit `flex justify-between`: alle 7 Tage bleiben einheitlich in sich zentriert, werden als Ganzes gleichmäßig über die Breite verteilt (Montag/Sonntag landen dadurch automatisch an den Rändern). Verifiziert: 0px Randabweichung **und** exakt gleicher Abstand zwischen allen Tagen
 - X-Balken des Dropdown-Icons vergrößert (7px→10px), Zentrierung von festem `margin-left` auf `translateX(-50%)` umgestellt, damit sie der jetzt mitanimierten Balkenbreite folgt

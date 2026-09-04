@@ -272,13 +272,6 @@ async function renderRoutinePicker(workout) {
     <div id="routine-picker-backdrop" class="fixed inset-0 z-30"></div>
     <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-surface rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
       ${
-        workout?.routineId
-          ? `<button id="clear-routine-option-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-base text-red-400 text-body">
-              Keine Routine (entfernen)
-            </button>`
-          : ''
-      }
-      ${
         routines.length === 0
           ? `<p class="text-body text-muted py-2">Noch keine Routinen vorhanden.</p>`
           : `<ul class="flex flex-col gap-1 max-h-64 overflow-y-auto">
@@ -436,16 +429,17 @@ function wireEvents() {
     document.querySelector('[data-view="routines"]')?.click();
   });
 
-  currentContainer.querySelector('#clear-routine-option-btn')?.addEventListener('click', async () => {
-    const workout = await getWorkoutByDate(state.selectedDate);
-    if (workout) await removeRoutineFromWorkout(workout.id);
-    closeRoutinePicker();
-  });
-
   currentContainer.querySelectorAll('.pick-routine-option-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const workout = await getOrCreateWorkoutForDate(state.selectedDate);
-      await applyRoutineToWorkout(workout.id, btn.dataset.routine);
+      // Klick auf die bereits ausgewählte Routine entfernt sie wieder
+      // (Toggle) statt eines separaten "Keine Routine"-Buttons.
+      const existingWorkout = await getWorkoutByDate(state.selectedDate);
+      if (existingWorkout?.routineId === btn.dataset.routine) {
+        await removeRoutineFromWorkout(existingWorkout.id);
+      } else {
+        const workout = await getOrCreateWorkoutForDate(state.selectedDate);
+        await applyRoutineToWorkout(workout.id, btn.dataset.routine);
+      }
       closeRoutinePicker();
     });
   });
