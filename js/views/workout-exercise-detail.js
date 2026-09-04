@@ -140,7 +140,10 @@ function renderStepperRow(field, label, value) {
 
 // Inhalt einer Satz-Zeile in der getrennten Notation ("35 kg" / "10 Reps"
 // statt "35 kg × 10", s. design-system.md Siebzehnte Iteration) - leere
-// Platzhalter zeigen nur einen Gedankenstrich statt beider Werte.
+// Platzhalter zeigen nur einen Gedankenstrich statt beider Werte. Die
+// Auswahl-Hervorhebung selbst wird nicht hier, sondern über den
+// `highlighted`-Parameter von renderSetTimelineRow() gezeichnet (eigenes,
+// aus dem Layout-Fluss genommenes Element - s. dort für die Begründung).
 function renderSetContent(set) {
   if (!set) return `<span class="text-muted">–</span>`;
   return `<span>${set.weight} kg</span><span>${set.reps} Reps</span>`;
@@ -152,8 +155,8 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
   const editing = !!state.selectedSetId;
 
   return `
-    <div class="flex flex-col gap-4">
-      <div class="bg-surface rounded-card p-4 flex flex-col gap-4">
+    <div class="flex flex-col gap-5">
+      <div class="flex flex-col gap-4">
         <div class="flex items-start justify-between gap-4">
           ${renderStepperRow('weight', 'Gewicht (kg)', formWeight)}
           ${renderStepperRow('reps', 'Reps', formReps)}
@@ -165,15 +168,16 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
         ${routineLabel ? `<p class="text-label text-muted uppercase tracking-wide">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
       </div>
 
-      <ul class="flex flex-col bg-surface rounded-card px-4 pt-4">
+      <ul class="flex flex-col">
         ${rows
           .map((set, i) => {
             const isSelected = set && state.selectedSetId === set.id;
             return renderSetTimelineRow(i + 1, renderSetContent(set), {
               isLast: i === rows.length - 1,
-              circleClasses: isSelected ? 'bg-accent text-base' : 'bg-base text-muted',
-              liClasses: `tap-feedback ${set ? 'set-row' : 'empty-set-row'} ${isSelected ? 'ring-2 ring-accent rounded-btn' : ''}`,
+              circleClasses: isSelected ? 'bg-raised text-ink' : 'bg-base text-muted',
+              liClasses: set ? 'set-row' : 'empty-set-row',
               liAttrs: set ? `data-set="${set.id}"` : 'data-row-empty="true"',
+              highlighted: isSelected,
             });
           })
           .join('')}
@@ -199,7 +203,7 @@ function renderHistoryTab(history) {
           (day) => `
         <div>
           <h3 class="text-card-title mb-2">${escapeHtml(formatHistoryDate(day.date))}</h3>
-          <ul class="flex flex-col bg-surface rounded-card px-4 pt-4">
+          <ul class="flex flex-col">
             ${day.sets
               .map((s, i) =>
                 renderSetTimelineRow(i + 1, renderSetContent(s), { isLast: i === day.sets.length - 1 })
@@ -276,7 +280,9 @@ function wireEvents() {
 
   currentContainer.querySelector('#detail-delete-btn')?.addEventListener('click', async () => {
     if (!state.selectedSetId) return;
-    if (!window.confirm('Diesen Satz wirklich löschen?')) return;
+    // Bewusst ohne Bestätigungsdialog, auf Nutzer-Wunsch - abweichend von der
+    // sonst geltenden Projekt-Konvention (Löschen sonst immer mit confirm()),
+    // s. CLAUDE.md und ADR 0010.
     await deleteSet(state.selectedSetId);
     state.selectedSetId = null;
     paint();

@@ -2,6 +2,28 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (Auswahl-Hervorhebung final)
+
+### Fixed (Zeilen-Sprung beim Auswählen behoben, Hervorhebung bildschirmbreit)
+- Satz-Zeilen "sprangen" beim Auswählen — der Auswahl-Pill hatte eigenes Padding, das nur im ausgewählten Zustand existierte und dadurch die Zeilenhöhe veränderte
+- Auswahl-Hervorhebung ist jetzt ein randloses, bildschirmbreites, eckiges Band hinter Kreis und Text (wie in der Referenz-App) statt eines schmalen Pills um den Text — umgesetzt als eigenes `position: absolute`-Element (`highlighted`-Parameter in `renderSetTimelineRow()`), dadurch komplett ohne Einfluss auf die Zeilenhöhe
+- Details: [design-system.md](design-system.md#navigation) (Zwanzigste Iteration)
+
+## 2026-09-04 (noch mehr Feinschliff)
+
+### Fixed (Tap-Animation entfernt, Auswahl-Hervorhebung zentriert)
+- Satz-Zeilen (Tages-Reiter der Übungs-Detailseite) haben keine Tap-Animation mehr — wirkte beim Auswählen zusammen mit der grauen Hervorhebung störend
+- Graue Auswahl-Hervorhebung saß nicht mittig zur Schrift, da sie die ganze Zeile inkl. des unteren Platzes für die Verbindungslinie mit eingefärbt hat. Sitzt jetzt auf einem eng um den Text gelegten Pill statt auf der ganzen Zeile — 0px Abweichung zur Kreis-Mitte verifiziert
+- Details: [design-system.md](design-system.md#navigation) (Neunzehnte Iteration)
+
+## 2026-09-04 (Referenz-App-Abgleich, Feinschliff)
+
+### Changed (Bestätigungsdialog entfernt, graue Auswahl, keine Kästen mehr)
+- Satz-Löschen läuft jetzt ohne Bestätigungsdialog (auf Nutzer-Wunsch, Ausnahme von der sonstigen Löschen-Konvention, s. CLAUDE.md)
+- Ausgewählte Satz-Zeile auf der Übungs-Detailseite jetzt grau (`bg-raised`) statt grün (`ring-accent`) hinterlegt
+- Satz-Liste und Eingabebereich (Stepper/Buttons/Routine-Label) sitzen jetzt direkt auf dem Seiten-Hintergrund statt in einer `bg-surface`-Box — näher an der Referenz-App. Gilt für Tages- und Verlauf-Reiter; die Roster-Karten im Workout-Tab bleiben unverändert eigene Karten
+- Details: [design-system.md](design-system.md#navigation) (Achtzehnte Iteration), [ADR 0010](decisions/0010-uebungs-detailseite.md)
+
 ## 2026-09-04 (Referenz-App-Abgleich)
 
 ### Changed (Design-System-Anpassungen nach Referenz-Screenshots)
