@@ -127,6 +127,11 @@ Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-ar
 - **"Heute"-Button oben rechts im Sheet-Header** (`text-accent`, neben dem zentrierten Ziehgriff via `grid grid-cols-3`) springt direkt zum heutigen Tag und schließt das Sheet — gleiches Verhalten wie ein Tap auf einen Tag
 - **Backdrop fadet jetzt weich ein/aus** (`calendar-sheet-backdrop-fade-in`/`-out`, 220ms, synchron zur Sheet-Slide-Animation) statt hart zu erscheinen/verschwinden — vorher hatte nur das Sheet selbst eine Animation, der Backdrop wechselte instantan
 
+**Neunte Iteration – Safe-Area-Korrektur (2026-09-04, nach Test auf echtem Gerät):** Auf einem echten iPhone lag der Sheet-Header teilweise hinter der Dynamic Island, und am unteren Rand blitzte ein Streifen der (durch das Backdrop abgedunkelten) Bottom-Nav durch — beides in der Browser-Pane (Chromium, kein echtes Notch/Island-Rendering) nicht reproduzierbar, daher rein aus der CSS-Logik heraus behoben:
+- **`height: 88vh` → zusätzlich `height: 88dvh`** (als zweite Deklaration, `vh` bleibt Fallback für Engines ohne `dvh`-Unterstützung). Naheliegendste Erklärung für den unteren Balken: `dvh` ("dynamic viewport height") ist genau für Fälle gedacht, in denen `vh` auf iOS Safari nicht zuverlässig der tatsächlich sichtbaren Fläche entspricht — ein bekanntes Verhalten, das in Kombination mit dem `position: fixed`-Body-Lock (Achte Iteration) auftreten kann. Ab iOS 15.4 unterstützt, für dieses ausschließlich iOS-Safari-Projekt unproblematisch
+- **Sheet-Header bekommt `padding-top: max(8px, env(safe-area-inset-top))`** statt sich auf die 88%-Höhen-Berechnung zu verlassen, um die Insel/Notch sicher freizuhalten — unabhängig davon, wie hoch das Sheet auf einem konkreten Gerät tatsächlich beginnt
+- Diese Korrektur konnte mangels Notch-Simulation in der Test-Umgebung nicht visuell nachgestellt, nur die Layout-Logik verifiziert werden — Bestätigung auf dem echten Gerät steht noch aus
+
 ## Bewusst nicht umgesetzt
 
 Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme") wurden folgende in der Spezifikation beschriebene Komponenten **nicht** gebaut, weil es im aktuellen Fitlog-Funktionsumfang keine Entsprechung gibt:

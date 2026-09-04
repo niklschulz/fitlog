@@ -388,8 +388,8 @@ async function renderCalendarSheet() {
 
   return `
     <div id="calendar-sheet-backdrop" class="calendar-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
-    <div class="calendar-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" style="height: 88vh;">
-      <div class="grid grid-cols-3 items-center px-4 flex-shrink-0">
+    <div class="calendar-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" style="height: 88vh; height: 88dvh;">
+      <div class="grid grid-cols-3 items-center px-4 pt-[max(8px,env(safe-area-inset-top))] flex-shrink-0">
         <div aria-hidden="true"></div>
         <div id="calendar-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
           <span class="w-9 h-1 rounded-full bg-white/25"></span>

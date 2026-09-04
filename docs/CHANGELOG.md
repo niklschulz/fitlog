@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (Abend)
+
+### Fixed (Kalender-Sheet: Safe-Area auf echtem Gerät)
+- Sheet-Header lag teilweise hinter der Dynamic Island, am unteren Rand blitzte die Bottom-Nav durch — auf echtem iPhone gemeldet, in der (Chromium-basierten) Test-Umgebung mangels Notch-Simulation nicht reproduzierbar
+- `height: 88vh` um `height: 88dvh` ergänzt (vh bleibt Fallback) — `dvh` ist für genau diese Art von iOS-Safari-Viewport-Unschärfe gedacht, möglicherweise verstärkt durch den `position: fixed`-Body-Lock aus der vorherigen Änderung
+- Sheet-Header bekommt explizites `padding-top: max(8px, env(safe-area-inset-top))`, statt sich auf die 88%-Höhen-Berechnung zur Notch-Freihaltung zu verlassen
+- Details: [design-system.md](design-system.md#navigation) (Neunte Iteration)
+
 ## 2026-09-04 (Nachmittag)
 
 ### Fixed / Changed (Kalender-Sheet-Feinschliff nach echtem Test)
