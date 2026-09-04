@@ -401,15 +401,19 @@ function renderSheetMonth(yearMonth, datesWithSets) {
             const isToday = d === today;
             const hasSets = datesWithSets.has(d);
             const dayNum = Number(d.slice(8, 10));
-            // Dokumentierte Tage (und die Auswahl) bekommen einen gefüllten
-            // Kreis - ein kleiner Punkt darunter war laut Nutzer-Feedback
-            // optisch nicht ausreichend. "Heute" bekommt, wenn nicht
-            // gleichzeitig dokumentiert/ausgewählt, einen ungefüllten Kreis
-            // (nur Rand) - Auswahl/Dokumentation haben also Vorrang vor der
-            // Heute-Markierung, analog zur Priorität in der kleinen
-            // Kalenderzeile.
-            const circleClasses =
-              isSelected || hasSets ? 'bg-accent text-base' : isToday ? 'border-2 border-accent text-accent' : 'text-ink';
+            // "Heute" bekommt immer nur einen ungefüllten Kreis (Rand) - auch
+            // wenn der Tag zugleich ausgewählt ist oder bereits Sätze
+            // dokumentiert sind. Hat also Vorrang vor beidem (anders als die
+            // vorherige Priorität, bei der Auswahl/Dokumentation "heute"
+            // überstimmt haben). Dokumentierte/ausgewählte Tage, die NICHT
+            // heute sind, bekommen weiterhin den gefüllten Kreis - ein
+            // kleiner Punkt darunter war laut Nutzer-Feedback optisch nicht
+            // ausreichend.
+            const circleClasses = isToday
+              ? 'border-2 border-accent text-accent'
+              : isSelected || hasSets
+                ? 'bg-accent text-base'
+                : 'text-ink';
             return `
             <button data-date="${d}" class="calendar-sheet-day-btn tap-feedback flex items-center justify-center min-h-[44px]">
               <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-full ${circleClasses}">${dayNum}</span>

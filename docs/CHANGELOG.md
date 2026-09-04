@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (noch später)
+
+### Changed (Heutiger Tag im großen Kalender immer nur umrandet)
+- Der heutige Tag zeigt jetzt in jedem Fall nur den ungefüllten Kreis (Rand) — auch wenn er zugleich ausgewählt ist oder bereits Sätze dokumentiert sind. Vorher hatten Auswahl/Dokumentation Vorrang, jetzt "heute" unbedingten Vorrang vor beidem
+- Betrifft nur den großen Kalender, die kleine Kalenderzeile bleibt unverändert
+- Details: [design-system.md](design-system.md#navigation) (Dreizehnte Iteration)
+
 ## 2026-09-04 (nach Mitternacht)
 
 ### Changed ("Heute"-Button, Bottom-Nav bei offenem Kalender-Sheet)
