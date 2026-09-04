@@ -37,7 +37,7 @@ Lebende Referenz für alle visuellen Tokens und Komponenten-Muster in Fitlog. En
 |---|---|---|
 | `rounded-card` | 18px | Größere Container: Formulare, Panels, größere Listenzeilen (Übungen, Routinen, aufklappbare Übungs-Roster-Einträge im Workout-Tab) |
 | `rounded-btn` | 13px | Buttons, Inputs, kompakte Listenzeilen (Sätze, Routine-Übungen-Zeilen) |
-| `rounded-sheet` | 26px | Definiert, aktuell **nicht verwendet** (kein Bottom-Sheet im Produkt, s. unten) |
+| `rounded-sheet` | 26px | Großer Kalender im Workout-Tab (Bottom-Sheet, s. Iterationen unten) — obere Ecken |
 | `rounded-badge` | 11px | Definiert, aktuell **nicht verwendet** (keine Badges im Produkt) |
 | `rounded-full` | Tailwind-Standard | Pillenförmige Elemente: Bottom-Nav, Exercise-Chips, "+ Weitere Übung" |
 
@@ -65,7 +65,7 @@ Freischwebende Bottom-Nav (`#bottom-nav` in `index.html`): `fixed left-4 right-4
 
 **Bewusst nur die Bottom-Nav, sonst nichts:** Karten, Buttons und Modals bleiben deckend (`bg-surface`/`bg-base`, kein Blur). Kein SVG-Filter-basierter Verzerrungseffekt (echtes Liquid Glass aus SwiftUI/UIKit) — Safari/iOS unterstützt nur `backdrop-filter: blur()`, keine SVG-Refraktion; das native Aussehen wird über Blur + Transparenz + Specular-Highlight angenähert, nicht pixelgenau nachgebaut.
 
-**Icons:** Vier eigene, minimale Outline-SVGs in der Nav (Hantel/Workout, Liste/Übungen, Kalender/Routinen, Person/Profil) direkt inline in `index.html`, `stroke-width="1.75"`, `22×22px`. Der Kalender-Umriss wird ein zweites Mal (kleiner) für den erweiterten-Datums-Picker-Button im Workout-Tab wiederverwendet (`js/views/workout.js`). Das ursprünglich fünfte Icon (Uhr/Verlauf) ist mit dem Verlauf-Tab entfallen, s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md). Bewusst **nicht** aus einer Bibliothek wie Lucide kopiert (Briefing verlangt explizit offene/eigene Icons, keine Assets der Referenz-App) — stattdessen selbst im gleichen minimalistischen Outline-Stil konstruiert, um jede Lizenz-/Fidelity-Frage zu vermeiden.
+**Icons:** Vier eigene, minimale Outline-SVGs in der Nav (Hantel/Workout, Liste/Übungen, Kalender/Routinen, Person/Profil) direkt inline in `index.html`, `stroke-width="1.75"`, `22×22px`. Der Kalender-Umriss wird ein zweites Mal (kleiner) für den Button im Workout-Tab wiederverwendet, der den großen Kalender öffnet (`js/views/workout.js`). Das ursprünglich fünfte Icon (Uhr/Verlauf) ist mit dem Verlauf-Tab entfallen, s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md). Bewusst **nicht** aus einer Bibliothek wie Lucide kopiert (Briefing verlangt explizit offene/eigene Icons, keine Assets der Referenz-App) — stattdessen selbst im gleichen minimalistischen Outline-Stil konstruiert, um jede Lizenz-/Fidelity-Frage zu vermeiden.
 
 Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-area-inset-bottom))`, damit Inhalte nicht hinter der freischwebenden Nav verschwinden.
 
@@ -80,7 +80,8 @@ Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-ar
 - **Chip (Auswahl):** `rounded-full px-4 py-2`, ausgewählt `bg-accent text-base`, unausgewählt `bg-surface text-ink`
 - **Listenzeile:** `bg-surface rounded-card` (bzw. `rounded-btn` bei kompakten Zeilen) `px-4 py-3`
 - **Nummerierter Satz-Eintrag:** kleiner Kreis `w-6 h-6 rounded-full bg-base text-label text-muted` mit der Satz-Nummer, davor Gewicht × Wiederholungen, dahinter Löschen (`✕`)
-- **Dropdown-Pill (Auswahl mit Popup):** `bg-surface rounded-full`, Label links, Icon rechts (Chevron-Down geschlossen, X bei geöffnetem Picker — z. B. Routine-Auswahl im Workout-Tab) — öffnet ein Popup im `Karte/Formular`-Stil als absolut positioniertes Overlay direkt darunter (nicht im normalen Fluss, verdrängt nichts), mit unsichtbarem Backdrop zum Schließen bei Klick außerhalb. Keine eigene Bottom-Sheet-Komponente
+- **Dropdown-Pill (Auswahl mit Popup):** `bg-surface rounded-full`, Label links, Icon rechts (Chevron-Down geschlossen, X bei geöffnetem Picker — z. B. Routine-Auswahl im Workout-Tab) — öffnet ein Popup im `Karte/Formular`-Stil als absolut positioniertes Overlay direkt darunter (nicht im normalen Fluss, verdrängt nichts), mit unsichtbarem Backdrop zum Schließen bei Klick außerhalb
+- **Bottom-Sheet:** `bg-surface rounded-sheet` (nur obere Ecken relevant, sitzt am unteren Bildschirmrand), zentrierter Ziehgriff (`w-9 h-1 rounded-full bg-white/25`) oben, `fixed inset-0 bg-black/50`-Backdrop zum Abdunkeln + Schließen bei Klick außerhalb. Schiebt sich per `translateY`-Keyframe von unten herein/heraus. Bisher einziger Anwendungsfall: großer Kalender im Workout-Tab, s. Iterationen unten und [ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md)
 - **Dezenter Icon-Link (Platzhalter):** `opacity-60`, zentriert, kleiner Kreis-Outline mit "+" davor (z. B. "Übung hinzufügen") — für Aktionen ohne (noch) echte Funktion, bewusst kein volles Button-Styling, um nicht wie eine funktionierende primäre Aktion zu wirken
 
 **Workout-Tab-Feinschliff nach Referenz-Screenshots (2026-08-30):** Auf Wunsch wurden Teile des Workout-Tab-UI an Screenshots einer Referenz-App angeglichen — ausschließlich Layout/Optik, keine der dort zusätzlich sichtbaren Funktionen (Statistics-/Premium-Tab, KI-Routine-Generierung, Wochenplanung, Zitat des Tages, Schloss-/Weight-Badge, Ziel-Satz-Zeile "3 Sätze × 8 Wiederholungen") wurden übernommen — letztere beide sind ohnehin explizit in Abschnitt 10 der Konzept-Erweiterung ausgeschlossen ("Dauerhaft nicht vorgesehen"). Übernommen:
@@ -110,14 +111,20 @@ Content-Bereich (`#view-container`) hat `padding-bottom: calc(88px + env(safe-ar
 
 **Sechste Iteration – Routine per Toggle-Klick entfernen (2026-08-30):** Der separate "Keine Routine (entfernen)"-Button im Popup ist auf Nutzer-Wunsch entfernt. Stattdessen: Klick auf die bereits ausgewählte Routine (erkennbar am ✓) entfernt sie wieder, statt sie erneut anzuwenden — reiner Toggle in `.pick-routine-option-btn`'s Klick-Handler (`workout.js`), keine Änderung an `removeRoutineFromWorkout()`/`applyRoutineToWorkout()` selbst nötig. Mit bereits begonnener Übung (inkl. Satz) durchgetestet: bleibt beim Entfernen korrekt erhalten, identisch zur bisherigen Kaskaden-Regel.
 
+**Siebte Iteration – Großer Kalender als Bottom-Sheet (2026-09-04, Abschnitt 11):** Der Kalender-Button ersetzt den bisherigen nativen `<input type="date">`-Zwischenstand (s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md)) durch ein selbst gebautes Bottom-Sheet — erste echte Sheet-Komponente der App, s. "Bottom-Sheet" oben.
+- **Aufbau:** `fixed left-0 right-0 bottom-0`, `height: 88vh`, `rounded-sheet`. Innerer scrollbarer Bereich (`#calendar-sheet-months`) mit Monats-Sektionen: Monatsname (`text-card-title`), eine Wochentags-Kopfzeile (`Mo`–`So`, `text-label uppercase text-muted`), darunter `grid grid-cols-7` mit führenden Leerzellen bis zum korrekten Wochentag des 1. Tages. Tages-Styling identisch zur kleinen Kalenderzeile (Accent-Badge bei Auswahl, grüner Text bei Heute-nicht-ausgewählt, grüner Punkt bei erfassten Sätzen)
+- **Öffnen:** direkt zum Monat des aktuell gewählten Tages gescrollt, initial nur Zielmonat ±1 gerendert (innerhalb der erlaubten Grenzen: fest ab Januar 2026, bis einen Monat über den echten aktuellen Kalendermonat hinaus)
+- **Lazy-Nachladen beim Scrollen statt vollständiger Virtualisierung:** weitere Monate werden erst beim Erreichen des oberen/unteren Rands per direkter DOM-Manipulation angehängt, bereits geladene bleiben im DOM (kein Recycling) — bewusste Vereinfachung für eine Einzelnutzer-App, s. [ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md) für die volle Begründung
+- **Tap auf einen Tag** schließt das Sheet und setzt `state.selectedDate` — die kleine Kalenderzeile und die Workout-Ansicht übernehmen die neue Auswahl automatisch
+- **Keine Pfeil-Buttons für Monatswechsel** — Navigation ausschließlich durch Scrollen, wie im Briefing gefordert
+
 ## Bewusst nicht umgesetzt
 
 Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme") wurden folgende in der Spezifikation beschriebene Komponenten **nicht** gebaut, weil es im aktuellen Fitlog-Funktionsumfang keine Entsprechung gibt:
 
 - **Segmented Control** — keine Stelle im Produkt, die ein Segment-Toggle braucht
-- **Bottom-Sheet** — alle "Panels" in Fitlog sind inline-expandierende Bereiche, keine echten Sheets von unten. `rounded-sheet`-Token ist vorbereitet, falls später eins gebraucht wird
 - **Diagramme** (Gitterlinien, Balken/Linien) — Fitlog hat keine Charts
 - **Checkmark-Auswahllisten** — die Routine-Auswahl im Workout-Tab (`workout.js`) nutzt inzwischen einen echten Checkmark (✓) bei der aktiven Routine, aber als Teil des Dropdown-Picker-Musters, keine eigenständige, wiederverwendbare Komponente
 - **Große Kennzahl (`text-kpi`)** — Token ist definiert, aber aktuell nirgends verwendet (kein Statistik-Screen vorhanden)
 
-Falls diese Screens/Komponenten später tatsächlich gebaut werden, sind die zugehörigen Tokens (`rounded-sheet`, `rounded-badge`, `text-kpi`) bereits vorbereitet.
+Ein echtes Bottom-Sheet ist inzwischen gebaut (großer Kalender im Workout-Tab, s. "Bottom-Sheet" oben und Siebte Iteration) — `rounded-sheet` ist damit nicht mehr nur vorbereitet, sondern im Einsatz. Falls die übrigen Screens/Komponenten später tatsächlich gebaut werden, sind die zugehörigen Tokens (`rounded-badge`, `text-kpi`) bereits vorbereitet.

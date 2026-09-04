@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04
+
+### Added (Großer Kalender im Workout-Tab, Abschnitt 11)
+- Kalender-Icon-Button im Workout-Tab öffnet jetzt ein großes Bottom-Sheet (88vh, `rounded-sheet`) mit einem vertikal scrollenden, monatsweisen Kalender — ersetzt den bisherigen nativen `<input type="date">`-Zwischenstand vollständig
+- Erlaubter Zeitraum: fest ab Januar 2026, bis einen Monat über den aktuellen Kalendermonat hinaus (dynamisch berechnet). Navigation ausschließlich per Scrollen, keine Pfeil-Buttons
+- Monate werden nicht alle auf einmal gerendert: beim Öffnen nur Zielmonat ±1, weitere Monate werden erst beim Erreichen des Scroll-Rands nachgeladen (direkte DOM-Manipulation statt vollem Re-Paint, um die Scroll-Position zu erhalten). Details und Abwägung: [ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md)
+- Tap auf einen Tag schließt das Sheet, springt zu diesem Tag und zentriert die kleine Kalenderzeile neu
+- Erste echte Bottom-Sheet-Komponente der App (Slide-up-Animation, abdunkelnder Backdrop) — etabliert das Muster für zukünftige Sheets, `rounded-sheet`-Token dadurch erstmals im Einsatz
+- Details: [design-system.md](design-system.md#navigation), [features.md](features.md#workout-jsviewsworkoutjs--kernfunktion)
+
 ## 2026-08-30
 
 ### Changed (Routine entfernen per Toggle)

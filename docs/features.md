@@ -21,7 +21,7 @@
 ## Die vier Kern-Flows
 
 ### Workout (`js/views/workout.js`) — Kernfunktion
-Kalenderzeile (±2 Wochen um den ausgewählten Tag, horizontal scrollbar, automatisch zum ausgewählten Tag zentriert), grüner Punkt an Tagen mit mindestens einem dokumentierten Satz. Kalender-Icon oben rechts öffnet einen nativen Datums-Picker (`<input type="date">`) für Tage außerhalb des ±2-Wochen-Fensters — springt dorthin und zentriert die Zeile neu.
+Kleine Kalenderzeile (Vorwoche, aktuelle Woche, Folgewoche — ±1 Woche um den ausgewählten Tag, horizontal scrollbar mit Wochen-Snapping, automatisch zur aktuellen Woche zentriert), grüner Punkt an Tagen mit mindestens einem dokumentierten Satz. Kalender-Icon oben rechts öffnet ein großes Bottom-Sheet (85–90% Bildschirmhöhe) mit einem monatsweise scrollenden Kalender für Tage außerhalb des ±1-Wochen-Fensters: fest ab Januar 2026, bis einen Monat über den aktuellen Kalendermonat hinaus reichend (dynamisch berechnet). Navigation ausschließlich per Scrollen, Monate werden lazy nachgeladen statt alle auf einmal gerendert (Details: [ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md)). Tap auf einen Tag schließt das Sheet, springt dorthin und zentriert die kleine Kalenderzeile neu.
 
 Pro Tag: **Routine wählen** (Popup-Liste aller Routinen) legt deren Übungen als Roster für diesen Tag an. **Wechseln**/**Entfernen** einer Routine räumt noch nicht begonnene, routinen-stammende Übungen auf, behält aber bereits begonnene (mit erfassten Sätzen) unabhängig davon, ob sie in einer neuen Routine enthalten sind — Details und Beispiel: [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md). Manuell hinzugefügte Übungen blieben von alldem unberührt — der Button dafür ("+ Übung hinzufügen") ist aktuell ein reiner Platzhalter ohne Funktion, die Auswahl-/Anlage-Logik folgt in einem separaten Schritt.
 
@@ -59,7 +59,6 @@ Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007]
 - Zusätzliche Satz-Felder (Notizen, RPE/Anstrengungsgrad, Pausenzeiten)
 - Auswertungen auf Basis der Routine-Verknüpfung (z. B. Trainingshäufigkeit pro Routine)
 - Funktionsfähige Übungsauswahl/-anlage über "+ Übung hinzufügen" im Workout-Tab (aktuell Platzhalter)
-- Finale Positionierung des erweiterten-Kalender-Buttons im Workout-Tab
 - Zusammenführung von Übungen/Routinen in den Workout-Tab (perspektivisch angekündigt, noch nicht spezifiziert)
 
 ## Verworfene Experimente

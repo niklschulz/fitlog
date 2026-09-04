@@ -178,3 +178,24 @@ input[type="number"]::-webkit-outer-spin-button {
   from { left: 8px; width: 10px; }
   to { left: 10px; width: 7px; }
 }
+
+/* Großer Kalender (Bottom-Sheet, Abschnitt 11): schiebt sich von unten
+   herein/heraus (js/views/workout.js hält die Animationsdauer per
+   CALENDAR_SHEET_CLOSE_ANIMATION_MS synchron). */
+.calendar-sheet {
+  animation: calendar-sheet-slide-up 220ms ease-out;
+}
+
+.calendar-sheet.closing {
+  animation: calendar-sheet-slide-down 220ms ease-in forwards;
+}
+
+@keyframes calendar-sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes calendar-sheet-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
