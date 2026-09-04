@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (Nacht)
+
+### Fixed (Kalender-Sheet: eigentliche Ursache des Safe-Area-Bugs gefunden)
+- Der vorherige Fix (dvh + Safe-Area-Padding) hat das Problem auf dem echten Gerät nicht behoben — zusätzlich wurde jetzt auch ein Scroll-Versatz beim Öffnen sichtbar (August lugte über September hervor), der sich erstmals auch in der Test-Umgebung reproduzieren ließ
+- Eigentliche Ursache: `lockBodyScroll()` setzte `document.body` auf `position: fixed` — das beeinflusste auf WebKit nachweislich die Positionierung/Größe des ebenfalls `position: fixed`-Sheets (zu weit unten, Bottom-Kante nicht exakt an `bottom: 0`, dadurch auch die Scroll-zu-Zielmonat-Berechnung beim Öffnen daneben)
+- body-Lock umgestellt auf `overflow: hidden` + gezielten `touchmove`-Blocker (lässt `#calendar-sheet-months` explizit durch) — body verlässt dadurch nie den normalen Fluss, kein `scrollY`-Merken/Wiederherstellen mehr nötig
+- In der Test-Umgebung verifiziert: Sheet sitzt exakt an `bottom: 0`, Scroll-Ausrichtung zum Zielmonat 0px daneben (vorher nicht reproduzierbar, jetzt tatsächlich gemessen und bestätigt)
+- Details: [design-system.md](design-system.md#navigation) (Zehnte Iteration)
+
 ## 2026-09-04 (Abend)
 
 ### Fixed (Kalender-Sheet: Safe-Area auf echtem Gerät)

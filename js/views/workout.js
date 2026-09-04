@@ -167,26 +167,39 @@ function allowedSheetMonths() {
 }
 
 // Verhindert Scrollen des Workout-Tabs im Hintergrund, während das
-// Kalender-Sheet offen ist (iOS-sicherer Ansatz: body auf position:fixed
-// setzen statt nur overflow:hidden, da Safari sonst per Touch weiterhin
-// "durchscrollen" kann). scrollY wird gemerkt und beim Entsperren wieder
-// hergestellt.
-let bodyScrollLockY = 0;
+// Kalender-Sheet offen ist.
+//
+// Frühere Version setzte body auf position:fixed (samt negativem
+// top-Offset) - das ist auf dem Papier vom Sheet selbst (ebenfalls
+// position:fixed) unabhängig, hat sich auf einem echten iPhone aber
+// nachweislich auf dessen Positionierung ausgewirkt (Sheet zu weit unten UND
+// weiterhin ein Lücke am unteren Rand statt exakt an bottom:0 zu sitzen) -
+// vermutlich eine WebKit-Eigenheit, wie position:fixed auf body verschachtelte
+// fixed-Elemente behandelt, die sich in der (Chromium-basierten) Testumgebung
+// nicht nachstellen ließ. Stattdessen jetzt der einfachere, body selbst nicht
+// aus dem normalen Fluss nehmende Ansatz: overflow:hidden auf body (blockiert
+// Maus-/Tastatur-/Trackpad-Scroll) plus ein gezielter touchmove-Blocker für
+// iOS' Rubber-Band-Scroll (den overflow:hidden allein auf Safari nicht immer
+// verhindert) - der Blocker lässt Touch-Bewegungen innerhalb des
+// Kalender-Monats-Bereichs explizit durch, damit das Sheet selbst weiter
+// scrollbar bleibt.
+let calendarSheetTouchBlocker = null;
 
 function lockBodyScroll() {
-  bodyScrollLockY = window.scrollY;
-  document.body.style.position = 'fixed';
-  document.body.style.top = `-${bodyScrollLockY}px`;
-  document.body.style.left = '0';
-  document.body.style.right = '0';
+  document.body.style.overflow = 'hidden';
+  calendarSheetTouchBlocker = (e) => {
+    if (e.target.closest('#calendar-sheet-months')) return;
+    e.preventDefault();
+  };
+  document.addEventListener('touchmove', calendarSheetTouchBlocker, { passive: false });
 }
 
 function unlockBodyScroll() {
-  document.body.style.position = '';
-  document.body.style.top = '';
-  document.body.style.left = '';
-  document.body.style.right = '';
-  window.scrollTo(0, bodyScrollLockY);
+  document.body.style.overflow = '';
+  if (calendarSheetTouchBlocker) {
+    document.removeEventListener('touchmove', calendarSheetTouchBlocker);
+    calendarSheetTouchBlocker = null;
+  }
 }
 
 // --- Paint ---
