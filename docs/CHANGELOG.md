@@ -2,6 +2,36 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (Referenz-App-Abgleich)
+
+### Changed (Design-System-Anpassungen nach Referenz-Screenshots)
+- Update/Delete-Buttons auf der Übungs-Detailseite auf neutralen Sekundär-Button-Stil (`bg-raised text-ink`) umgestellt statt Accent-Grün/Rot — erster echter Anwendungsfall für das bisher ungenutzte Sekundär-Button-Muster. Eine mögliche spätere Neugestaltung der übrigen App-Buttons wurde nur vorgemerkt, nicht entschieden
+- Neuer kreisförmiger "Glass"-Icon-Button-Stil (Liquid-Glass wie die Bottom-Nav) für Zurück-Pfeil und Kalender-Icon
+- Gewicht-/Reps-Stepper: Label jetzt über statt neben der Eingabezeile, beide Stepper nebeneinander
+- Neue gemeinsame Komponente `renderSetTimelineRow()` (`js/utils.js`): nummerierte Satz-Kreise mit Verbindungslinie, jetzt einheitlich in Roster-Zeile, Tages- und Verlauf-Reiter der Übungs-Detailseite verwendet — löst dabei auch die erst kurz zuvor eingeführte kompakte " · "-Zusammenfassung in der Roster-Zeile wieder ab (volle Liste stattdessen)
+- Satz-Notation vereinheitlicht: "35 kg" / "10 Reps" (getrennt) statt "35 kg × 10"
+- Bewusst nicht übernommen (neue Funktionen, außerhalb des Scopes dieser reinen Design-Anpassung): Kamera-Icon, RPE, Einheiten-Umschalter, Stift-/Timer-Icon, Routine-Ziel-Anzeige, PR-Badge, zusätzlicher Routinen-Link, neuer Kopfbereich
+- Details: [design-system.md](design-system.md#navigation) (Siebzehnte Iteration)
+
+## 2026-09-04 (spät, nach Abschnitt 12)
+
+### Changed ("Reps" statt "Wdh.", Satz-Daten in der Roster-Zeile)
+- Stepper-Label auf der Übungs-Detailseite von "Wdh." auf "Reps" geändert
+- Roster-Zeile im Workout-Tab zeigt jetzt die tatsächlichen Satz-Werte (z. B. "50 kg × 10") unter dem Titel, nicht mehr nur die Anzahl
+- Details: [design-system.md](design-system.md#navigation) (Sechzehnte Iteration)
+
+## 2026-09-04 (Nacht, Abschnitt 12)
+
+### Added (Übungs-Detailseite)
+- Tap auf eine Übung im Workout-Tab öffnet jetzt eine eigene Unterseite (`js/views/workout-exercise-detail.js`) statt wie zuvor inline zu expandieren — Zurück-Pfeil, Übungstitel, Segmented Control mit drei Reitern (aktueller Tag/Verlauf/Statistik)
+- Reiter "aktueller Tag": Gewicht/Wiederholungen per Minus-/Plus-Stepper (1-kg- bzw. 1er-Schritte) oder direkter Eingabe, Vorbelegung mit dem zuletzt erfassten Wert dieser Übung. Tap auf einen bestehenden Satz lädt ihn zur Bearbeitung ("Update"-Button, "Delete" aktiv); ohne Auswahl "Speichern", "Delete" deaktiviert. Anzahl leerer Platzhalter-Zeilen kommt aus einer eigenen Konstante (`DEFAULT_SET_COUNT = 3`) statt fest verankert zu sein. Routinen-Herkunft wird als "ROUTINE: `<Name>`" angezeigt
+- Reiter "Verlauf": frühere Workout-Tage dieser Übung, gruppiert nach Datum, neueste zuerst, rein informativ
+- Reiter "Statistik": Platzhalter ohne Funktion
+- `updateSet()` in `db.js` wieder eingeführt (war mit ADR 0007 als Konsequenz des Verlauf-Wegfalls entfernt worden) — jetzt über den "Update"-Button möglich
+- Neue Abfrage `getExerciseSetHistory()` in `db.js` für den Verlauf-Reiter
+- Satz-Löschen verlangt jetzt einen Bestätigungsdialog (vorher nicht, kleine Lücke gegenüber der sonst schon geltenden Projekt-Konvention)
+- Details und Architektur-Entscheidung: [ADR 0010](decisions/0010-uebungs-detailseite.md), [design-system.md](design-system.md#navigation) (Fünfzehnte Iteration)
+
 ## 2026-09-04 (kurz danach)
 
 ### Fixed (Routine-Picker: Leerstand-Text ausgerichtet)

@@ -24,7 +24,10 @@ fitlog/
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
 │   └── views/              Ein Modul pro Tab (workout.js, exercises.js, routines.js, profile.js),
-│                           jedes exportiert render(container)
+│                           jedes exportiert render(container). Außerdem
+│                           workout-exercise-detail.js - kein eigener Tab,
+│                           sondern ein Sub-View, direkt von workout.js
+│                           aufgerufen (s. View-Pattern unten)
 └── icons/                  App-Icons (generiert, s. unten)
 ```
 
@@ -33,6 +36,8 @@ fitlog/
 Jede View in `js/views/*.js` folgt demselben Muster: ein modul-lokaler `state`, eine `render(container)`-Funktion (Einstiegspunkt vom Router), eine interne `paint()`, die den Container neu befüllt, und `wireEvents()`, das nach jedem Paint die Event-Listener neu bindet (da `innerHTML` die alten DOM-Knoten ersetzt). Kein virtuelles DOM, kein Diffing — bei der Datenmenge einer Einzelnutzer-Fitness-App unproblematisch.
 
 Optionaler zweiter Export: `unmount()`. `app.js`'s `showView()` ruft ihn (falls vorhanden) auf der bisherigen View auf, bevor zur neuen gewechselt wird — für Aufräumarbeiten, die über den Container hinausgehen (globale Locks, `document`-weite Listener, ausstehende Timeouts). Aktuell nur von `workout.js` genutzt (Body-Scroll-Sperre/Nav-z-index des Kalender-Sheets, s. [design-system.md](design-system.md#navigation), Zwölfte Iteration) — die meisten Views brauchen das nicht, da bloßes Ersetzen von `innerHTML` beim nächsten `render()` ausreicht.
+
+**Sub-Views**: `workout-exercise-detail.js` (Übungs-Detailseite, [ADR 0010](decisions/0010-uebungs-detailseite.md)) folgt demselben `render()`/`paint()`/`wireEvents()`-Muster, ist aber nicht in `app.js`s View-Registrierung eingetragen — `workout.js` ruft `render(container, { entryId, onBack })` direkt auf, sobald sein eigener `state.detailEntryId` gesetzt ist, und delegiert damit den kompletten Container an das Sub-View-Modul, bis `onBack()` zurück zur Tagesübersicht führt. Bottom-Nav bleibt dabei unbeeinflusst sichtbar (kein Overlay, ersetzt den Container-Inhalt normal wie jeder View-Wechsel) — anders als das Kalender-Sheet braucht dieses Muster keine z-index-Tricks oder Body-Scroll-Sperre.
 
 **Ausnahme**: Der große Kalender im Workout-Tab (Bottom-Sheet, [ADR 0009](decisions/0009-grosser-kalender-vollstaendiges-rendern.md)) rendert seinen gesamten Inhalt beim Öffnen einmalig über den normalen `paint()`-Zyklus, manipuliert das DOM aber während zweier Interaktionen bewusst direkt statt über `paint()`: dem Drag-to-Dismiss-Gesture am Ziehgriff (muss 1:1 dem Finger folgen) und — historisch — dem inzwischen wieder entfernten Lazy-Nachladen weiterer Monate beim Scrollen ([ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md), verursachte spürbares Ruckeln und wurde durch vollständiges Vorab-Rendern ersetzt).
 
@@ -45,7 +50,7 @@ Sechs Dexie-Tabellen (Schema-Version 2), alle mit UUID-`id`:
 - **routineExercises** — Verknüpfungstabelle Routine↔Übung (Vorlage): `id, routineId, exerciseId, order`
 - **workouts** — `id, routineId (nullable), date ('YYYY-MM-DD'), createdAt, updatedAt`. Höchstens ein Workout pro Kalendertag (`date`), unabhängig davon ob Vergangenheit/Gegenwart/Zukunft. Kein `startedAt`/`finishedAt` mehr — kein Konzept von "Training beenden", jeder Tag bleibt dauerhaft bearbeitbar. Begründung: [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md)
 - **workoutExercises** — welche Übungen zu einem konkreten Workout gehören, unabhängig davon ob schon Sätze existieren: `id, workoutId, exerciseId, order, sourceRoutineId (nullable), startedAt (nullable), createdAt, updatedAt`. `startedAt` wird einmalig beim ersten Satz für diese Übung gesetzt — Grundlage der dynamischen Sortierung (begonnene Übungen zuerst nach Startzeitpunkt, dann unbegonnene nach `order`). `sourceRoutineId` unterscheidet routinen-stammende (werden bei Routine-Wechsel/-Entfernen aufgeräumt, solange unbegonnen) von manuell hinzugefügten Übungen (`null`, bleiben davon unberührt)
-- **sets** — `id, workoutId, exerciseId, weight, reps, createdAt, updatedAt`
+- **sets** — `id, workoutId, exerciseId, weight, reps, createdAt, updatedAt`. Nachträgliches Bearbeiten (`updateSet`) ist über die Übungs-Detailseite wieder möglich — [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) hatte das noch als Konsequenz des Verlauf-Wegfalls ausgeschlossen, [ADR 0010](decisions/0010-uebungs-detailseite.md) führt es wieder ein
 
 Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um `workoutExercises`).
 

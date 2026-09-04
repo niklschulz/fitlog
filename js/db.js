@@ -269,9 +269,44 @@ export async function deleteSet(id) {
   await db.sets.delete(id);
 }
 
+// Nachträgliches Bearbeiten eines bereits erfassten Satz-Werts - mit ADR
+// 0007 (Wegfall des Verlauf-Tabs) als nicht mehr möglich dokumentiert, jetzt
+// über die Übungs-Detailseite (Abschnitt 12) wieder eingeführt ("Update"-
+// Button bei ausgewähltem bestehendem Satz). Siehe ADR 0010.
+export async function updateSet(id, weight, reps) {
+  await db.sets.update(id, { weight, reps, updatedAt: nowISO() });
+}
+
 // Für die Progressive-Overload-Hilfe: letzter erfasster Satz dieser Übung,
 // übungsbezogen über alle Workouts hinweg (s. Konzept Flow 3).
 export async function getLastSetForExercise(exerciseId) {
   const sets = await db.sets.where('exerciseId').equals(exerciseId).sortBy('createdAt');
   return sets.length ? sets[sets.length - 1] : null;
+}
+
+// Verlauf einer Übung für die Übungs-Detailseite (Abschnitt 12): alle Tage
+// (außer dem übergebenen aktuellen Workout), an denen mindestens ein Satz
+// dieser Übung erfasst wurde, gruppiert nach Datum, neueste zuerst.
+export async function getExerciseSetHistory(exerciseId, excludeWorkoutId) {
+  const sets = await db.sets.where('exerciseId').equals(exerciseId).toArray();
+  const relevant = sets.filter((s) => s.workoutId !== excludeWorkoutId);
+  if (relevant.length === 0) return [];
+
+  const workoutIds = [...new Set(relevant.map((s) => s.workoutId))];
+  const workouts = await db.workouts.bulkGet(workoutIds);
+  const dateByWorkoutId = Object.fromEntries(workoutIds.map((id, i) => [id, workouts[i]?.date ?? null]));
+
+  const setsByDate = {};
+  for (const s of relevant) {
+    const date = dateByWorkoutId[s.workoutId];
+    if (!date) continue; // Workout wurde inzwischen gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen, defensiv trotzdem übersprungen)
+    (setsByDate[date] ??= []).push(s);
+  }
+
+  return Object.entries(setsByDate)
+    .map(([date, daySets]) => ({
+      date,
+      sets: daySets.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
+    }))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 }

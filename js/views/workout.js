@@ -5,19 +5,16 @@ import {
   getWorkoutExercises,
   applyRoutineToWorkout,
   removeRoutineFromWorkout,
-  markWorkoutExerciseStarted,
-  addSet,
-  deleteSet,
-  getLastSetForExercise,
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow } from '../utils.js';
+import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
 let state = {
   selectedDate: todayISODate(),
-  expandedExerciseId: null,
+  detailEntryId: null, // workoutExercises.id der geöffneten Übungs-Detailseite (Abschnitt 12), oder null für die Tagesübersicht
   routinePickerOpen: false,
   routinePickerClosing: false,
   calendarSheetOpen: false,
@@ -26,7 +23,7 @@ let state = {
 
 export async function render(container) {
   currentContainer = container;
-  state.expandedExerciseId = null;
+  state.detailEntryId = null;
   state.routinePickerOpen = false;
   state.routinePickerClosing = false;
   state.calendarSheetOpen = false;
@@ -236,6 +233,21 @@ function resetNavZIndex() {
 // --- Paint ---
 
 async function paint() {
+  // Übungs-Detailseite (Abschnitt 12) ersetzt die Tagesübersicht komplett,
+  // solange sie offen ist - eigenständiges Sub-View-Modul, verwaltet sich
+  // ab hier vollständig selbst (eigenes render()/paint()/wireEvents()).
+  // onBack räumt nur den State hier auf und rendert die Tagesübersicht neu.
+  if (state.detailEntryId) {
+    await exerciseDetail.render(currentContainer, {
+      entryId: state.detailEntryId,
+      onBack: () => {
+        state.detailEntryId = null;
+        paint();
+      },
+    });
+    return;
+  }
+
   // Vorwoche, aktuelle Woche, folgende Woche (±1 Woche um die Auswahl) -
   // je ein 7-Tage-Block, s. renderCalendarStrip.
   const currentMonday = mondayOf(state.selectedDate);
@@ -263,16 +275,6 @@ async function paint() {
     }
   }
 
-  let expandedLastSet = null;
-  if (state.expandedExerciseId) {
-    const entry = entries.find((e) => e.id === state.expandedExerciseId);
-    if (entry) {
-      expandedLastSet = await getLastSetForExercise(entry.exerciseId);
-    } else {
-      state.expandedExerciseId = null;
-    }
-  }
-
   currentContainer.innerHTML = `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between">
@@ -280,8 +282,8 @@ async function paint() {
           <h1 class="text-screen-title">Workout</h1>
           <p class="text-body text-muted">${formatFullDate(state.selectedDate)}</p>
         </div>
-        <button id="open-date-picker-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted" aria-label="Kalender öffnen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-[22px] h-[22px] ml-auto">
+        <button id="open-date-picker-btn" class="icon-btn-glass tap-feedback w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-ink" aria-label="Kalender öffnen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
             <rect x="4" y="5.5" width="16" height="15" rx="3" />
             <path d="M8 3.5v4M16 3.5v4M4 10.5h16" />
           </svg>
@@ -292,7 +294,7 @@ async function paint() {
 
       ${await renderRoutineSection(workout, routine)}
 
-      ${renderExerciseRoster(entries, nameById, setsByExercise, expandedLastSet)}
+      ${renderExerciseRoster(entries, nameById, setsByExercise)}
 
       <button type="button" class="tap-feedback w-full flex items-center justify-center gap-2 py-3 min-h-[44px] text-muted opacity-60" disabled>
         <span class="w-5 h-5 rounded-full border border-current flex items-center justify-center text-xs leading-none">+</span>
@@ -524,72 +526,38 @@ async function renderRoutinePicker(workout) {
   `;
 }
 
-function renderExerciseRoster(entries, nameById, setsByExercise, expandedLastSet) {
+function renderExerciseRoster(entries, nameById, setsByExercise) {
   if (entries.length === 0) {
     return `<p class="text-body text-muted text-center py-6">Noch keine Übungen in diesem Workout.</p>`;
   }
 
   return `
     <ul class="flex flex-col gap-2">
-      ${entries
-        .map((entry) =>
-          renderExerciseRow(entry, nameById[entry.exerciseId], setsByExercise[entry.exerciseId] ?? [], expandedLastSet)
-        )
-        .join('')}
+      ${entries.map((entry) => renderExerciseRow(entry, nameById[entry.exerciseId], setsByExercise[entry.exerciseId] ?? [])).join('')}
     </ul>
   `;
 }
 
-function renderExerciseRow(entry, name, sets, expandedLastSet) {
+// Tap öffnet die Übungs-Detailseite (Abschnitt 12) statt wie zuvor eine
+// Inline-Akkordeon-Erweiterung - s. exercise-row-toggle in wireEvents().
+function renderExerciseRow(entry, name, sets) {
   const label = name ?? 'Gelöschte Übung';
-  const expanded = state.expandedExerciseId === entry.id;
+  const setRows = sets
+    .map((s, i) =>
+      renderSetTimelineRow(i + 1, `<span>${s.weight} kg</span><span>${s.reps} Reps</span>`, { isLast: i === sets.length - 1 })
+    )
+    .join('');
 
   return `
     <li class="bg-surface rounded-card overflow-hidden">
-      <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex items-center justify-between">
-        <span class="text-card-title ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
-        <span class="text-label text-muted">${sets.length > 0 ? `${sets.length} Satz${sets.length === 1 ? '' : 'e'}` : ''}</span>
+      <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-card-title ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
+          <span class="text-label text-muted flex-shrink-0">${sets.length > 0 ? `${sets.length} Satz${sets.length === 1 ? '' : 'e'}` : ''}</span>
+        </div>
+        ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
       </button>
-      ${expanded ? renderExercisePanel(entry, sets, expandedLastSet) : ''}
     </li>
-  `;
-}
-
-function renderExercisePanel(entry, sets, lastSet) {
-  const weight = lastSet ? lastSet.weight : '';
-  const reps = lastSet ? lastSet.reps : '';
-
-  return `
-    <div class="px-4 pb-4 flex flex-col gap-3">
-      ${
-        sets.length > 0
-          ? `<ul class="flex flex-col gap-2">
-              ${sets
-                .map(
-                  (s, i) => `
-                <li class="flex items-center gap-3 text-body">
-                  <span class="w-6 h-6 rounded-full bg-base flex items-center justify-center text-label text-muted flex-shrink-0">${i + 1}</span>
-                  <span class="flex-1">${s.weight} kg × ${s.reps}</span>
-                  <button data-set="${s.id}" class="delete-set-btn tap-feedback min-w-[44px] min-h-[44px] text-red-400">✕</button>
-                </li>
-              `
-                )
-                .join('')}
-            </ul>`
-          : ''
-      }
-      <form data-entry="${entry.id}" data-exercise="${entry.exerciseId}" class="set-entry-form flex gap-3 items-end">
-        <div class="flex-1 flex flex-col gap-1">
-          <label class="text-label text-muted">Gewicht (kg)</label>
-          <input name="weight" type="number" inputmode="decimal" step="0.5" min="0" value="${weight}" class="w-full bg-base rounded-btn px-3 py-2 text-ink min-h-[44px]" required />
-        </div>
-        <div class="flex-1 flex flex-col gap-1">
-          <label class="text-label text-muted">Wdh.</label>
-          <input name="reps" type="number" inputmode="numeric" step="1" min="0" value="${reps}" class="w-full bg-base rounded-btn px-3 py-2 text-ink min-h-[44px]" required />
-        </div>
-        <button type="submit" class="tap-feedback bg-accent text-base font-semibold rounded-btn px-4 min-h-[44px]">Speichern</button>
-      </form>
-    </div>
   `;
 }
 
@@ -735,7 +703,6 @@ function wireEvents() {
   currentContainer.querySelectorAll('.calendar-day-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.selectedDate = btn.dataset.date;
-      state.expandedExerciseId = null;
       state.routinePickerOpen = false;
       state.routinePickerClosing = false;
       paint();
@@ -767,7 +734,6 @@ function wireEvents() {
     const btn = e.target.closest('.calendar-sheet-day-btn');
     if (!btn) return;
     state.selectedDate = btn.dataset.date;
-    state.expandedExerciseId = null;
     closeCalendarSheet();
   });
 
@@ -803,31 +769,11 @@ function wireEvents() {
     });
   });
 
+  // Öffnet die Übungs-Detailseite (Abschnitt 12) statt wie zuvor inline zu
+  // expandieren.
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.expandedExerciseId = state.expandedExerciseId === btn.dataset.entry ? null : btn.dataset.entry;
-      paint();
-    });
-  });
-
-  currentContainer.querySelectorAll('.set-entry-form').forEach((form) => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const weight = parseFloat(e.target.elements.weight.value);
-      const reps = parseInt(e.target.elements.reps.value, 10);
-      if (Number.isNaN(weight) || Number.isNaN(reps)) return;
-
-      const workout = await getWorkoutByDate(state.selectedDate);
-      const exerciseId = form.dataset.exercise;
-      await addSet(workout.id, exerciseId, weight, reps);
-      await markWorkoutExerciseStarted(workout.id, exerciseId);
-      paint();
-    });
-  });
-
-  currentContainer.querySelectorAll('.delete-set-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      await deleteSet(btn.dataset.set);
+      state.detailEntryId = btn.dataset.entry;
       paint();
     });
   });
