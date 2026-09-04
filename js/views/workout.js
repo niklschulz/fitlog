@@ -22,7 +22,6 @@ let state = {
   routinePickerClosing: false,
   calendarSheetOpen: false,
   calendarSheetClosing: false,
-  sheetMonths: [], // ['YYYY-MM', ...], zusammenhängend, nur während der Sheet offen ist befüllt
 };
 
 export async function render(container) {
@@ -32,7 +31,6 @@ export async function render(container) {
   state.routinePickerClosing = false;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
-  state.sheetMonths = [];
   await paint();
 }
 
@@ -136,6 +134,59 @@ async function getDatesWithSets(dates) {
     if (count > 0) result.add(w.date);
   }
   return result;
+}
+
+// Wie getDatesWithSets, aber für einen zusammenhängenden Datumsbereich (statt
+// einer expliziten Tagesliste) über eine einzige Range-Abfrage plus einen
+// einzigen Sets-Bulk-Abruf - effizienter als N Einzelabfragen pro Monat, s.
+// ADR 0009 (ersetzt das ursprüngliche Monats-für-Monat-Nachladen).
+async function getDatesWithSetsInRange(fromDate, toDateExclusive) {
+  const workouts = await db.workouts.where('date').between(fromDate, toDateExclusive, true, false).toArray();
+  if (workouts.length === 0) return new Set();
+
+  const dateByWorkoutId = Object.fromEntries(workouts.map((w) => [w.id, w.date]));
+  const sets = await db.sets.where('workoutId').anyOf(Object.keys(dateByWorkoutId)).toArray();
+
+  const result = new Set();
+  for (const s of sets) {
+    result.add(dateByWorkoutId[s.workoutId]);
+  }
+  return result;
+}
+
+// Alle im großen Kalender erreichbaren Monate, chronologisch.
+function allowedSheetMonths() {
+  const months = [];
+  let ym = CALENDAR_SHEET_MIN_MONTH;
+  const max = calendarSheetMaxMonth();
+  while (ym <= max) {
+    months.push(ym);
+    ym = addMonths(ym, 1);
+  }
+  return months;
+}
+
+// Verhindert Scrollen des Workout-Tabs im Hintergrund, während das
+// Kalender-Sheet offen ist (iOS-sicherer Ansatz: body auf position:fixed
+// setzen statt nur overflow:hidden, da Safari sonst per Touch weiterhin
+// "durchscrollen" kann). scrollY wird gemerkt und beim Entsperren wieder
+// hergestellt.
+let bodyScrollLockY = 0;
+
+function lockBodyScroll() {
+  bodyScrollLockY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${bodyScrollLockY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+}
+
+function unlockBodyScroll() {
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  window.scrollTo(0, bodyScrollLockY);
 }
 
 // --- Paint ---
@@ -277,20 +328,16 @@ function renderCalendarStrip(weeks, datesWithSets) {
 
 // --- Großer Kalender (Bottom-Sheet, Abschnitt 11) ---
 //
-// Rendert nicht den kompletten erlaubten Datumsbereich auf einmal, sondern
-// nur ein kleines Fenster von Monaten um den Zielmonat (state.sheetMonths).
-// Beim Scrollen nahe an den Rand dieses Fensters wird per direkter
-// DOM-Manipulation (insertAdjacentHTML, s. handleCalendarSheetScroll) ein
-// weiterer Monat angehängt/vorangestellt - bewusst NICHT über einen vollen
-// paint()-Durchlauf, da das die Scroll-Position beim Neuaufbau des inneren
-// HTML zurücksetzen würde. Die Monats-Tage-Buttons hängen daher an einem
-// einzigen delegierten Klick-Listener auf dem Container (s. wireEvents),
-// der auch für nachträglich eingefügte Monate ohne erneutes Verdrahten
-// funktioniert.
+// Rendert den kompletten erlaubten Datumsbereich auf einmal (nicht
+// nachladend beim Scrollen) - der Bereich ist praktisch begrenzt (ab Januar
+// 2026, wächst nur um einen Monat pro echtem Kalendermonat), eine einzige
+// Bulk-Abfrage (getDatesWithSetsInRange) plus einmaliges HTML-Rendern ist
+// dafür sowohl einfacher als auch spürbar flüssiger als das ursprüngliche
+// Nachladen-beim-Scrollen, das durch die asynchronen DB-Abfragen mitten in
+// der Scroll-Geste geruckelt hat. Details/Historie: ADR 0009 (löst ADR 0008 ab).
 
-async function renderSheetMonth(yearMonth) {
+function renderSheetMonth(yearMonth, datesWithSets) {
   const days = daysInMonth(yearMonth);
-  const datesWithSets = await getDatesWithSets(days);
   const blanks = leadingBlankCount(yearMonth);
   const today = todayISODate();
 
@@ -308,13 +355,20 @@ async function renderSheetMonth(yearMonth) {
           .map((d) => {
             const isSelected = d === state.selectedDate;
             const isToday = d === today;
-            const hasDot = datesWithSets.has(d);
+            const hasSets = datesWithSets.has(d);
             const dayNum = Number(d.slice(8, 10));
-            const numClasses = isSelected ? 'bg-accent text-base' : isToday ? 'text-accent' : 'text-ink';
+            // Dokumentierte Tage (und die Auswahl) bekommen einen gefüllten
+            // Kreis - ein kleiner Punkt darunter war laut Nutzer-Feedback
+            // optisch nicht ausreichend. "Heute" bekommt, wenn nicht
+            // gleichzeitig dokumentiert/ausgewählt, einen ungefüllten Kreis
+            // (nur Rand) - Auswahl/Dokumentation haben also Vorrang vor der
+            // Heute-Markierung, analog zur Priorität in der kleinen
+            // Kalenderzeile.
+            const circleClasses =
+              isSelected || hasSets ? 'bg-accent text-base' : isToday ? 'border-2 border-accent text-accent' : 'text-ink';
             return `
-            <button data-date="${d}" class="calendar-sheet-day-btn tap-feedback flex flex-col items-center gap-1.5 min-h-[44px]">
-              <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-lg ${numClasses}">${dayNum}</span>
-              <span class="w-1.5 h-1.5 rounded-full ${hasDot ? 'bg-accent' : 'bg-transparent'}"></span>
+            <button data-date="${d}" class="calendar-sheet-day-btn tap-feedback flex items-center justify-center min-h-[44px]">
+              <span class="text-card-title w-8 h-8 flex items-center justify-center rounded-full ${circleClasses}">${dayNum}</span>
             </button>
           `;
           })
@@ -326,16 +380,24 @@ async function renderSheetMonth(yearMonth) {
 
 async function renderCalendarSheet() {
   const closing = state.calendarSheetClosing;
-  const monthSections = await Promise.all(state.sheetMonths.map((ym) => renderSheetMonth(ym)));
+  const months = allowedSheetMonths();
+  const fromDate = `${CALENDAR_SHEET_MIN_MONTH}-01`;
+  const toDateExclusive = `${addMonths(calendarSheetMaxMonth(), 1)}-01`;
+  const datesWithSets = await getDatesWithSetsInRange(fromDate, toDateExclusive);
+  const monthSections = months.map((ym) => renderSheetMonth(ym, datesWithSets)).join('');
 
   return `
-    <div id="calendar-sheet-backdrop" class="fixed inset-0 z-50 bg-black/50"></div>
+    <div id="calendar-sheet-backdrop" class="calendar-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
     <div class="calendar-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" style="height: 88vh;">
-      <div class="flex justify-center pt-3 pb-2 flex-shrink-0">
-        <div class="w-9 h-1 rounded-full bg-white/25"></div>
+      <div class="grid grid-cols-3 items-center px-4 flex-shrink-0">
+        <div aria-hidden="true"></div>
+        <div id="calendar-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+          <span class="w-9 h-1 rounded-full bg-white/25"></span>
+        </div>
+        <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end text-label font-semibold text-accent px-2 py-2 min-h-[44px]">Heute</button>
       </div>
       <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+24px)] flex flex-col gap-6">
-        ${monthSections.join('')}
+        ${monthSections}
       </div>
     </div>
   `;
@@ -501,26 +563,20 @@ function closeRoutinePicker() {
   }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
 }
 
-// Öffnet direkt um den Monat des aktuell gewählten Tages herum (±1 Monat,
-// innerhalb der erlaubten Grenzen) und scrollt nach dem Paint zu diesem
-// Zielmonat.
+// Öffnet den Kalender, sperrt das Hintergrund-Scrollen (s.
+// lockBodyScroll) und scrollt nach dem Paint zum Monat des aktuell
+// gewählten Tages.
 async function openCalendarSheet() {
-  const targetMonth = yearMonthOf(state.selectedDate);
-  const months = [targetMonth];
-  const prev = addMonths(targetMonth, -1);
-  if (prev >= CALENDAR_SHEET_MIN_MONTH) months.unshift(prev);
-  const next = addMonths(targetMonth, 1);
-  if (next <= calendarSheetMaxMonth()) months.push(next);
-
-  state.sheetMonths = months;
   state.calendarSheetOpen = true;
   state.calendarSheetClosing = false;
+  lockBodyScroll();
   // paint() muss vor dem Scroll-Versuch fertig sein - es lädt die
-  // Monatsdaten asynchron (getDatesWithSets), das innerHTML steht also
-  // erst nach dem await tatsächlich im DOM.
+  // Kalenderdaten asynchron (getDatesWithSetsInRange), das innerHTML steht
+  // also erst nach dem await tatsächlich im DOM.
   await paint();
 
   requestAnimationFrame(() => {
+    const targetMonth = yearMonthOf(state.selectedDate);
     const monthEl = currentContainer.querySelector(`.calendar-sheet-month[data-year-month="${targetMonth}"]`);
     monthEl?.scrollIntoView({ block: 'start' });
   });
@@ -528,58 +584,91 @@ async function openCalendarSheet() {
 
 // Analog zu closeRoutinePicker: erst die Schließen-Animation abspielen
 // (muss zur Dauer von .calendar-sheet.closing in css/styles.css passen),
-// danach erst wirklich aus dem State/DOM entfernen.
+// danach erst wirklich aus dem State/DOM entfernen und das
+// Hintergrund-Scrollen wieder freigeben. finalizeCalendarSheetClose ist der
+// gemeinsame Abschluss-Schritt für diesen Weg UND für das Drag-to-Dismiss
+// (s. wireCalendarSheetDrag) - dort läuft die Animation über eine direkte
+// Transform-Transition statt der CSS-Keyframes, das Zurücksetzen von State
+// und Body-Scroll-Lock ist aber identisch.
 const CALENDAR_SHEET_CLOSE_ANIMATION_MS = 200;
+
+function finalizeCalendarSheetClose() {
+  state.calendarSheetOpen = false;
+  state.calendarSheetClosing = false;
+  unlockBodyScroll();
+  paint();
+}
 
 function closeCalendarSheet() {
   if (!state.calendarSheetOpen || state.calendarSheetClosing) return;
   state.calendarSheetClosing = true;
   paint();
-  setTimeout(() => {
-    state.calendarSheetOpen = false;
-    state.calendarSheetClosing = false;
-    state.sheetMonths = [];
-    paint();
-  }, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
+  setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
 }
 
-// Verhindert überlappende Wachstums-Schübe, während eine Erweiterung
-// bereits läuft (async, wegen getDatesWithSets) - der synchrone Teil vor
-// dem ersten await setzt das Flag, bevor ein weiteres Scroll-Event
-// dazwischenfunken kann.
-let sheetGrowing = false;
-const SHEET_GROWTH_THRESHOLD_PX = 400;
+// Drag-to-Dismiss am Ziehgriff: Der Griff selbst wird per Pointer Events
+// (touch- und mausfähig) verfolgt, Sheet und Backdrop werden währenddessen
+// direkt per Inline-Style bewegt/abgeblendet (außerhalb von paint(), da wir
+// hier 1:1 dem Finger folgen müssen statt in Render-Zyklen zu denken).
+// `touch-action: none` auf dem Griff (s. renderCalendarSheet) verhindert,
+// dass Safari die Geste stattdessen als Seiten-Scroll interpretiert.
+const CALENDAR_SHEET_DRAG_CLOSE_THRESHOLD_PX = 120;
+let calendarSheetDrag = null;
 
-async function handleCalendarSheetScroll(e) {
-  if (sheetGrowing) return;
-  const el = e.currentTarget;
+function wireCalendarSheetDrag() {
+  const handle = currentContainer.querySelector('#calendar-sheet-handle');
+  const sheetEl = currentContainer.querySelector('.calendar-sheet');
+  const backdropEl = currentContainer.querySelector('#calendar-sheet-backdrop');
+  if (!handle || !sheetEl || !backdropEl) return;
 
-  if (el.scrollTop < SHEET_GROWTH_THRESHOLD_PX) {
-    const first = state.sheetMonths[0];
-    const prevMonth = addMonths(first, -1);
-    if (prevMonth < CALENDAR_SHEET_MIN_MONTH) return;
+  handle.addEventListener('pointerdown', (e) => {
+    if (state.calendarSheetClosing) return;
+    calendarSheetDrag = { startY: e.clientY };
+    sheetEl.style.transition = 'none';
+    backdropEl.style.transition = 'none';
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch {
+      // Kein aktiver Pointer mit dieser ID (z. B. bei synthetischen Events) -
+      // die Drag-Logik selbst funktioniert auch ohne Capture weiter, nur
+      // ohne die Garantie, dass Move-Events bei schnellen Gesten am
+      // Element "kleben" bleiben.
+    }
+  });
 
-    sheetGrowing = true;
-    const html = await renderSheetMonth(prevMonth);
-    const beforeHeight = el.scrollHeight;
-    el.insertAdjacentHTML('afterbegin', html);
-    // Höhendifferenz sofort auf scrollTop aufschlagen, damit die sichtbare
-    // Position stabil bleibt statt durch den oben eingefügten Monat nach
-    // unten wegzuspringen.
-    el.scrollTop += el.scrollHeight - beforeHeight;
-    state.sheetMonths.unshift(prevMonth);
-    sheetGrowing = false;
-  } else if (el.scrollHeight - el.scrollTop - el.clientHeight < SHEET_GROWTH_THRESHOLD_PX) {
-    const last = state.sheetMonths[state.sheetMonths.length - 1];
-    const nextMonth = addMonths(last, 1);
-    if (nextMonth > calendarSheetMaxMonth()) return;
+  handle.addEventListener('pointermove', (e) => {
+    if (!calendarSheetDrag) return;
+    const delta = Math.max(0, e.clientY - calendarSheetDrag.startY);
+    sheetEl.style.transform = `translateY(${delta}px)`;
+    backdropEl.style.opacity = String(1 - Math.min(delta / sheetEl.offsetHeight, 1));
+  });
 
-    sheetGrowing = true;
-    const html = await renderSheetMonth(nextMonth);
-    el.insertAdjacentHTML('beforeend', html);
-    state.sheetMonths.push(nextMonth);
-    sheetGrowing = false;
-  }
+  const endDrag = (e) => {
+    if (!calendarSheetDrag) return;
+    const delta = Math.max(0, e.clientY - calendarSheetDrag.startY);
+    calendarSheetDrag = null;
+
+    sheetEl.style.transition = `transform ${CALENDAR_SHEET_CLOSE_ANIMATION_MS}ms ease`;
+    backdropEl.style.transition = `opacity ${CALENDAR_SHEET_CLOSE_ANIMATION_MS}ms ease`;
+
+    if (delta > CALENDAR_SHEET_DRAG_CLOSE_THRESHOLD_PX) {
+      sheetEl.style.transform = 'translateY(100%)';
+      backdropEl.style.opacity = '0';
+      setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
+    } else {
+      sheetEl.style.transform = 'translateY(0)';
+      backdropEl.style.opacity = '1';
+      setTimeout(() => {
+        sheetEl.style.transition = '';
+        sheetEl.style.transform = '';
+        backdropEl.style.transition = '';
+        backdropEl.style.opacity = '';
+      }, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
+    }
+  };
+
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
 }
 
 function wireEvents() {
@@ -601,12 +690,16 @@ function wireEvents() {
     closeCalendarSheet();
   });
 
-  currentContainer.querySelector('#calendar-sheet-months')?.addEventListener('scroll', handleCalendarSheetScroll);
+  currentContainer.querySelector('#calendar-sheet-today-btn')?.addEventListener('click', () => {
+    state.selectedDate = todayISODate();
+    state.expandedExerciseId = null;
+    closeCalendarSheet();
+  });
+
+  wireCalendarSheetDrag();
 
   // Delegierter Listener auf dem Container statt auf jedem Tages-Button
-  // einzeln - Monate, die erst nachträglich beim Scrollen angehängt werden
-  // (s. handleCalendarSheetScroll), sind so automatisch mit abgedeckt, ohne
-  // dass nach jedem Anhängen neu verdrahtet werden müsste.
+  // einzeln, konsistent mit den übrigen Listen in dieser View.
   currentContainer.querySelector('#calendar-sheet-months')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.calendar-sheet-day-btn');
     if (!btn) return;

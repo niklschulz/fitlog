@@ -1,5 +1,7 @@
 # 0008 – Großer Kalender im Workout-Tab: wachsendes Lazy-Loading statt echter Virtualisierung
 
+**Status: Überholt durch [ADR 0009](0009-grosser-kalender-vollstaendiges-rendern.md).** Das hier beschriebene Nachladen-beim-Scrollen verursachte in der Praxis spürbares Ruckeln (asynchrone DB-Abfragen mitten in der Scroll-Geste) und wurde durch vollständiges Vorab-Rendern des gesamten (praktisch begrenzten) Zeitraums ersetzt. Dokument bleibt als Entscheidungshistorie erhalten.
+
 ## Kontext
 
 Abschnitt 11 der Konzept-Erweiterungen verlangt einen aktivierten Kalender-Button im Workout-Tab, der ein großes (85–90% Höhe) Bottom-Sheet mit einem vertikal scrollenden, monatsweisen Kalender öffnet. Der erlaubte Zeitraum ist fest ab Januar 2026 bis einen Monat nach dem aktuellen echten Kalendermonat (dynamisch berechnet) – je nach Nutzungsdauer der App theoretisch viele Dutzend Monate. Explizite Vorgabe: **Monate dürfen nicht alle gleichzeitig gerendert werden** (Performance), Navigation ausschließlich per Scrollen (keine Pfeil-Buttons).

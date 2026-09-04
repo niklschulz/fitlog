@@ -2,6 +2,17 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-04 (Nachmittag)
+
+### Fixed / Changed (Kalender-Sheet-Feinschliff nach echtem Test)
+- Grüner Kreis statt kleinem Punkt für Tage mit dokumentierten Sätzen im großen Kalender — der Punkt war optisch nicht auffällig genug. "Heute" bekommt einen ungefüllten Kreis (nur Rand), Auswahl/dokumentierte Tage haben bei Überlapp Vorrang vor der Heute-Markierung
+- Ruckeln beim ersten Hochscrollen behoben: Lazy-Nachladen weiterer Monate beim Scrollen (ADR 0008) durch vollständiges Vorab-Rendern des gesamten Zeitraums ersetzt (ADR 0009) — Ursache war eine asynchrone DB-Abfrage pro nachgeladenem Monat mitten in der Scroll-Geste
+- Hintergrund-Scrollen des Workout-Tabs während offenem Sheet gesperrt (iOS-sicherer `position: fixed`-Lock) — behebt auch das gemeldete Problem, dass sich nach einmaligem Workout-Tab-Scroll nur noch der Tab statt des Kalenders scrollen ließ (gleiche Ursache: Touch-Bleed-Through durch den weiterhin scrollbaren Body hinter dem Fixed-Overlay)
+- Drag-to-Dismiss am Ziehgriff ergänzt (nach unten wegziehen schließt das Sheet, mit Rückspring unterhalb eines Schwellenwerts)
+- "Heute"-Button oben rechts im Sheet-Header ergänzt — springt direkt zum aktuellen Tag
+- Backdrop fadet jetzt weich ein/aus (220ms, synchron zur Sheet-Animation) statt hart zu erscheinen/verschwinden
+- Details: [design-system.md](design-system.md#navigation), [ADR 0009](decisions/0009-grosser-kalender-vollstaendiges-rendern.md)
+
 ## 2026-09-04
 
 ### Added (Großer Kalender im Workout-Tab, Abschnitt 11)
