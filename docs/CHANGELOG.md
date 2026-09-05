@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-05 (Auswahl-Hervorhebung final, Teil 4)
+
+### Fixed (Band wieder dicker, ohne die Zentrierung zu verlieren)
+- Die letzte Korrektur hatte die Zentrierung repariert, dabei aber unbeabsichtigt auch die Dicke des Hervorhebungs-Bands wieder auf die reine 24px-Kreishöhe reduziert
+- Band ist jetzt wieder deutlich dicker (40px statt 24px, 8px symmetrisch oben und unten) — da Kreis und Inhalts-Box jetzt strukturell denselben Mittelpunkt haben, bleibt die Zentrierung dabei erhalten (0px Abweichung verifiziert)
+- Details: [design-system.md](design-system.md#navigation) (Dreiundzwanzigste Iteration)
+
 ## 2026-09-04 (Auswahl-Hervorhebung final, Teil 3)
 
 ### Fixed (Kreis, Band und Text exakt zueinander zentriert)
