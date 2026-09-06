@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Doppel-Grün-Zeitraum beim Nav-Wechsel halbiert)
+
+### Changed
+- Nutzer-Feedback: gleichzeitiges volles Grün beider Tabs wirkte störend. Zweite, frame-genaue Auswertung derselben Bildschirmaufnahme (11 native Frames statt Kontaktbogen) bestätigte: Real gibt es keinen Moment mit zwei vollständig grünen Tabs, nur einen kurzen (~33ms), an die Glasform gekoppelten Wisch
+- Umschaltpunkt für die Icon-Farbe von "Animationsende" auf "Hälfte der Laufzeit" vorgezogen — halbiert den wahrgenommenen Doppel-Grün-Zeitraum auf ca. 85ms
+- Details: [design-system.md](design-system.md#navigation) (Vierzigste Iteration)
+
 ## 2026-09-06 (Nav-Indikator anhand einer echten Bildschirmaufnahme verfeinert)
 
 ### Changed

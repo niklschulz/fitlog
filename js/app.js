@@ -61,7 +61,7 @@ function moveNavIndicator(btn, { animate, onSettled }) {
   const stretchLeft = Math.min(current.left, target.left);
   const stretchWidth = Math.abs(target.left - current.left) + Math.max(current.width, target.width);
 
-  const animation = navIndicator.animate(
+  navIndicator.animate(
     [
       { left: `${current.left}px`, width: `${current.width}px` },
       { left: `${stretchLeft}px`, width: `${stretchWidth}px`, offset: 0.55 },
@@ -69,7 +69,18 @@ function moveNavIndicator(btn, { animate, onSettled }) {
     ],
     { duration: NAV_INDICATOR_DURATION_MS, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
   );
-  animation.finished.then(onSettled).catch(() => {});
+
+  // Farbwechsel bewusst NICHT erst am Animationsende, sondern schon zur
+  // Hälfte der Laufzeit (deckt sich mit dem Stretch-Höhepunkt bei 55%, s.
+  // oben): Eine frame-genaue Auswertung derselben Bildschirmaufnahme zeigt,
+  // dass in Echt kein Zustand existiert, in dem beide Tabs vollständig grün
+  // sind - der Farbwechsel dort ist ein kurzer, anteiliger, an die Glasform
+  // geklebter Wisch (< 1/5 der Animationsdauer). Ein per Clip-Maske exakt
+  // nachgebauter Wisch wäre für diese sehr kurze Sichtbarkeit unverhältnismäßig
+  // aufwendig - stattdessen ein früherer, harter Umschaltpunkt, der den in der
+  // ersten Umsetzung als störend empfundenen ausgedehnten Doppel-Grün-Zustand
+  // vermeidet, ohne die volle Maskierung nachzubauen.
+  setTimeout(() => onSettled?.(), NAV_INDICATOR_DURATION_MS * 0.5);
 }
 
 function showView(name) {
@@ -88,12 +99,12 @@ function showView(name) {
   const activeBtn = Array.from(navButtons).find((btn) => btn.dataset.view === name);
 
   if (activeBtn) {
-    // Neuer Tab wird sofort grün eingefärbt (nicht erst nach Animationsende)
-    // - laut Bildschirmaufnahme sind während des gesamten Übergangs BEIDE
-    // Icons grün getönt, die Farbe hängt an der Glas-Fläche, nicht an einem
-    // festen Zeitpunkt. Der alte Tab verliert seine Farbe erst, wenn der
-    // Indikator ihn vollständig verlassen hat (onSettled-Callback unten),
-    // nicht schon beim Klick.
+    // Neuer Tab wird sofort grün eingefärbt, der alte verliert seine Farbe
+    // erst zur Hälfte der Indikator-Animation (onSettled-Callback unten),
+    // nicht schon synchron beim Klick - vermeidet den harten Sprung, wirkt
+    // aber bewusst NICHT den vollen Doppel-Grün-Zeitraum, der sich als
+    // störend herausgestellt hat (s. moveNavIndicator() für die Begründung
+    // des früheren Umschaltpunkts).
     activeBtn.classList.add('active');
     moveNavIndicator(activeBtn, {
       animate: !isInitialRender,
