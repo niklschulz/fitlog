@@ -296,9 +296,8 @@ async function paint() {
 
       ${renderExerciseRoster(entries, nameById, setsByExercise)}
 
-      <button type="button" class="tap-feedback w-full flex items-center justify-center gap-2 py-3 min-h-[44px] text-muted opacity-60" disabled>
-        <span class="w-5 h-5 rounded-full border border-current flex items-center justify-center text-xs leading-none">+</span>
-        <span class="text-body font-medium">Übung hinzufügen</span>
+      <button type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] text-accent text-body font-medium">
+        Übung hinzufügen
       </button>
     </div>
 
@@ -444,7 +443,7 @@ async function renderCalendarSheet() {
         <div id="calendar-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
           <span class="w-9 h-1 rounded-full bg-white/25"></span>
         </div>
-        <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end text-label font-semibold text-accent px-2 py-2 min-h-[44px]">Heute</button>
+        <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end text-body font-medium text-accent px-2 py-2 min-h-[44px]">Heute</button>
       </div>
       <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-6">
         ${monthSections}
@@ -551,10 +550,7 @@ function renderExerciseRow(entry, name, sets) {
   return `
     <li class="bg-surface rounded-card overflow-hidden">
       <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1">
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-card-title ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
-          <span class="text-label text-muted flex-shrink-0">${sets.length > 0 ? `${sets.length} Satz${sets.length === 1 ? '' : 'e'}` : ''}</span>
-        </div>
+        <span class="text-card-title ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
         ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
       </button>
     </li>

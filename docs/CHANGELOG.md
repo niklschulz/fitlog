@@ -2,6 +2,79 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Design-System-Audit: Glass-Look als Navigations-Standard dokumentiert)
+
+### Fixed (reine Doku-Korrektur, kein Code geändert)
+- "Bewusst nur die Bottom-Nav, sonst nichts" widersprach der später eingeführten "Icon-Button (Glass)"-Komponente (Zurück-Pfeil, Kalender-Icon nutzen denselben Blur-Effekt) — beide Aussagen standen unverändert nebeneinander im Dokument
+- Umformuliert: Glass-Look ist der Standard-Stil für Navigations-Buttons (Bottom-Nav + Navigations-Icon-Buttons), nicht auf die Bottom-Nav beschränkt
+- Details: [design-system.md](design-system.md#navigation) (Zweiunddreißigste Iteration)
+
+## 2026-09-06 (Satz-Anzahl aus der Workout-Tab-Roster-Zeile entfernt)
+
+### Removed
+- Übungs-Karten im Workout-Tab zeigen nicht mehr die Satz-Anzahl (z. B. "2 Sätze") rechts neben dem Titel — die Anzahl ist an der Satz-Timeline darunter ohnehin ablesbar
+- Dabei behoben: fehlerhafte Pluralbildung ("Satze" statt "Sätze" bei mehr als einem Satz)
+- Details: [design-system.md](design-system.md#navigation) (Einunddreißigste Iteration)
+
+## 2026-09-06 (Design-System-Audit: veraltetes "SÄTZE"-Beispiel entfernt)
+
+### Fixed (Fall D aus dem Design-System-Audit — reine Doku-Korrektur, kein Code geändert)
+- "SÄTZE" stand an zwei Stellen als Beispiel für eine großgeschriebene `text-label`-Sektionsüberschrift, kam laut Git-Historie aber nie in einer JS-Datei vor — anders als "ÜBUNGEN", das tatsächlich existiert (Routine-Editor). Beide Stellen korrigiert
+
+## 2026-09-06 (Fälle C3 und C4 aus dem Design-System-Audit zurückgestellt)
+
+### Notiz (keine Änderung)
+- Der "✕"-Entfernen-Button in der Routine-Übungen-Zeile passt zu keinem dokumentierten Button-Muster — Entscheidung bewusst zurückgestellt, da der Routine-Editor als Workflow noch nicht fertiggestellt ist
+- Das Umbenennen-Formular im Routine-Editor nutzt keinen Karten-Rahmen, obwohl das Anlegen einer neuen Routine denselben Vorgang als volles Karten-Formular zeigt — ebenfalls zurückgestellt, da sowohl der Routine-Editor- als auch der Übungen-Workflow noch nicht fertiggestellt sind
+- Beide als offene Punkte festgehalten: [design-system.md](design-system.md#offene-punkte-aus-dem-design-system-audit)
+
+## 2026-09-06 ("+"-Zeichen aus Textlink-Aktionen entfernt)
+
+### Changed
+- "Übung hinzufügen" (Workout-Tab und Routine-Editor) zeigt kein "+" mehr vor dem Label — die Akzentfarbe des Textlink (Aktion)-Musters macht die Klickbarkeit bereits deutlich
+- Details: [design-system.md](design-system.md#navigation) (Dreißigste Iteration)
+
+## 2026-09-06 ("Übung hinzufügen" im Workout-Tab: Platzhalter-Stil abgeschafft)
+
+### Changed (Anschlussentscheidung zu Fall C2)
+- "Übung hinzufügen" im Workout-Tab war grau/gedimmt/`disabled`, weil die Funktion dahinter noch nicht existiert — auf Nutzer-Entscheidung vereinheitlicht mit dem neuen Textlink (Aktion)-Muster (`text-accent text-body font-medium`), da eine Aktion keinen eigenen Stil bekommen soll, nur weil sie noch nicht gebaut ist
+- Eigener Kreis-Outline-"+"-Indikator entfernt zugunsten eines einfachen "+" als Text, `disabled`-Attribut entfernt — der Button hat weiterhin keinen Klick-Handler (Funktion folgt separat), sieht jetzt aber wie eine aktive Aktion aus
+- "Dezenter Icon-Link (Platzhalter)"-Muster in design-system.md als nicht mehr verwendet markiert
+- Details: [design-system.md](design-system.md#navigation) (Neunundzwanzigste Iteration)
+
+## 2026-09-06 (Design-System-Audit: Textlink-Aktionen vereinheitlicht)
+
+### Changed (Fall C2 aus dem Design-System-Audit)
+- "+ Übung hinzufügen" (Routine-Editor), "Heute" (großer Kalender) und "Alle Routinen anzeigen" (Routine-Picker) nutzten denselben Grundgedanken (akzentfarbener Textlink für eine echte Aktion), aber jeweils leicht andere Klassen — auf `text-accent text-body font-medium` vereinheitlicht
+- Neues Muster "Textlink (Aktion)" in design-system.md dokumentiert
+- Details: [design-system.md](design-system.md#navigation) (Achtundzwanzigste Iteration)
+
+## 2026-09-06 (Design-System-Audit: Ausnahme von der "Keine Trennlinien"-Regel ergänzt)
+
+### Fixed (Fall C1 aus dem Design-System-Audit — reine Doku-Korrektur, kein Code geändert)
+- Die generelle Regel "Keine Trennlinien" (design-system.md:19) galt seit der Achten Iteration nicht mehr uneingeschränkt: Der "Heute"-Tag im großen Kalender nutzt bewusst einen umrandeten statt gefüllten Kreis (`border-2 border-accent`) — bereits dort begründet, aber in der allgemeinen Regel nicht als Ausnahme erwähnt
+- Regel um einen Verweis auf diese eine bewusste Ausnahme ergänzt
+
+## 2026-09-06 (Design-System-Audit: "Chip"-Muster als nicht mehr verwendet markiert)
+
+### Fixed (Fall B aus dem Design-System-Audit — reine Doku-Korrektur, kein Code geändert)
+- "Chip (Auswahl)" war in der Doku an vier Stellen als aktives Muster beschrieben (Farbtabelle, Radien-Tabelle, Komponenten-Muster, eine Iteration), existiert im Code aber nirgends mehr
+- Ursache geklärt: Die "Exercise-Chips" gehörten zur Übungsauswahl im alten, session-basierten Trainings-Flow und wurden mit Commit `6031f58` (Umbau auf das heutige Tages-Modell, [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md)) ersatzlos entfernt — die Doku wurde dabei nicht nachgezogen
+- Alle vier Stellen jetzt korrigiert bzw. als "aktuell nicht verwendet" markiert (analog zu `rounded-badge`/`text-kpi`), Musterdefinition bleibt für eine mögliche spätere Wiederverwendung erhalten
+
+## 2026-09-06 (Design-System-Audit: Radien-Tabelle vervollständigt)
+
+### Fixed (Fall A2 aus dem Design-System-Audit — reine Doku-Korrektur, kein Code geändert)
+- `rounded-lg` (Tageszahl im kleinen Wochenstreifen) fehlte in der Radien-Tabelle der Doku und wirkte dadurch wie ein nicht dokumentierter Streuwert. Tatsächlich bewusste, bereits in der Achten Iteration begründete Entscheidung: Wochenstreifen zeigt den hervorgehobenen Tag eckig, der große Kalender kreisförmig — beide Ansichten sollen sich hier bewusst unterscheiden
+- Radien-Tabelle um `rounded-lg` ergänzt, mit Verweis auf die Achte Iteration
+
+## 2026-09-06 (Design-System-Bereinigung: Primärer Button vereinheitlicht)
+
+### Changed (Fall A1 aus dem Design-System-Audit)
+- Primärer Button (`bg-accent`) war je nach View unterschiedlich fett (`font-bold` in profile.js, `font-semibold` in exercises.js/routines.js) — auf `font-semibold` (600) vereinheitlicht, passend zum bereits an anderer Stelle dominanten Gewicht (`text-card-title`). h1-Überschriften (`text-screen-title`) bleiben bewusst bei `font-bold`
+- Destruktiver "Profil entfernen"-Button (`bg-red-600`) auf den Primären Button umgestellt — greift den seit der Siebzehnten Iteration vorgemerkten, aber nie entschiedenen Gesprächspunkt zur Buttons-Neugestaltung auf. Löschen bleibt weiterhin über `confirm()` abgesichert, nur ohne zusätzliche rote Warnfarbe
+- Details: [design-system.md](design-system.md#navigation) (Siebenundzwanzigste Iteration)
+
 ## 2026-09-06 (Gewicht-/Reps-Boxen verbreitert)
 
 ### Fixed (dreistellige Reps überfüllten ihre feste Box, Abstand zur Einheit dadurch uneinheitlich)

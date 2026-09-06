@@ -158,8 +158,8 @@ async function renderEditor() {
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <h2 class="text-label text-muted uppercase">Übungen</h2>
-          <button id="add-exercise-to-routine-btn" class="tap-feedback text-accent font-semibold min-h-[44px] px-2">
-            + Übung hinzufügen
+          <button id="add-exercise-to-routine-btn" class="tap-feedback text-accent text-body font-medium min-h-[44px] px-2">
+            Übung hinzufügen
           </button>
         </div>
         ${

@@ -43,7 +43,7 @@ function renderView(profile) {
       Wird für den späteren Sync zum eigenen Server verwendet. Sync ist aktuell noch nicht aktiv – das Training-Tracking funktioniert unabhängig davon vollständig offline weiter.
     </p>
 
-    <button id="remove-profile-btn" class="tap-feedback bg-red-600 text-white font-bold rounded-btn py-3 min-h-[44px]">
+    <button id="remove-profile-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
       Profil entfernen
     </button>
   `;
@@ -52,7 +52,7 @@ function renderView(profile) {
 function renderEmpty() {
   return `
     <p class="text-body text-muted text-center py-8">Noch kein Profil hinterlegt.</p>
-    <button id="add-profile-btn" class="tap-feedback bg-accent text-base font-bold rounded-btn py-3 min-h-[44px]">
+    <button id="add-profile-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
       Profil hinzufügen
     </button>
   `;
@@ -90,7 +90,7 @@ function renderForm() {
       </p>
 
       <div class="flex gap-3">
-        <button type="submit" class="tap-feedback flex-1 bg-accent text-base font-bold rounded-btn py-3 min-h-[44px]">
+        <button type="submit" class="tap-feedback flex-1 bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
           Speichern
         </button>
         <button type="button" id="cancel-profile-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">
