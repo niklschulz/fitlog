@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Nav-Indikator anhand einer echten Bildschirmaufnahme verfeinert)
+
+### Changed
+- Übergangsdauer des Nav-Indikators von 420ms auf 170ms reduziert — anhand einer per `ffmpeg` frame-genau ausgewerteten Bildschirmaufnahme einer Referenz-App gemessen (reale Animation dauert dort nur ca. 100-130ms)
+- Icon-Farbe des alten Tabs bleibt jetzt bis zum Ende der Indikator-Animation erhalten (`animation.finished`-Callback), statt sofort beim Klick zu wechseln — während des gesamten Übergangs sind beide Tabs grün, wie in der Aufnahme zu sehen
+- Details: [design-system.md](design-system.md#navigation) (Neununddreißigste Iteration)
+
 ## 2026-09-06 (Liquid-Glass-Animationen: Nav-Indikator, View-Transitions, Press-Feedback)
 
 ### Added

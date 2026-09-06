@@ -24,13 +24,20 @@ function indicatorTargetFor(btn) {
   return { left: btnRect.left - navRect.left, width: btnRect.width };
 }
 
-function moveNavIndicator(btn, { animate }) {
+// Dauer/Kurve anhand einer echten Liquid-Glass-Bildschirmaufnahme (Referenz-
+// App) frame-genau vermessen: Der komplette Übergang (erste sichtbare
+// Bewegung bis vollständiges Einrasten) dauert dort nur ca. 100-130ms -
+// spürbar knackiger als ursprünglich angenommen.
+const NAV_INDICATOR_DURATION_MS = 170;
+
+function moveNavIndicator(btn, { animate, onSettled }) {
   const target = indicatorTargetFor(btn);
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (!animate || reduceMotion) {
     navIndicator.style.left = `${target.left}px`;
     navIndicator.style.width = `${target.width}px`;
+    onSettled?.();
     return;
   }
 
@@ -54,14 +61,15 @@ function moveNavIndicator(btn, { animate }) {
   const stretchLeft = Math.min(current.left, target.left);
   const stretchWidth = Math.abs(target.left - current.left) + Math.max(current.width, target.width);
 
-  navIndicator.animate(
+  const animation = navIndicator.animate(
     [
       { left: `${current.left}px`, width: `${current.width}px` },
       { left: `${stretchLeft}px`, width: `${stretchWidth}px`, offset: 0.55 },
       { left: `${target.left}px`, width: `${target.width}px` },
     ],
-    { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+    { duration: NAV_INDICATOR_DURATION_MS, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
   );
+  animation.finished.then(onSettled).catch(() => {});
 }
 
 function showView(name) {
@@ -73,16 +81,29 @@ function showView(name) {
     views[currentViewName].unmount?.();
   }
   const isInitialRender = currentViewName === null;
+  const previousActiveBtn = document.querySelector('.nav-btn.active');
   currentViewName = name;
 
   views[name].render(viewContainer);
-  let activeBtn = null;
-  navButtons.forEach((btn) => {
-    const isActive = btn.dataset.view === name;
-    btn.classList.toggle('active', isActive);
-    if (isActive) activeBtn = btn;
-  });
-  if (activeBtn) moveNavIndicator(activeBtn, { animate: !isInitialRender });
+  const activeBtn = Array.from(navButtons).find((btn) => btn.dataset.view === name);
+
+  if (activeBtn) {
+    // Neuer Tab wird sofort grün eingefärbt (nicht erst nach Animationsende)
+    // - laut Bildschirmaufnahme sind während des gesamten Übergangs BEIDE
+    // Icons grün getönt, die Farbe hängt an der Glas-Fläche, nicht an einem
+    // festen Zeitpunkt. Der alte Tab verliert seine Farbe erst, wenn der
+    // Indikator ihn vollständig verlassen hat (onSettled-Callback unten),
+    // nicht schon beim Klick.
+    activeBtn.classList.add('active');
+    moveNavIndicator(activeBtn, {
+      animate: !isInitialRender,
+      onSettled: () => {
+        if (previousActiveBtn && previousActiveBtn !== activeBtn) {
+          previousActiveBtn.classList.remove('active');
+        }
+      },
+    });
+  }
   viewContainer.scrollTop = 0;
 }
 
