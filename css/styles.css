@@ -327,8 +327,8 @@ html[data-transition-direction='back']::view-transition-old(root) {
 }
 
 @keyframes view-back-out {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(16px); }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Reduced Motion: Apple reduziert bei aktivierter "Bewegung reduzieren"-

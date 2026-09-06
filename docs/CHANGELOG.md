@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Zurück-Übergang auf reinen Fade reduziert)
+
+### Changed
+- `view-back-out` (View Transition beim Zurück-Navigieren, z. B. Zurück-Pfeil auf der Übungs-Detailseite) hatte zusätzlich zum Fade ein `translateY(0→16px)`-Slide nach unten — eine zweite, gezielt zum Zurück-Pfeil ausgewertete Bildschirmaufnahme (12 native Frames) zeigte, dass der reale Übergang ein reiner Fade ohne jede Bewegung ist. Slide entfernt
+- Details: [design-system.md](design-system.md#navigation) (Einundvierzigste Iteration)
+
 ## 2026-09-06 (Doppel-Grün-Zeitraum beim Nav-Wechsel halbiert)
 
 ### Changed
