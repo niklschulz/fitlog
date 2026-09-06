@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Design-System-Audit: drei doku-interne Widersprüche behoben)
+
+### Fixed (reine Doku-Korrektur, kein Code geändert)
+- "Keine Trennlinien"-Passage behauptete fälschlich, `bg-red-600` sei noch aktuell im Einsatz für destruktive Aktionen — ist seit der Siebenundzwanzigsten Iteration nicht mehr der Fall, korrigiert
+- "Accent-Grün ausschließlich für Auswahl-/Selektions-Zustände" (Achtzehnte Iteration) stand im Widerspruch zum neuen "Textlink (Aktion)"-Muster (Achtundzwanzigste Iteration) — historische Aussage entsprechend markiert, Farbtabelle ergänzt
+- `bg-raised` als "Aktiver Tab-Hintergrund" war seit dem Glass-Effekt für die Bottom-Nav nicht mehr korrekt (transparente Variante dort) — auf den weiterhin zutreffenden Kontext (Segmented Control) präzisiert
+- Details: [design-system.md](design-system.md#navigation) (Dreiunddreißigste Iteration)
+
 ## 2026-09-06 (Design-System-Audit: Glass-Look als Navigations-Standard dokumentiert)
 
 ### Fixed (reine Doku-Korrektur, kein Code geändert)
