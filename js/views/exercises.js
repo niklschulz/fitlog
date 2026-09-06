@@ -1,5 +1,5 @@
 import { db, createExercise, updateExercise, deleteExercise } from '../db.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, BTN_PRIMARY, INPUT, CARD, LIST_ROW, DESTRUCTIVE_LINK } from '../utils.js';
 
 let currentContainer = null;
 let editingId = null; // null = Liste, 'new' = Übung anlegen, <id> = Übung bearbeiten
@@ -19,7 +19,7 @@ async function paint() {
         <h1 class="text-screen-title">Übungen</h1>
         ${
           editingId === null
-            ? `<button id="add-exercise-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn px-4 py-2 min-h-[44px]">
+            ? `<button id="add-exercise-btn" class="tap-feedback ${BTN_PRIMARY} px-4 py-2 min-h-[44px]">
                 + Neue Übung
               </button>`
             : ''
@@ -38,7 +38,7 @@ function renderForm(list) {
   const name = editing ? editing.name : '';
 
   return `
-    <form id="exercise-form" class="flex flex-col gap-3 bg-surface rounded-card p-4">
+    <form id="exercise-form" class="flex flex-col gap-3 ${CARD}">
       <label class="text-label text-muted" for="exercise-name">Name</label>
       <input
         id="exercise-name"
@@ -47,11 +47,11 @@ function renderForm(list) {
         autocomplete="off"
         value="${escapeHtml(name)}"
         placeholder="z. B. Kniebeuge"
-        class="bg-base rounded-btn px-3 py-3 text-ink min-h-[44px]"
+        class="bg-base ${INPUT}"
         required
       />
       <div class="flex gap-3">
-        <button type="submit" class="tap-feedback flex-1 bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
+        <button type="submit" class="tap-feedback flex-1 ${BTN_PRIMARY} py-3 min-h-[44px]">
           Speichern
         </button>
         <button type="button" id="cancel-exercise-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">
@@ -60,7 +60,7 @@ function renderForm(list) {
       </div>
       ${
         editing
-          ? `<button type="button" id="delete-exercise-btn" class="tap-feedback text-red-400 text-body py-2 min-h-[44px]">
+          ? `<button type="button" id="delete-exercise-btn" class="tap-feedback ${DESTRUCTIVE_LINK} py-2 min-h-[44px]">
               Übung löschen
             </button>`
           : ''
@@ -80,7 +80,7 @@ function renderList(list) {
         .map(
           (ex) => `
         <li>
-          <button data-id="${ex.id}" class="exercise-item tap-feedback w-full text-left bg-surface rounded-btn px-4 py-3 min-h-[44px] text-card-title">
+          <button data-id="${ex.id}" class="exercise-item tap-feedback w-full text-left ${LIST_ROW} min-h-[44px] text-card-title">
             ${escapeHtml(ex.name)}
           </button>
         </li>

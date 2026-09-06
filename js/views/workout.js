@@ -8,7 +8,7 @@ import {
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION } from '../utils.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
@@ -282,7 +282,7 @@ async function paint() {
           <h1 class="text-screen-title">Workout</h1>
           <p class="text-body text-muted">${formatFullDate(state.selectedDate)}</p>
         </div>
-        <button id="open-date-picker-btn" class="icon-btn-glass tap-feedback w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-ink" aria-label="Kalender öffnen">
+        <button id="open-date-picker-btn" class="icon-btn-glass tap-feedback text-ink" aria-label="Kalender öffnen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
             <rect x="4" y="5.5" width="16" height="15" rx="3" />
             <path d="M8 3.5v4M16 3.5v4M4 10.5h16" />
@@ -296,7 +296,7 @@ async function paint() {
 
       ${renderExerciseRoster(entries, nameById, setsByExercise)}
 
-      <button type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] text-accent text-body font-medium">
+      <button type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] ${TEXTLINK_ACTION}">
         Übung hinzufügen
       </button>
     </div>
@@ -443,7 +443,7 @@ async function renderCalendarSheet() {
         <div id="calendar-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
           <span class="w-9 h-1 rounded-full bg-white/25"></span>
         </div>
-        <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end text-body font-medium text-accent px-2 py-2 min-h-[44px]">Heute</button>
+        <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end ${TEXTLINK_ACTION} px-2 py-2 min-h-[44px]">Heute</button>
       </div>
       <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-6">
         ${monthSections}
@@ -518,7 +518,7 @@ async function renderRoutinePicker(workout) {
                 .join('')}
             </ul>`
       }
-      <button id="go-to-routines-option-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-accent text-body font-medium">
+      <button id="go-to-routines-option-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${TEXTLINK_ACTION}">
         Alle Routinen anzeigen
       </button>
     </div>

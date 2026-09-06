@@ -2,6 +2,28 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Alle übrigen Komponenten-Muster zentralisiert)
+
+### Changed (Fälle #3–#8 aus der Design-System-Zentralisierung)
+- Neue Klassen-Konstanten in `js/utils.js`: `BTN_SECONDARY`, `DESTRUCTIVE_LINK`, `CARD`, `LIST_ROW`, `TEXTLINK_ACTION` — ersetzen von Hand kopierte Klassen-Ketten in `exercises.js`, `profile.js`, `routines.js`, `workout.js`, `workout-exercise-detail.js`
+- `.icon-btn-glass` (CSS) enthält jetzt Größe/Form (`44×44px`, `border-radius: 9999px`, zentriertes Flex-Layout) direkt, statt sie an beiden Verwendungsstellen als Tailwind-Utilities zu duplizieren
+- Reine Refaktorierung ohne sichtbare Änderung, an allen betroffenen Bildschirmen per Screenshot verifiziert
+- Details: [design-system.md](design-system.md#navigation) (Sechsunddreißigste Iteration)
+
+## 2026-09-06 (Input als zentrale Klassen-Konstante)
+
+### Changed (Fall #2 aus der Design-System-Zentralisierung)
+- Input-Styling (`rounded-btn px-3 py-3 text-ink min-h-[44px]`) war an 5 Stellen in `exercises.js`, `profile.js`, `routines.js` von Hand kopiert — jetzt als `INPUT`-Konstante in `js/utils.js`. Hintergrundfarbe (`bg-base`/`bg-surface`) bleibt bewusst pro Stelle gesetzt, da kontextabhängig
+- Reine Refaktorierung ohne sichtbare Änderung, per DOM-Vergleich verifiziert
+- Details: [design-system.md](design-system.md#navigation) (Fünfunddreißigste Iteration)
+
+## 2026-09-06 (Primärer Button als zentrale Klassen-Konstante)
+
+### Changed (Fall #1 aus der Design-System-Zentralisierung)
+- Primärer Button (`bg-accent text-base font-semibold rounded-btn`) war an 8 Stellen in `exercises.js`, `profile.js`, `routines.js` von Hand kopiert — jetzt als `BTN_PRIMARY`-Konstante in `js/utils.js`, von allen drei Views importiert und interpoliert
+- Reine Refaktorierung ohne sichtbare Änderung, per DOM-Vergleich verifiziert
+- Details: [design-system.md](design-system.md#navigation) (Vierunddreißigste Iteration)
+
 ## 2026-09-06 (Design-System-Audit: drei doku-interne Widersprüche behoben)
 
 ### Fixed (reine Doku-Korrektur, kein Code geändert)

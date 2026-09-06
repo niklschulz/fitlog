@@ -1,5 +1,5 @@
 import { getProfile, saveProfile, clearProfile } from '../profile.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, BTN_PRIMARY, INPUT, CARD } from '../utils.js';
 
 let currentContainer = null;
 let state = { mode: 'empty' }; // 'view' | 'empty' | 'form'
@@ -28,7 +28,7 @@ function paint() {
 
 function renderView(profile) {
   return `
-    <div class="bg-surface rounded-card p-4 flex flex-col gap-3">
+    <div class="${CARD} flex flex-col gap-3">
       <div class="flex flex-col gap-1">
         <span class="text-label text-muted">Angemeldet als</span>
         <span class="text-card-title">${escapeHtml(profile.username)}</span>
@@ -43,7 +43,7 @@ function renderView(profile) {
       Wird für den späteren Sync zum eigenen Server verwendet. Sync ist aktuell noch nicht aktiv – das Training-Tracking funktioniert unabhängig davon vollständig offline weiter.
     </p>
 
-    <button id="remove-profile-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
+    <button id="remove-profile-btn" class="tap-feedback ${BTN_PRIMARY} py-3 min-h-[44px]">
       Profil entfernen
     </button>
   `;
@@ -52,7 +52,7 @@ function renderView(profile) {
 function renderEmpty() {
   return `
     <p class="text-body text-muted text-center py-8">Noch kein Profil hinterlegt.</p>
-    <button id="add-profile-btn" class="tap-feedback bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
+    <button id="add-profile-btn" class="tap-feedback ${BTN_PRIMARY} py-3 min-h-[44px]">
       Profil hinzufügen
     </button>
   `;
@@ -60,7 +60,7 @@ function renderEmpty() {
 
 function renderForm() {
   return `
-    <form id="profile-form" class="flex flex-col gap-4 bg-surface rounded-card p-4">
+    <form id="profile-form" class="flex flex-col gap-4 ${CARD}">
       <div class="flex flex-col gap-1">
         <label class="text-label text-muted" for="profile-username">Username</label>
         <input
@@ -68,7 +68,7 @@ function renderForm() {
           name="username"
           type="text"
           autocomplete="off"
-          class="bg-base rounded-btn px-3 py-3 text-ink min-h-[44px]"
+          class="bg-base ${INPUT}"
           required
         />
       </div>
@@ -80,7 +80,7 @@ function renderForm() {
           name="token"
           type="text"
           autocomplete="off"
-          class="bg-base rounded-btn px-3 py-3 text-ink min-h-[44px]"
+          class="bg-base ${INPUT}"
           required
         />
       </div>
@@ -90,7 +90,7 @@ function renderForm() {
       </p>
 
       <div class="flex gap-3">
-        <button type="submit" class="tap-feedback flex-1 bg-accent text-base font-semibold rounded-btn py-3 min-h-[44px]">
+        <button type="submit" class="tap-feedback flex-1 ${BTN_PRIMARY} py-3 min-h-[44px]">
           Speichern
         </button>
         <button type="button" id="cancel-profile-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">

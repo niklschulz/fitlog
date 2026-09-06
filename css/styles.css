@@ -67,8 +67,19 @@ input[type="number"]::-webkit-outer-spin-button {
    (s. #bottom-nav oben) - für alleinstehende Icon-Buttons wie den
    Zurück-Pfeil der Übungs-Detailseite oder das Kalender-Icon im
    Workout-Tab-Header. Eigene Klasse statt Wiederverwendung von #bottom-nav,
-   da Radius (voller Kreis statt Pille) und Größe abweichen. */
+   da Radius (voller Kreis statt Pille) und Größe abweichen. Größe/Form sind
+   Teil dieser Klasse (nicht als Tailwind-Utilities an den zwei
+   Verwendungsstellen dupliziert) - text-ink bleibt bewusst eine
+   Tailwind-Klasse am Element selbst, damit die Farbe weiterhin zentral aus
+   dem tailwind.config-Token stammt statt hier als Hex-Wert zu duplizieren. */
 .icon-btn-glass {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   background: rgba(30, 30, 30, 0.55);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);

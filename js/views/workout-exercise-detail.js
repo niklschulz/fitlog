@@ -5,7 +5,7 @@
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, BTN_SECONDARY } from '../utils.js';
 
 // Anzahl standardmäßig angezeigter (leerer) Satz-Zeilen - bewusst als
 // eigene Variable statt hart im Rendering verankert, Grundlage für eine
@@ -87,7 +87,7 @@ async function paint() {
 function renderHeader(exerciseName) {
   return `
     <div class="flex items-center gap-3">
-      <button id="detail-back-btn" type="button" class="icon-btn-glass tap-feedback w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-ink" aria-label="Zurück">
+      <button id="detail-back-btn" type="button" class="icon-btn-glass tap-feedback text-ink" aria-label="Zurück">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
           <path d="M15 5l-7 7 7 7" />
         </svg>
@@ -162,8 +162,8 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
           ${renderStepperRow('reps', 'Reps', formReps)}
         </div>
         <div class="flex gap-3">
-          <button id="detail-save-btn" type="button" class="tap-feedback flex-1 bg-raised text-ink font-semibold rounded-btn py-3 min-h-[44px]">${editing ? 'Update' : 'Speichern'}</button>
-          <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-1 bg-raised text-ink font-semibold rounded-btn py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Delete</button>
+          <button id="detail-save-btn" type="button" class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Update' : 'Speichern'}</button>
+          <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Delete</button>
         </div>
         ${routineLabel ? `<p class="text-label text-muted uppercase tracking-wide">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
       </div>

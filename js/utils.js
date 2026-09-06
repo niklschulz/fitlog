@@ -1,3 +1,33 @@
+// Komponenten-Muster als gemeinsame Klassen-Konstanten (s. design-system.md,
+// "Komponenten-Muster"): Ohne Build-Schritt gibt es kein Tailwind-`@apply`,
+// über das mehrere Utility-Klassen unter einem eigenen CSS-Klassennamen
+// gebündelt werden könnten (ADR 0002) - eine exportierte String-Konstante,
+// die Views in ihre Template-Strings interpolieren, ist der Weg ohne
+// Build-Schritt, der denselben Zweck erfüllt: eine einzige Stelle pro
+// Muster statt an jeder Verwendung von Hand kopierter Klassen-Ketten.
+export const BTN_PRIMARY = 'bg-accent text-base font-semibold rounded-btn';
+
+// Form-Input (s. design-system.md, "Input"): Hintergrund bewusst nicht Teil
+// der Konstante - bg-base ist der Standardfall (Input innerhalb einer
+// bg-surface-Karte), das Umbenennen-Formular im Routine-Editor weicht
+// bewusst auf bg-surface ab (kein Karten-Hintergrund dort, s. "Offene
+// Punkte"), jede Stelle setzt die Hintergrundfarbe deshalb selbst davor.
+export const INPUT = 'rounded-btn px-3 py-3 text-ink min-h-[44px]';
+
+export const BTN_SECONDARY = 'bg-raised text-ink font-semibold rounded-btn';
+
+export const DESTRUCTIVE_LINK = 'text-red-400 text-body';
+
+export const CARD = 'bg-surface rounded-card p-4';
+
+// Kompakte Listenzeile (s. design-system.md, "Listenzeile") - die größere
+// Karten-Variante (rounded-card) hat aktuell nur einen Anwendungsfall
+// (Übungs-Roster im Workout-Tab) und lohnt deshalb noch keine eigene
+// Konstante.
+export const LIST_ROW = 'bg-surface rounded-btn px-4 py-3';
+
+export const TEXTLINK_ACTION = 'text-accent text-body font-medium';
+
 export function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
