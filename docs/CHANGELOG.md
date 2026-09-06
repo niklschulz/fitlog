@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Kartenradius verkleinert: eckigeres Design)
+
+### Changed
+- `rounded-card` von 18px auf 4px verkleinert (`index.html`, `tailwind.config`) — Karten wirken jetzt als Rechtecke mit leicht abgerundeten Ecken statt stark gerundet. Vorab im Browser getestet (temporäres CSS-Override, ohne Datei-Änderung), erst nach Bestätigung übernommen
+- Da `rounded-card` ein zentrales Token ist, wirkt die Änderung automatisch überall (Formulare, Übungs-Roster-Karten) — keine View musste einzeln angepasst werden
+- `rounded-btn`/`rounded-full` unverändert
+- Details: [design-system.md](design-system.md#navigation) (Siebenunddreißigste Iteration)
+
 ## 2026-09-06 (Alle übrigen Komponenten-Muster zentralisiert)
 
 ### Changed (Fälle #3–#8 aus der Design-System-Zentralisierung)
