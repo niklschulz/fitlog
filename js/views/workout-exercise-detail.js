@@ -5,7 +5,7 @@
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, BTN_SECONDARY } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, BTN_SECONDARY, CARD } from '../utils.js';
 
 // Anzahl standardmäßig angezeigter (leerer) Satz-Zeilen - bewusst als
 // eigene Variable statt hart im Rendering verankert, Grundlage für eine
@@ -114,7 +114,7 @@ function renderSegmentedControl(workoutDate) {
       ${tabs
         .map(
           (t) => `
-        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-full py-2 min-h-[36px] text-label font-medium ${state.activeTab === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
+        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-full py-2 min-h-[36px] text-label ${state.activeTab === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
       `
         )
         .join('')}
@@ -128,7 +128,7 @@ function renderStepperRow(field, label, value) {
 
   return `
     <div class="flex flex-col items-center gap-2">
-      <span class="text-label uppercase text-muted tracking-wide">${label}</span>
+      <span class="text-label uppercase text-muted">${label}</span>
       <div class="flex items-center gap-2">
         <button data-stepper="${field}" data-delta="-1" type="button" class="stepper-btn tap-feedback w-9 h-9 rounded-full bg-base text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">−</button>
         <input id="detail-${field}-input" type="number" inputmode="${inputMode}" step="${step}" min="0" value="${value}" class="w-16 text-center bg-base rounded-btn py-2 text-ink" />
@@ -165,7 +165,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
           <button id="detail-save-btn" type="button" class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Ändern' : 'Speichern'}</button>
           <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Löschen</button>
         </div>
-        ${routineLabel ? `<p class="text-label text-muted uppercase tracking-wide">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
+        ${routineLabel ? `<p class="text-label text-muted uppercase">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
       </div>
 
       <ul class="flex flex-col">
@@ -192,7 +192,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
 
 function formatHistoryDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' });
+  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function renderHistoryTab(history) {
@@ -205,7 +205,7 @@ function renderHistoryTab(history) {
       ${history
         .map(
           (day) => `
-        <div>
+        <div class="${CARD}">
           <h3 class="text-card-title mb-2">${escapeHtml(formatHistoryDate(day.date))}</h3>
           <ul class="flex flex-col">
             ${day.sets

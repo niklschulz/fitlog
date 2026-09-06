@@ -2,6 +2,34 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Verlauf-Datum in die Karte verschoben, Karten-Abstand unten korrigiert)
+
+### Fixed
+- Verlauf-Reiter: Datum stand als Überschrift über der Karte statt wie der Übungsname im Workout-Tab innerhalb der Karte — behoben, `CARD` sitzt jetzt auf dem gemeinsamen Wrapper aus Datum und Satz-Liste
+- Sowohl Workout-Roster-Karte als auch Verlauf-Tages-Karte hatten unten deutlich mehr Leerraum als oben: `renderSetTimelineRow()` reservierte per `pb-4` immer Platz für die Verbindungslinie zum nächsten Kreis, auch bei der letzten Zeile, für die es keine gibt. Bei der letzten Zeile entfällt `pb-4` jetzt; das Hervorhebungs-Band nutzt dort `-bottom-2` statt `bottom-2`, um trotzdem exakt auf den Kreis zentriert zu bleiben
+- Per `getBoundingClientRect()` verifiziert: Abstand oben/unten jetzt symmetrisch (12px/12px Workout-Roster, 16px/16px Verlauf-Karte), Kreis/Band-Zentrierung bei einer ausgewählten letzten Zeile weiterhin exakt (0px Abweichung)
+- Details: [design-system.md](design-system.md#navigation) (Fünfzigste Iteration)
+
+## 2026-09-06 (Verlauf-Reiter: Jahreszahl und Tages-Karten)
+
+### Added
+- Jahreszahl im Verlauf-Datum ergänzt ("Freitag, 04. September 2026" statt "Freitag, 04. September")
+- Sätze pro Tag im Verlauf-Reiter mit einer grauen Karte (`bg-surface rounded-card`) hinterlegt, damit die Zugehörigkeit zu einem Workout-Tag optisch erkennbar ist — der Tages-Reiter bleibt bewusst kastenlos
+- Details: [design-system.md](design-system.md#navigation) (Neunundvierzigste Iteration)
+
+## 2026-09-06 (tracking-wide-Konflikt an drei text-label-Stellen behoben)
+
+### Fixed
+- `text-label` bringt eine feste Laufweite von 0.6px mit — an drei Stellen (Stepper-Beschriftung "GEWICHT (KG)"/"REPS", "ROUTINE: `<Name>`" in `workout-exercise-detail.js`, Übungsanzahl im Routine-Picker in `workout.js`) stand zusätzlich `tracking-wide` daneben und gewann durch denselben Kaskaden-Zufall wie beim Segmented-Tab-Schriftgewicht — Laufweite dadurch unbeabsichtigt auf 0.2875px verkleinert. `tracking-wide` entfernt
+- Vermuteten Größenunterschied zwischen Segmented-Tab und Bottom-Nav/Eingabefeld-Beschriftung per Pixel-Messung geprüft: kein Code-Fehler, alle drei identisch groß (13.5px Zeilenhöhe)
+- Details: [design-system.md](design-system.md#navigation) (Achtundvierzigste Iteration)
+
+## 2026-09-06 (Segmented-Control-Schriftgewicht korrigiert)
+
+### Fixed
+- Segmented-Control-Tabs (Übungs-Detailseite) hatten Schriftgewicht 500 statt 600 wie die Bottom-Nav — verursacht durch eine überflüssige `font-medium`-Klasse neben `text-label` (das bereits 600 mitbringt), die per Kaskaden-Zufall gewann. Entfernt, Größe/Zeilenhöhe/Laufweite waren bereits identisch
+- Details: [design-system.md](design-system.md#navigation) (Siebenundvierzigste Iteration)
+
 ## 2026-09-06 (Routinen-Optionen im Picker: Hintergrund und Übungsanzahl)
 
 ### Changed

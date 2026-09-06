@@ -92,14 +92,29 @@ export function escapeHtml(str) {
 // (die als normale, nicht positionierte Flex-Kinder sonst dahinter
 // verschwinden würden).
 export function renderSetTimelineRow(number, contentHtml, { isLast = false, circleClasses = 'bg-base text-muted', liClasses = '', liAttrs = '', highlighted = false } = {}) {
+  // `pb-4` reserviert Platz für die Verbindungslinie zum nächsten Kreis -
+  // bei der letzten Zeile gibt es keine, das Reservieren erzeugte dort
+  // unnötigen Leerraum (sichtbar z. B. als zu großer Abstand zwischen
+  // letzter Zeile und Karten-Unterkante, wenn die Liste in einer Karte
+  // steckt, s. design-system.md Fünfzigste Iteration). Nur bei
+  // Nicht-letzten Zeilen gesetzt.
+  //
+  // Das Hervorhebungs-Band muss diesen Wegfall mitziehen, um weiterhin
+  // exakt auf den 24px-Kreis zentriert zu bleiben (s. Zweiundzwanzigste/
+  // Dreiundzwanzigste Iteration für die ursprüngliche Herleitung von
+  // `-top-2 bottom-2`): Ohne `pb-4` ist die Zeile nur noch 24px hoch statt
+  // 40px - `bottom-2` (8px *innerhalb* der Zeile) würde das Band dann nach
+  // oben verschieben. Bei der letzten Zeile deshalb stattdessen `-bottom-2`
+  // (8px *außerhalb*), symmetrisch zu `-top-2` auf der anderen Seite.
+  const bandBottomClass = isLast ? '-bottom-2' : 'bottom-2';
   return `
     <li ${liAttrs} class="relative flex gap-3 ${liClasses}">
-      ${highlighted ? '<div class="absolute -inset-x-4 -top-2 bottom-2 bg-raised -z-10"></div>' : ''}
+      ${highlighted ? `<div class="absolute -inset-x-4 -top-2 ${bandBottomClass} bg-raised -z-10"></div>` : ''}
       <div class="flex flex-col items-center flex-shrink-0">
         <span class="w-6 h-6 rounded-full flex items-center justify-center text-label flex-shrink-0 ${circleClasses}">${number}</span>
         ${!isLast ? '<div class="w-0.5 flex-1 bg-white/10 mt-1"></div>' : ''}
       </div>
-      <div class="flex-1 pb-4">
+      <div class="flex-1 ${isLast ? '' : 'pb-4'}">
         <div class="h-6 flex items-center gap-6 text-body">${contentHtml}</div>
       </div>
     </li>
