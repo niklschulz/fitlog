@@ -9,7 +9,7 @@ Lebende Referenz für alle visuellen Tokens und Komponenten-Muster in Fitlog. En
 | Tailwind-Klasse | Wert | Verwendung |
 |---|---|---|
 | `bg-base` | `#121212` | App-Hintergrund |
-| `bg-surface` | `#1E1E1E` | Karten, Formulare, Listenzeilen |
+| `bg-surface` | `#252525` (vorher `#1E1E1E`, s. Zweiundvierzigste Iteration) | Karten, Formulare, Listenzeilen |
 | `bg-raised` | `#2A2A2A` | Aktiver Tab bei der Segmented Control (Übungs-Detailseite), sekundäre Buttons — die Bottom-Nav nutzt für ihren aktiven Tab eine transparente Variante statt reinem `bg-raised`, s. "Glass-Effekt" unter Navigation |
 | `bg-accent` / `text-accent` | `#A3E635` | Primäre Buttons, aktive/ausgewählte Zustände, Textlink (Aktion) (z. B. "Heute" im großen Kalender) |
 | `text-ink` | `#F5F5F5` | Haupttext |
@@ -56,7 +56,7 @@ Freischwebende Bottom-Nav (`#bottom-nav` in `index.html`): `fixed left-4 right-4
 
 | Eigenschaft | Wert |
 |---|---|
-| `background` | `rgba(30, 30, 30, 0.55)` (halbtransparente `bg-surface`) |
+| `background` | `rgba(37, 37, 37, 0.55)` (halbtransparente `bg-surface`) |
 | `backdrop-filter` / `-webkit-backdrop-filter` | `blur(20px) saturate(160%)` |
 | `border` | `1px solid rgba(255, 255, 255, 0.12)` |
 | `box-shadow` | `inset 0 1px 0 rgba(255,255,255,0.15)` (Glaskante oben) + `0 8px 24px rgba(0,0,0,0.35)` (Schwebe-Schatten) |
@@ -254,6 +254,8 @@ Quellen: [Apple Liquid Glass – UX Evolution](https://supercharge.design/blog/a
 **Vierzigste Iteration – Doppel-Grün-Zeitraum beim Nav-Wechsel halbiert (2026-09-06):** Nutzer-Feedback nach dem Ausprobieren der Neununddreißigsten Iteration: Das gleichzeitige volle Grün beider Tabs wirkte störend, und die Vermutung war, dass echtes Liquid Glass das gar nicht so macht. Zweite, diesmal frame-genaue Einzelbild-Auswertung (11 native Frames statt eines groben Kontaktbogens) derselben Bildschirmaufnahme bestätigte das: Es gibt keinen Moment, in dem beide Tabs vollständig grün sind — real ist es ein kurzer (~2 Frames, ~33ms), anteiliger Wisch, der exakt der sich verformenden Glasfläche folgt (der alte Tab verliert seine Farbe dort, wo das Glas ihn bereits verlassen hat, der neue gewinnt sie dort, wo das Glas ihn schon erreicht hat). Die erste Umsetzung hielt beide Tabs dagegen die volle Animationsdauer (170ms) über komplett grün — spürbar länger und ohne den anteiligen Wisch-Charakter. Eine exakt nachgebaute Maskierung wäre für einen nur 33ms sichtbaren Effekt unverhältnismäßig aufwendig gewesen; stattdessen wurde der Umschaltpunkt von "Animationsende" auf "Hälfte der Laufzeit" vorgezogen — halbiert den wahrgenommenen Doppel-Grün-Zeitraum auf ca. 85ms, ohne die volle Komplexität einer Live-Clip-Maske.
 
 **Einundvierzigste Iteration – Zurück-Übergang auf reinen Fade reduziert (2026-09-06):** Nutzer hat eine zweite Bildschirmaufnahme bereitgestellt, diesmal gezielt zum Verhalten des Zurück-Pfeils oben links (Übungs-Detailseite → Workout-Liste). Frame-genaue Auswertung (12 native Frames rund um den Tap, ~180ms) zeigte: Der reale Übergang ist ein **reiner Fade ohne jede Bewegung** — Zurück-Pfeil, Titel und Segmented Control verblassen an ihrer Position, der neue Kopfbereich blendet an seiner finalen Position ein, nichts verschiebt sich. Zusätzlich beobachtet (nicht umgesetzt, zu kleinteilig für den Aufwand): Die Icon-*Glyphen* verblassen sichtbar schneller als ihre runden Glas-Hintergründe — für ein paar Frames bleiben nur noch leere, verblassende Glas-Kreise ohne Symbol übrig. Unser `view-back-out` hatte zusätzlich zum Fade ein `translateY(0→16px)`-Slide nach unten, das durch keine der beiden Aufnahmen gedeckt ist — entfernt. `view-back-in` war bereits ein reiner Fade und blieb unverändert.
+
+**Zweiundvierzigste Iteration – `bg-surface` von `#1E1E1E` auf `#252525` aufgehellt (2026-09-06):** Nutzer-Wunsch, ein Token-Wert in `index.html`s `tailwind.config` geändert — wirkt automatisch überall (Karten, Formulare, Listenzeilen). Die beiden Stellen, an denen der alte Wert zusätzlich als eigenständige `rgba()`-Farbe in `css/styles.css` dupliziert war (`#bottom-nav` und `.icon-btn-glass`, jeweils als "halbtransparente Variante von bg-surface" kommentiert, da CSS außerhalb des Tailwind-Tokens keinen Zugriff auf den Konfigurationswert hat), von Hand auf `rgba(37, 37, 37, 0.55)` nachgezogen — sonst wäre der Glass-Effekt der Navigation sichtbar heller/dunkler als die restlichen Oberflächen gewesen.
 
 **Sechzehnte Iteration – "Reps" statt "Wdh.", Satz-Daten in der Roster-Zeile (2026-09-04):**
 - Stepper-Label auf der Übungs-Detailseite von "Wdh." auf "Reps" geändert (Nutzer-Vorgabe)

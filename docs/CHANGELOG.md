@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (bg-surface aufgehellt)
+
+### Changed
+- `bg-surface` von `#1E1E1E` auf `#252525` geändert (`index.html`, `tailwind.config`) — wirkt automatisch überall (Karten, Formulare, Listenzeilen)
+- Die beiden `rgba(30,30,30,0.55)`-Stellen in `css/styles.css` (`#bottom-nav`, `.icon-btn-glass`), die als "halbtransparente Variante von bg-surface" außerhalb des Tokens dupliziert waren, auf `rgba(37,37,37,0.55)` nachgezogen, damit der Glass-Effekt weiterhin zur neuen Oberflächenfarbe passt
+- Details: [design-system.md](design-system.md#navigation) (Zweiundvierzigste Iteration)
+
 ## 2026-09-06 (Zurück-Übergang auf reinen Fade reduziert)
 
 ### Changed
