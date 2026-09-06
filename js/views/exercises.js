@@ -1,5 +1,5 @@
 import { db, createExercise, updateExercise, deleteExercise } from '../db.js';
-import { escapeHtml, BTN_PRIMARY, INPUT, CARD, LIST_ROW, DESTRUCTIVE_LINK } from '../utils.js';
+import { escapeHtml, BTN_PRIMARY, INPUT, CARD, LIST_ROW, DESTRUCTIVE_LINK, withViewTransition } from '../utils.js';
 
 let currentContainer = null;
 let editingId = null; // null = Liste, 'new' = Übung anlegen, <id> = Übung bearbeiten
@@ -94,21 +94,27 @@ function renderList(list) {
 function wireEvents() {
   const addBtn = currentContainer.querySelector('#add-exercise-btn');
   addBtn?.addEventListener('click', () => {
-    editingId = 'new';
-    paint();
+    withViewTransition(() => {
+      editingId = 'new';
+      paint();
+    }, 'forward');
   });
 
   currentContainer.querySelectorAll('.exercise-item').forEach((btn) => {
     btn.addEventListener('click', () => {
-      editingId = btn.dataset.id;
-      paint();
+      withViewTransition(() => {
+        editingId = btn.dataset.id;
+        paint();
+      }, 'forward');
     });
   });
 
   const cancelBtn = currentContainer.querySelector('#cancel-exercise-btn');
   cancelBtn?.addEventListener('click', () => {
-    editingId = null;
-    paint();
+    withViewTransition(() => {
+      editingId = null;
+      paint();
+    }, 'back');
   });
 
   const form = currentContainer.querySelector('#exercise-form');
@@ -122,8 +128,10 @@ function wireEvents() {
     } else {
       await updateExercise(editingId, name);
     }
-    editingId = null;
-    paint();
+    withViewTransition(() => {
+      editingId = null;
+      paint();
+    }, 'back');
   });
 
   const deleteBtn = currentContainer.querySelector('#delete-exercise-btn');
@@ -132,7 +140,9 @@ function wireEvents() {
       return;
     }
     await deleteExercise(editingId);
-    editingId = null;
-    paint();
+    withViewTransition(() => {
+      editingId = null;
+      paint();
+    }, 'back');
   });
 }

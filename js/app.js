@@ -8,8 +8,61 @@ const views = { workout, exercises, routines, profile };
 
 const viewContainer = document.getElementById('view-container');
 const navButtons = document.querySelectorAll('.nav-btn');
+const bottomNav = document.getElementById('bottom-nav');
+const navIndicator = document.getElementById('nav-indicator');
 
 let currentViewName = null;
+
+// Gleitender Glas-Indikator hinter dem aktiven Tab (s. css/styles.css,
+// #nav-indicator, und design-system.md "Liquid Glass"-Iteration). Position
+// wird immer per getBoundingClientRect() der Ziel-Schaltfläche gemessen
+// statt aus Index * Breite berechnet - robust gegenüber dem tatsächlichen
+// Gap/Padding der Nav, statt eine gleichmäßige Aufteilung anzunehmen.
+function indicatorTargetFor(btn) {
+  const navRect = bottomNav.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  return { left: btnRect.left - navRect.left, width: btnRect.width };
+}
+
+function moveNavIndicator(btn, { animate }) {
+  const target = indicatorTargetFor(btn);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!animate || reduceMotion) {
+    navIndicator.style.left = `${target.left}px`;
+    navIndicator.style.width = `${target.width}px`;
+    return;
+  }
+
+  const current = {
+    left: parseFloat(navIndicator.style.left) || target.left,
+    width: parseFloat(navIndicator.style.width) || target.width,
+  };
+  // Ziel-Position sofort als "echten" Stil setzen - die folgende
+  // Web-Animations-API-Animation läuft standardmäßig mit `fill: 'none'`,
+  // das Element fällt nach Animationsende also automatisch auf genau
+  // diesen bereits gesetzten Zielwert zurück, ohne ihn separat fixieren
+  // zu müssen.
+  navIndicator.style.left = `${target.left}px`;
+  navIndicator.style.width = `${target.width}px`;
+
+  // "Morphen" statt reinem Verschieben (s. Recherche zu Apples Liquid
+  // Glass: Material expandiert/schrumpft beim Übergang, statt sich nur zu
+  // bewegen): Der Indikator zieht sich kurz breiter, bis er beide
+  // Positionen überspannt, und schnappt dann auf die Zielbreite zurück -
+  // ein einfacher, reiner CSS/WAAPI-Effekt ohne Animationsbibliothek.
+  const stretchLeft = Math.min(current.left, target.left);
+  const stretchWidth = Math.abs(target.left - current.left) + Math.max(current.width, target.width);
+
+  navIndicator.animate(
+    [
+      { left: `${current.left}px`, width: `${current.width}px` },
+      { left: `${stretchLeft}px`, width: `${stretchWidth}px`, offset: 0.55 },
+      { left: `${target.left}px`, width: `${target.width}px` },
+    ],
+    { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+  );
+}
 
 function showView(name) {
   // Optionaler Aufräum-Hook: Views ohne eigenen globalen Zustand (Locks,
@@ -19,17 +72,30 @@ function showView(name) {
   if (currentViewName && currentViewName !== name) {
     views[currentViewName].unmount?.();
   }
+  const isInitialRender = currentViewName === null;
   currentViewName = name;
 
   views[name].render(viewContainer);
+  let activeBtn = null;
   navButtons.forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.view === name);
+    const isActive = btn.dataset.view === name;
+    btn.classList.toggle('active', isActive);
+    if (isActive) activeBtn = btn;
   });
+  if (activeBtn) moveNavIndicator(activeBtn, { animate: !isInitialRender });
   viewContainer.scrollTop = 0;
 }
 
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+
+// Fenstergröße kann sich ändern (z. B. Bildschirmdrehung) - Indikator ohne
+// Animation neu ausrichten, kein "Nachziehen" bei einer reinen
+// Layout-Anpassung.
+window.addEventListener('resize', () => {
+  const activeBtn = document.querySelector('.nav-btn.active');
+  if (activeBtn) moveNavIndicator(activeBtn, { animate: false });
 });
 
 db.open()

@@ -8,7 +8,7 @@ import {
   removeExerciseFromRoutine,
   reorderRoutineExercise,
 } from '../db.js';
-import { escapeHtml, BTN_PRIMARY, INPUT, CARD, LIST_ROW, DESTRUCTIVE_LINK, TEXTLINK_ACTION } from '../utils.js';
+import { escapeHtml, BTN_PRIMARY, INPUT, CARD, LIST_ROW, DESTRUCTIVE_LINK, TEXTLINK_ACTION, withViewTransition } from '../utils.js';
 
 let currentContainer = null;
 // mode: 'list' | 'name-form' | 'editor' | 'picker'
@@ -219,20 +219,26 @@ async function renderPicker() {
 
 function wireEvents() {
   currentContainer.querySelector('#add-routine-btn')?.addEventListener('click', () => {
-    state = { mode: 'name-form', routineId: null };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'name-form', routineId: null };
+      paint();
+    }, 'forward');
   });
 
   currentContainer.querySelectorAll('.routine-item').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state = { mode: 'editor', routineId: btn.dataset.id };
-      paint();
+      withViewTransition(() => {
+        state = { mode: 'editor', routineId: btn.dataset.id };
+        paint();
+      }, 'forward');
     });
   });
 
   currentContainer.querySelector('#cancel-routine-btn')?.addEventListener('click', () => {
-    state = { mode: 'list', routineId: null };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'list', routineId: null };
+      paint();
+    }, 'back');
   });
 
   currentContainer.querySelector('#routine-name-form')?.addEventListener('submit', async (e) => {
@@ -240,18 +246,24 @@ function wireEvents() {
     const name = e.target.elements.name.value.trim();
     if (!name) return;
     const routine = await createRoutine(name);
-    state = { mode: 'editor', routineId: routine.id };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'editor', routineId: routine.id };
+      paint();
+    }, 'forward');
   });
 
   currentContainer.querySelector('#back-to-list-btn')?.addEventListener('click', () => {
-    state = { mode: 'list', routineId: null };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'list', routineId: null };
+      paint();
+    }, 'back');
   });
 
   currentContainer.querySelector('#back-to-editor-btn')?.addEventListener('click', () => {
-    state = { mode: 'editor', routineId: state.routineId };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'editor', routineId: state.routineId };
+      paint();
+    }, 'back');
   });
 
   currentContainer.querySelector('#rename-routine-form')?.addEventListener('submit', async (e) => {
@@ -263,15 +275,19 @@ function wireEvents() {
   });
 
   currentContainer.querySelector('#add-exercise-to-routine-btn')?.addEventListener('click', () => {
-    state = { mode: 'picker', routineId: state.routineId };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'picker', routineId: state.routineId };
+      paint();
+    }, 'forward');
   });
 
   currentContainer.querySelectorAll('.pick-exercise-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
       await appendExerciseToRoutine(state.routineId, btn.dataset.id);
-      state = { mode: 'editor', routineId: state.routineId };
-      paint();
+      withViewTransition(() => {
+        state = { mode: 'editor', routineId: state.routineId };
+        paint();
+      }, 'back');
     });
   });
 
@@ -294,7 +310,9 @@ function wireEvents() {
       return;
     }
     await deleteRoutine(state.routineId);
-    state = { mode: 'list', routineId: null };
-    paint();
+    withViewTransition(() => {
+      state = { mode: 'list', routineId: null };
+      paint();
+    }, 'back');
   });
 }

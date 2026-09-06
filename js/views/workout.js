@@ -8,7 +8,7 @@ import {
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, withViewTransition } from '../utils.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
@@ -241,8 +241,10 @@ async function paint() {
     await exerciseDetail.render(currentContainer, {
       entryId: state.detailEntryId,
       onBack: () => {
-        state.detailEntryId = null;
-        paint();
+        withViewTransition(() => {
+          state.detailEntryId = null;
+          paint();
+        }, 'back');
       },
     });
     return;
@@ -769,8 +771,10 @@ function wireEvents() {
   // expandieren.
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.detailEntryId = btn.dataset.entry;
-      paint();
+      withViewTransition(() => {
+        state.detailEntryId = btn.dataset.entry;
+        paint();
+      }, 'forward');
     });
   });
 }

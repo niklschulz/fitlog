@@ -2,6 +2,18 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Liquid-Glass-Animationen: Nav-Indikator, View-Transitions, Press-Feedback)
+
+### Added
+- Gleitender, morphender Indikator hinter dem aktiven Bottom-Nav-Tab (`#nav-indicator`) statt statischer Hintergrundfarbe auf dem Button selbst — Position/Breite per `getBoundingClientRect()` gemessen, Übergang als dreistufige `Element.animate()`-Sequenz (kurz strecken, dann auf Zielbreite zurückschnappen)
+- View Transitions (`document.startViewTransition()`, Safari 18.2+) beim Öffnen/Schließen einer Navigationsebene: Übungs-Detailseite, Formulare in `exercises.js`/`routines.js`/`profile.js` — Skalierung+Fade beim Reingehen, Slide-nach-unten+Fade beim Zurückgehen
+- Glas-Press-Feedback: `.icon-btn-glass` und der Nav-Indikator reduzieren beim Antippen kurz ihre Blur-Intensität
+- `@media (prefers-reduced-motion: reduce)` deaktiviert alle neuen Animationen, zusätzlich in JS geprüft, bevor eine Animation überhaupt startet
+
+### Changed
+- Vor der Umsetzung geprüft, ob ein extern vorgeschlagener Ansatz (reiner `translateX`-Indikator) tatsächlich am besten geeignet ist — Mechanismus bestätigt, Choreografie auf ein "Morphen" statt reiner Bewegung verfeinert (s. Web-Recherche zu Apples Liquid-Glass-HIG)
+- Details: [design-system.md](design-system.md#bewegung-liquid-glass-animationen) (Achtunddreißigste Iteration)
+
 ## 2026-09-06 (Kartenradius verkleinert: eckigeres Design)
 
 ### Changed

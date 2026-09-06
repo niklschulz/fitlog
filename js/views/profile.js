@@ -1,5 +1,5 @@
 import { getProfile, saveProfile, clearProfile } from '../profile.js';
-import { escapeHtml, BTN_PRIMARY, INPUT, CARD } from '../utils.js';
+import { escapeHtml, BTN_PRIMARY, INPUT, CARD, withViewTransition } from '../utils.js';
 
 let currentContainer = null;
 let state = { mode: 'empty' }; // 'view' | 'empty' | 'form'
@@ -103,13 +103,17 @@ function renderForm() {
 
 function wireEvents() {
   currentContainer.querySelector('#add-profile-btn')?.addEventListener('click', () => {
-    state.mode = 'form';
-    paint();
+    withViewTransition(() => {
+      state.mode = 'form';
+      paint();
+    }, 'forward');
   });
 
   currentContainer.querySelector('#cancel-profile-btn')?.addEventListener('click', () => {
-    state.mode = 'empty';
-    paint();
+    withViewTransition(() => {
+      state.mode = 'empty';
+      paint();
+    }, 'back');
   });
 
   currentContainer.querySelector('#profile-form')?.addEventListener('submit', (e) => {
@@ -118,14 +122,18 @@ function wireEvents() {
     const token = e.target.elements.token.value.trim();
     if (!username || !token) return;
     saveProfile({ username, token });
-    state.mode = 'view';
-    paint();
+    withViewTransition(() => {
+      state.mode = 'view';
+      paint();
+    }, 'forward');
   });
 
   currentContainer.querySelector('#remove-profile-btn')?.addEventListener('click', () => {
     if (!confirm('Profil wirklich entfernen? Der Token muss danach erneut eingegeben werden.')) return;
     clearProfile();
-    state.mode = 'empty';
-    paint();
+    withViewTransition(() => {
+      state.mode = 'empty';
+      paint();
+    }, 'back');
   });
 }

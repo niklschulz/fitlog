@@ -28,6 +28,35 @@ export const LIST_ROW = 'bg-surface rounded-btn px-4 py-3';
 
 export const TEXTLINK_ACTION = 'text-accent text-body font-medium';
 
+// Liquid-Glass-Navigationsgefühl (Übungs-Detailseite, Formulare in
+// exercises.js/routines.js/profile.js): Ein "Reingehen" (neue, tiefere
+// Ebene öffnen, z. B. Übung antippen) bekommt Skalierung+Fade, ein
+// "Zurückgehen" ein Slide-nach-unten+Fade - Richtung wird kurz vor dem
+// Übergang als Attribut auf <html> gesetzt, die eigentlichen Keyframes
+// stehen in css/styles.css (::view-transition-old/-new(root)). Fällt ohne
+// Attribut-Zuordnung nichts auf, deshalb hier explizit setzen statt sich
+// auf einen Default zu verlassen.
+//
+// Kein Build-Schritt/Framework nötig (ADR 0001/0002) - die View Transitions
+// API ist eine native Browser-API (Safari ab 18.2, Fitlog setzt iOS 18 als
+// Mindestversion voraus), kein zusätzliches Bundle. Ohne Unterstützung oder
+// bei aktiviertem "Bewegung reduzieren" läuft renderFn() einfach direkt,
+// ohne jeden Übergang - kein Bruch, nur kein Effekt (s. auch die
+// @media(prefers-reduced-motion)-Regel in styles.css für den Fall, dass die
+// Browser-Unterstützung zwar da ist, aber keine Animation gewünscht ist).
+export function withViewTransition(renderFn, direction = 'forward') {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion || !document.startViewTransition) {
+    renderFn();
+    return;
+  }
+  document.documentElement.setAttribute('data-transition-direction', direction);
+  const transition = document.startViewTransition(renderFn);
+  transition.finished.finally(() => {
+    document.documentElement.removeAttribute('data-transition-direction');
+  });
+}
+
 export function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;

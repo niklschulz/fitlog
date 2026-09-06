@@ -60,7 +60,45 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .nav-btn {
-  transition: color 120ms ease, background-color 120ms ease;
+  position: relative; /* muss über #nav-indicator liegen (s. dort) */
+  z-index: 1;
+  transition: color 120ms ease;
+}
+
+/* Gleitender Glas-Indikator hinter dem aktiven Tab, ersetzt die vorherige
+   pro-Button-Hintergrundfarbe (s. .nav-btn.active unten) - Liquid-Glass-Ziel:
+   nicht nur Bewegung, sondern spürbares "Morphen" beim Wechsel. Position/
+   Breite werden per Web Animations API in app.js gesetzt (kein Layout-Jank
+   durch reine CSS-transition auf `left`/`width`, da wir während der
+   Bewegung bewusst kurz breiter ziehen und wieder einschnappen lassen -
+   dafür braucht es Keyframes, keine lineare Eigenschafts-Interpolation).
+   `will-change` hilft Safari, die Compositor-Ebene vorzubereiten. */
+#nav-indicator {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  border-radius: 9999px;
+  background-color: rgba(42, 42, 42, 0.6); /* identisch zur vorherigen .nav-btn.active-Farbe */
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  will-change: left, width, backdrop-filter;
+  z-index: 0;
+}
+
+/* Press-Feedback für Glas-Elemente: zusätzlich zum generischen
+   .tap-feedback-Scale (s. unten) reduziert sich beim Antippen kurz die
+   Blur-Intensität - simuliert "ins Glas drücken" statt einer reinen
+   Skalierung. :has() ist seit Safari 15.4 unterstützt, für dieses
+   iOS-18-Baseline-Projekt unproblematisch. */
+.icon-btn-glass:active {
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+#bottom-nav:has(.nav-btn:active) #nav-indicator {
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
 }
 
 /* Kreisförmiger Icon-Button im selben Liquid-Glass-Stil wie die Bottom-Nav
@@ -90,8 +128,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .nav-btn.active {
-  background-color: rgba(42, 42, 42, 0.6); /* transparente Variante von bg-surface-raised */
-  color: #A3E635; /* accent */
+  color: #A3E635; /* accent - Hintergrund kommt jetzt von #nav-indicator, s. dort */
 }
 
 /* Kurzes Tap-Feedback, da kein haptisches Feedback über Web-APIs verfügbar ist */
@@ -244,4 +281,74 @@ input[type="number"]::-webkit-outer-spin-button {
 @keyframes calendar-sheet-backdrop-fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+/* View Transitions (Rein-/Rausnavigieren, z. B. Übungs-Detailseite, Formulare
+   in exercises.js/routines.js/profile.js) - `withViewTransition()` in
+   js/utils.js setzt vor jedem Aufruf kurz `data-transition-direction` auf
+   <html>, damit hier zwischen "tiefer rein" (scale+fade) und "zurück raus"
+   (slide-down+fade) unterschieden werden kann; ohne dieses Attribut (z. B.
+   Browser ohne API-Unterstützung) passiert einfach gar nichts, da
+   startViewTransition dann übersprungen wird. Dauer/Kurve bewusst identisch
+   zur Kalender-Sheet-Animation (220ms) für ein einheitliches Tempo-Gefühl
+   in der ganzen App. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-transition-direction='forward']::view-transition-new(root) {
+  animation-name: view-forward-in;
+}
+html[data-transition-direction='forward']::view-transition-old(root) {
+  animation-name: view-forward-out;
+}
+html[data-transition-direction='back']::view-transition-new(root) {
+  animation-name: view-back-in;
+}
+html[data-transition-direction='back']::view-transition-old(root) {
+  animation-name: view-back-out;
+}
+
+@keyframes view-forward-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes view-forward-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes view-back-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes view-back-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(16px); }
+}
+
+/* Reduced Motion: Apple reduziert bei aktivierter "Bewegung reduzieren"-
+   Einstellung selbst die Intensität von Liquid Glass und deaktiviert
+   elastische Eigenschaften - hier nachgebildet für Indikator, Glas-Press-
+   Feedback und View-Transitions. Der WAAPI-Aufruf für #nav-indicator prüft
+   dieselbe Media Query zusätzlich in JS (s. updateNavIndicator() in
+   app.js), damit dort gar nicht erst eine Animation gestartet wird, statt
+   nur eine bereits laufende per CSS zu unterbinden. */
+@media (prefers-reduced-motion: reduce) {
+  .tap-feedback,
+  .icon-btn-glass,
+  #nav-indicator,
+  #bottom-nav:has(.nav-btn:active) #nav-indicator {
+    transition: none !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
