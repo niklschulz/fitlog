@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Routinen-Optionen im Picker: Hintergrund und Übungsanzahl)
+
+### Changed
+- Hintergrund der Routinen-Zeilen im Auswahl-Popup (Workout-Tab) von `bg-base` auf `bg-surface` geändert — vorab live im Browser getestet, `#252525` gewählt (kaum Kontrast zum Popup-Hintergrund, bewusst)
+
+### Added
+- Übungsanzahl ("1 Übung"/"N Übungen") als zweite Zeile unter dem Routinen-Namen in jeder Options-Zeile, Schriftstil identisch zur "ROUTINE: `<Name>`"-Beschriftung auf der Übungs-Detailseite
+- Details: [design-system.md](design-system.md#navigation) (Sechsundvierzigste Iteration)
+
 ## 2026-09-06 ("Delete"-Button in "Löschen" umbenannt)
 
 ### Changed

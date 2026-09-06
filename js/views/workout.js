@@ -497,6 +497,9 @@ async function renderRoutineSection(workout, routine) {
 // closeRoutinePicker() in wireEvents.
 async function renderRoutinePicker(workout) {
   const routines = await db.routines.orderBy('name').toArray();
+  const exerciseCounts = await Promise.all(
+    routines.map((r) => db.routineExercises.where('routineId').equals(r.id).count())
+  );
   const closing = state.routinePickerClosing;
 
   return `
@@ -508,10 +511,13 @@ async function renderRoutinePicker(workout) {
           : `<ul class="flex flex-col gap-1 max-h-64 overflow-y-auto">
               ${routines
                 .map(
-                  (r) => `
+                  (r, i) => `
                 <li>
-                  <button data-routine="${r.id}" class="pick-routine-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-base text-ink text-body flex items-center justify-between">
-                    <span>${escapeHtml(r.name)}</span>
+                  <button data-routine="${r.id}" class="pick-routine-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-surface text-ink text-body flex items-center justify-between">
+                    <span class="flex flex-col gap-0.5">
+                      <span>${escapeHtml(r.name)}</span>
+                      <span class="text-label text-muted uppercase tracking-wide">${exerciseCounts[i]} Übung${exerciseCounts[i] === 1 ? '' : 'en'}</span>
+                    </span>
                     ${r.id === workout?.routineId ? '<span class="text-accent">✓</span>' : ''}
                   </button>
                 </li>
