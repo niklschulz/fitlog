@@ -46,3 +46,31 @@ export function renderSetTimelineRow(number, contentHtml, { isLast = false, circ
     </li>
   `;
 }
+
+// Gewicht/Reps-Wertepaar einer Satz-Zeile, spaltenbündig über mehrere
+// Zeilen hinweg - sowohl die Zahl als auch die Einheit dahinter. Jede Zahl
+// steckt in einer eigenen, fest breiten Box (`inline-block ... text-right`)
+// statt ihrer natürlichen Textbreite zu folgen und ist darin rechtsbündig -
+// die Einheit folgt direkt danach und landet dadurch automatisch an
+// derselben Kante wie in jeder anderen Zeile, unabhängig davon, wie viele
+// Stellen der jeweilige Wert hat (z. B. "5" vs. "999.5"). Die Boxen sind
+// bewusst breiter als die längsten realistisch vorkommenden Werte
+// ("999.5" kg, "999" Reps) statt genau passend - eine Zahl, die ihre Box
+// überfüllt, überragt sie sichtbar auf der falschen Seite und zerstört
+// damit den festen Abstand zur Einheit (s. Sechsundzwanzigste Iteration).
+// Einheit in `text-muted`, damit die Zahl selbst optisch leichter zu
+// erfassen ist (dasselbe Muted-Token wie sonst im Design-System für
+// sekundäre Beschriftungen, z. B. "text-label text-muted").
+// Wiederverwendet zwischen Roster-Zeile (Workout-Tab) und
+// Übungs-Detailseite (Tages-/Verlauf-Reiter), s. design-system.md
+// Vierundzwanzigste bis Sechsundzwanzigste Iteration.
+export function renderSetValues(weight, reps) {
+  return `
+    <span class="inline-flex items-baseline gap-1">
+      <span class="inline-block w-16 text-right">${weight}</span><span class="text-muted">kg</span>
+    </span>
+    <span class="inline-flex items-baseline gap-1">
+      <span class="inline-block w-8 text-right">${reps}</span><span class="text-muted">Reps</span>
+    </span>
+  `;
+}

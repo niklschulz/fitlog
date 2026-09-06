@@ -8,7 +8,7 @@ import {
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues } from '../utils.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
@@ -544,7 +544,7 @@ function renderExerciseRow(entry, name, sets) {
   const label = name ?? 'Gelöschte Übung';
   const setRows = sets
     .map((s, i) =>
-      renderSetTimelineRow(i + 1, `<span>${s.weight} kg</span><span>${s.reps} Reps</span>`, { isLast: i === sets.length - 1 })
+      renderSetTimelineRow(i + 1, renderSetValues(s.weight, s.reps), { isLast: i === sets.length - 1 })
     )
     .join('');
 

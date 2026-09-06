@@ -5,7 +5,7 @@
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
-import { escapeHtml, renderSetTimelineRow } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues } from '../utils.js';
 
 // Anzahl standardmäßig angezeigter (leerer) Satz-Zeilen - bewusst als
 // eigene Variable statt hart im Rendering verankert, Grundlage für eine
@@ -146,7 +146,7 @@ function renderStepperRow(field, label, value) {
 // aus dem Layout-Fluss genommenes Element - s. dort für die Begründung).
 function renderSetContent(set) {
   if (!set) return `<span class="text-muted">–</span>`;
-  return `<span>${set.weight} kg</span><span>${set.reps} Reps</span>`;
+  return renderSetValues(set.weight, set.reps);
 }
 
 function renderTodayTab(sets, formWeight, formReps, routineLabel) {
@@ -235,6 +235,10 @@ function wireEvents() {
     btn.addEventListener('click', () => {
       if (state.activeTab === btn.dataset.tab) return;
       state.activeTab = btn.dataset.tab;
+      // Auswahl wird beim Reiter-Wechsel verworfen (Testkonzept Fall 26) -
+      // sonst könnte man z. B. über "Verlauf" navigieren und mit einer
+      // stillen, nicht mehr sichtbaren Auswahl zum Tages-Reiter zurückkehren.
+      state.selectedSetId = null;
       paint();
     });
   });

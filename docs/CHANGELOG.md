@@ -2,6 +2,26 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Gewicht-/Reps-Boxen verbreitert)
+
+### Fixed (dreistellige Reps überfüllten ihre feste Box, Abstand zur Einheit dadurch uneinheitlich)
+- Nutzer-Beobachtung: Abstand zwischen Zahl und Einheit wirkte in manchen Zeilen ungleichmäßig
+- Ursache: Die feste Reps-Box (`w-6` = 24px) war zu schmal für dreistellige Werte wie "999" (natürliche Breite ca. 26.3px) — die Zahl überfüllte die Box, wodurch der feste 4px-Abstand auf ca. 1.7px zusammenschrumpfte
+- Behoben, indem beide Boxen komfortabel breiter gemacht wurden, als realistische Extremwerte je brauchen (`w-12`→`w-16` für Gewicht, `w-6`→`w-8` für Reps), statt die genaue Overflow-Mechanik von `text-align: right` bei überfüllten Boxen abschließend zu klären
+- Mit `getBoundingClientRect()` erneut verifiziert: Abstand exakt 4px in jeder Zeile (Gewicht und Reps, Werte "5"/"3" bis "999.5"/"999"), in Roster-Zeile, Tages-Reiter und Verlauf-Reiter gleichermaßen
+- Details: [design-system.md](design-system.md#navigation) (Sechsundzwanzigste Iteration)
+
+## 2026-09-05 (Reps-Spalte bündig, verfeinert)
+
+### Fixed (Gewicht/Reps-Spalten nicht mehr verschoben bei unterschiedlicher Ziffernzahl)
+- Reps-Spalte verschob sich je nach Länge des Gewichtswerts (z. B. "5 kg" vs. "999.5 kg") — Ursache: Der Gewichts-Span hatte keine feste Breite, nur der Abstand danach war konstant
+- Erster Fix: gemeinsame Funktion `renderSetValues()` (`js/utils.js`) gab dem gesamten Gewichts-Textblock eine feste Breite
+
+### Changed (Zahlen rechtsbündig, Einheiten grau)
+- Auf Nutzer-Wunsch verfeinert: Zahl steckt jetzt in einer eigenen rechtsbündigen, fest breiten Box, die Einheit (`kg`/`Reps`) folgt direkt danach in `text-muted` — Zahl dadurch optisch leichter erfassbar, Einheiten landen automatisch an derselben Kante über alle Zeilen hinweg
+- Mit stark unterschiedlichen Testwerten (5 / 62.5 / 999.5 kg, 3 / 12 / 999 Reps) verifiziert: sowohl Zahlen als auch Einheiten exakt bündig, in Roster-Zeile und Übungs-Detailseite gleichermaßen
+- Details: [design-system.md](design-system.md#navigation) (Vierundzwanzigste/Fünfundzwanzigste Iteration)
+
 ## 2026-09-05 (Auswahl-Hervorhebung final, Teil 4)
 
 ### Fixed (Band wieder dicker, ohne die Zentrierung zu verlieren)
