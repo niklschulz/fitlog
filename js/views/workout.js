@@ -481,7 +481,7 @@ async function renderRoutineSection(workout, routine) {
 
   return `
     <div class="relative">
-      <button id="routine-dropdown-btn" class="tap-feedback w-full bg-surface rounded-full pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
+      <button id="routine-dropdown-btn" class="tap-feedback w-full bg-surface rounded-btn pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
         <span class="text-card-title truncate">${escapeHtml(label)}</span>
         ${renderDropdownIcon(state.routinePickerOpen, state.routinePickerClosing)}
       </button>

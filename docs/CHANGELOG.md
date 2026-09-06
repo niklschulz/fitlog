@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 (Routine-Auswahl auf rounded-btn, rounded-btn-Radius auf 4px verkleinert)
+
+### Changed
+- Routine-Auswahl-Button im Workout-Tab von `rounded-full` auf `rounded-btn` umgestellt
+- `rounded-btn`-Token (`index.html`, `tailwind.config`) von 13px auf 4px verkleinert — wirkt automatisch überall (Buttons, Inputs, kompakte Listenzeilen, Stepper-Eingabefeld)
+- Details: [design-system.md](design-system.md#navigation) (Dreiundvierzigste Iteration)
+
 ## 2026-09-06 (bg-surface aufgehellt)
 
 ### Changed
