@@ -2,6 +2,18 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-06 ("Delete"-Button in "Löschen" umbenannt)
+
+### Changed
+- Button-Label auf der Übungs-Detailseite: "Delete" heißt jetzt "Löschen" — reine Textänderung
+- Details: [design-system.md](design-system.md#navigation) (Fünfundvierzigste Iteration)
+
+## 2026-09-06 ("Update"-Button in "Ändern" umbenannt)
+
+### Changed
+- Button-Label auf der Übungs-Detailseite: "Update" (bei ausgewähltem Satz) heißt jetzt "Ändern" — reine Textänderung, "Speichern" (neuer Satz) unverändert
+- Details: [design-system.md](design-system.md#navigation) (Vierundvierzigste Iteration)
+
 ## 2026-09-06 (Routine-Auswahl auf rounded-btn, rounded-btn-Radius auf 4px verkleinert)
 
 ### Changed

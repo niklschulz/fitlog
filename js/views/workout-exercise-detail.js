@@ -162,8 +162,8 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
           ${renderStepperRow('reps', 'Reps', formReps)}
         </div>
         <div class="flex gap-3">
-          <button id="detail-save-btn" type="button" class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Update' : 'Speichern'}</button>
-          <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Delete</button>
+          <button id="detail-save-btn" type="button" class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Ändern' : 'Speichern'}</button>
+          <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Löschen</button>
         </div>
         ${routineLabel ? `<p class="text-label text-muted uppercase tracking-wide">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
       </div>
