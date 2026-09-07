@@ -21,7 +21,22 @@ let state = {
   calendarSheetClosing: false,
 };
 
+// Erhöht sich bei jedem render()/unmount() (= neue Mount-Instanz dieser
+// View). paint() merkt sich beim Start seinen aktuellen Wert und prüft ihn
+// erneut, nachdem alle asynchronen DB-Abfragen durchgelaufen sind: Wurde in
+// der Zwischenzeit der Tab gewechselt (unmount() erhöht den Zähler ebenso
+// wie ein erneutes render()), bricht der veraltete paint()-Aufruf ab, statt
+// den inzwischen von einer anderen View belegten Container per innerHTML zu
+// überschreiben. Ohne diese Sperre reicht es, das Kalender-Sheet oder den
+// Routine-Picker zu schließen und sofort den Tab zu wechseln, um die neue
+// View mit dem alten Workout-Inhalt zu überschreiben (im Kalender-Fall sogar
+// inklusive eines unsichtbaren, aber weiterhin klickfangenden Backdrops -
+// das Schließen selbst löst ja außerhalb dieses Zählers direkt einen
+// eigenen, nicht abwartbaren paint()-Aufruf aus, s. closeCalendarSheet()).
+let renderEpoch = 0;
+
 export async function render(container) {
+  renderEpoch++;
   currentContainer = container;
   state.detailEntryId = null;
   state.routinePickerOpen = false;
@@ -39,12 +54,22 @@ export async function render(container) {
 // Schließen-Timeout würde nachträglich paint() auf dem inzwischen von der
 // neuen View belegten Container aufrufen.
 export function unmount() {
+  renderEpoch++;
   if (pendingCalendarSheetCloseTimeout) {
     clearTimeout(pendingCalendarSheetCloseTimeout);
     pendingCalendarSheetCloseTimeout = null;
   }
+  if (pendingRoutinePickerCloseTimeout) {
+    clearTimeout(pendingRoutinePickerCloseTimeout);
+    pendingRoutinePickerCloseTimeout = null;
+  }
   unlockBodyScroll();
   resetNavZIndex();
+  // War die Übungs-Detailseite (Abschnitt 12) gerade aktiv, hat auch sie
+  // noch einen eigenen renderEpoch-Zähler (s. dort) - unconditional
+  // aufrufen ist harmlos, falls sie gar nicht aktiv war (kein aktueller
+  // paint()-Aufruf, den es zu invalidieren gäbe).
+  exerciseDetail.unmount();
 }
 
 // --- Datums-Hilfsfunktionen (lokale Zeitzone, kein UTC-Shift) ---
@@ -233,6 +258,8 @@ function resetNavZIndex() {
 // --- Paint ---
 
 async function paint() {
+  const myEpoch = renderEpoch;
+
   // Übungs-Detailseite (Abschnitt 12) ersetzt die Tagesübersicht komplett,
   // solange sie offen ist - eigenständiges Sub-View-Modul, verwaltet sich
   // ab hier vollständig selbst (eigenes render()/paint()/wireEvents()).
@@ -241,6 +268,12 @@ async function paint() {
     await exerciseDetail.render(currentContainer, {
       entryId: state.detailEntryId,
       onBack: () => {
+        // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
+        // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
+        // paint()-Aufruf der Detailseite (z. B. durch einen vorherigen
+        // Reiter-Wechsel dort ausgelöst) darf den Container nicht mehr
+        // überschreiben, sobald er fertig wird (s. exerciseDetail.unmount()).
+        exerciseDetail.unmount();
         withViewTransition(() => {
           state.detailEntryId = null;
           paint();
@@ -277,7 +310,7 @@ async function paint() {
     }
   }
 
-  currentContainer.innerHTML = `
+  const html = `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div>
@@ -306,6 +339,12 @@ async function paint() {
     ${state.calendarSheetOpen ? await renderCalendarSheet() : ''}
   `;
 
+  // Tab kann während der obigen awaits gewechselt worden sein (s. renderEpoch
+  // oben) - ein veralteter paint()-Aufruf darf den inzwischen von einer
+  // anderen View belegten Container nicht mehr überschreiben.
+  if (myEpoch !== renderEpoch) return;
+
+  currentContainer.innerHTML = html;
   wireEvents();
 
   // Erst im nächsten Frame scrollen - direkt nach dem innerHTML-Update hat
@@ -572,11 +611,18 @@ function renderExerciseRow(entry, name, sets) {
 // in css/styles.css passen).
 const ROUTINE_PICKER_CLOSE_ANIMATION_MS = 150;
 
+// Muss in unmount() abgebrochen werden können - analog zu
+// pendingCalendarSheetCloseTimeout (s. dort für die Begründung: ein
+// Tab-Wechsel während der Picker noch schließt, würde sonst diesen Timeout
+// unangetastet weiterlaufen lassen).
+let pendingRoutinePickerCloseTimeout = null;
+
 function closeRoutinePicker() {
   if (!state.routinePickerOpen || state.routinePickerClosing) return;
   state.routinePickerClosing = true;
   paint();
-  setTimeout(() => {
+  pendingRoutinePickerCloseTimeout = setTimeout(() => {
+    pendingRoutinePickerCloseTimeout = null;
     state.routinePickerOpen = false;
     state.routinePickerClosing = false;
     paint();
@@ -611,7 +657,7 @@ async function openCalendarSheet() {
 // (s. wireCalendarSheetDrag) - dort läuft die Animation über eine direkte
 // Transform-Transition statt der CSS-Keyframes, das Zurücksetzen von State
 // und Body-Scroll-Lock ist aber identisch.
-const CALENDAR_SHEET_CLOSE_ANIMATION_MS = 200;
+const CALENDAR_SHEET_CLOSE_ANIMATION_MS = 220;
 
 function finalizeCalendarSheetClose() {
   pendingCalendarSheetCloseTimeout = null;

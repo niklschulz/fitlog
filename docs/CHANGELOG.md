@@ -2,6 +2,19 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Workout-Tab: veraltete paint()-Aufrufe können Tab-Wechsel nicht mehr überschreiben)
+
+### Fixed
+- Schloss man das Kalender-Sheet oder den Routine-Picker und wechselte sofort (noch während der Schließ-Animation) den Tab, überschrieb der zu diesem Zeitpunkt bereits laufende `paint()`-Aufruf von `workout.js` nach Abschluss seiner asynchronen DB-Abfragen den inzwischen von der neuen View belegten Container — im Kalender-Fall blieb dabei zusätzlich ein unsichtbarer, aber weiterhin klickfangender Backdrop (`z-index: 50`) über der gesamten App inkl. Bottom-Nav zurück, die App wirkte bis zum Neuladen eingefroren
+- Neuer `renderEpoch`-Zähler in `workout.js`: `render()` und `unmount()` erhöhen ihn, `paint()` merkt sich seinen Stand beim Start und bricht vor dem `innerHTML`-Schreiben ab, falls sich der Zähler zwischenzeitlich geändert hat
+- Zusätzlich: Der Schließen-Timeout des Routine-Pickers wurde bisher gar nicht gespeichert und konnte deshalb in `unmount()` nicht abgebrochen werden (anders als beim strukturell identischen Kalender-Sheet-Timeout) — jetzt analog dazu in `pendingRoutinePickerCloseTimeout` nachgehalten
+- Derselbe Fehler bestand isoliert auch in der Übungs-Detailseite (`workout-exercise-detail.js`, Abschnitt 12): ein durch einen Reiter-Wechsel (Heute/Verlauf/Statistik) ausgelöster, noch laufender `paint()`-Aufruf konnte nach einem Zurück-Tap oder einem Bottom-Nav-Tab-Wechsel verspätet fertig werden und den dann bereits von der Tagesübersicht oder einer anderen View belegten Container überschreiben — analoger `renderEpoch`-Schutz plus neuer `unmount()`-Export ergänzt, den `workout.js` sowohl beim eigenen `unmount()` als auch im `onBack`-Callback aufruft
+
+## 2026-09-07 (Kalender-Sheet: Schließen-Timeout an CSS-Animationsdauer angeglichen)
+
+### Fixed
+- `CALENDAR_SHEET_CLOSE_ANIMATION_MS` in `workout.js` stand auf 200ms, während die zugehörigen CSS-Keyframes (`calendar-sheet-slide-down`/`calendar-sheet-backdrop-fade-out`) 220ms liefen — der Sheet-DOM-Knoten wurde dadurch 20ms vor Ende der CSS-Animation entfernt, sichtbar als minimal abrupter Sprung am Ende des Schließens. Auf 220ms korrigiert, passend zum bereits vorhandenen Kommentar in `css/styles.css`, der beide Werte synchron halten soll
+
 ## 2026-09-06 (Verlauf-Datum in die Karte verschoben, Karten-Abstand unten korrigiert)
 
 ### Fixed

@@ -22,7 +22,20 @@ let state = {
   selectedSetId: null,
 };
 
+// Analog zu workout.js's eigenem renderEpoch (s. dort für die ausführliche
+// Begründung): erhöht sich bei jedem render() (neuer Aufruf durch workout.js
+// für einen Eintrag) und bei jedem unmount(). paint() prüft nach seinen
+// asynchronen DB-Abfragen, ob sein eigener Stand noch aktuell ist, bevor es
+// den Container beschreibt oder onBack() aufruft. Ohne diese Sperre könnte
+// ein durch einen Reiter-Wechsel (Heute/Verlauf/Statistik) ausgelöster,
+// noch laufender paint()-Aufruf nach einem Zurück-Tap oder einem Wechsel
+// des Bottom-Nav-Tabs verspätet fertig werden und den dann längst von der
+// Tagesübersicht oder einer ganz anderen View belegten Container
+// überschreiben.
+let renderEpoch = 0;
+
 export async function render(container, { entryId, onBack: onBackCallback }) {
+  renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
   state.entryId = entryId;
@@ -31,8 +44,18 @@ export async function render(container, { entryId, onBack: onBackCallback }) {
   await paint();
 }
 
+// Von workout.js aufgerufen, sobald diese Sub-View verlassen wird - sowohl
+// beim regulären Zurück-Tap (onBack) als auch, falls der komplette
+// Workout-Tab gewechselt wird, während die Detailseite gerade aktiv ist
+// (s. workout.js's eigenes unmount()).
+export function unmount() {
+  renderEpoch++;
+}
+
 async function paint() {
+  const myEpoch = renderEpoch;
   const entry = await db.workoutExercises.get(state.entryId);
+  if (myEpoch !== renderEpoch) return;
   if (!entry) {
     // Eintrag existiert nicht mehr (z. B. Routine zwischenzeitlich
     // gewechselt) - kann hier nichts mehr anzeigen, zurück zur Übersicht.
@@ -71,7 +94,7 @@ async function paint() {
 
   const history = state.activeTab === 'history' ? await getExerciseSetHistory(entry.exerciseId, entry.workoutId) : [];
 
-  currentContainer.innerHTML = `
+  const html = `
     <div class="py-4 flex flex-col gap-4">
       ${renderHeader(exerciseName)}
       ${renderSegmentedControl(workout?.date)}
@@ -81,6 +104,9 @@ async function paint() {
     </div>
   `;
 
+  if (myEpoch !== renderEpoch) return;
+
+  currentContainer.innerHTML = html;
   wireEvents();
 }
 
