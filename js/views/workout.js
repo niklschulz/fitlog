@@ -8,7 +8,7 @@ import {
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, withViewTransition } from '../utils.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
@@ -21,11 +21,6 @@ let state = {
   calendarSheetClosing: false,
 };
 
-// Nur einmal pro App-Laufzeit verdrahtet (s. render() unten) - #view-container
-// selbst wird nie neu erzeugt, nur sein innerHTML ausgetauscht, ein erneutes
-// Verdrahten bei jedem render() würde also Listener duplizieren.
-let exerciseDetailSwipeWired = false;
-
 export async function render(container) {
   currentContainer = container;
   state.detailEntryId = null;
@@ -33,11 +28,6 @@ export async function render(container) {
   state.routinePickerClosing = false;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
-  resetExerciseDetailTransform();
-  if (!exerciseDetailSwipeWired) {
-    wireExerciseDetailSwipe();
-    exerciseDetailSwipeWired = true;
-  }
   await paint();
 }
 
@@ -55,7 +45,6 @@ export function unmount() {
   }
   unlockBodyScroll();
   resetNavZIndex();
-  resetExerciseDetailTransform();
 }
 
 // --- Datums-Hilfsfunktionen (lokale Zeitzone, kein UTC-Shift) ---
@@ -249,37 +238,18 @@ async function paint() {
   // ab hier vollständig selbst (eigenes render()/paint()/wireEvents()).
   // onBack räumt nur den State hier auf und rendert die Tagesübersicht neu.
   if (state.detailEntryId) {
-    // touch-action: pan-y (s. .exercise-detail-swipe-active in styles.css)
-    // erlaubt weiterhin vertikales Scrollen der Satz-Liste, verhindert aber,
-    // dass Safari eine horizontale Wisch-Bewegung selbst interpretiert -
-    // sonst könnte wireExerciseDetailSwipe() ihr nicht zuverlässig zuvorkommen.
-    currentContainer.classList.add('exercise-detail-swipe-active');
     await exerciseDetail.render(currentContainer, {
       entryId: state.detailEntryId,
-      onBack: () => closeExerciseDetail(),
+      onBack: () => {
+        withViewTransition(() => {
+          state.detailEntryId = null;
+          paint();
+        }, 'back');
+      },
     });
     return;
   }
-  currentContainer.classList.remove('exercise-detail-swipe-active');
 
-  const currentMonday = mondayOf(state.selectedDate);
-  currentContainer.innerHTML = await renderDayViewHTML();
-  wireEvents();
-
-  // Erst im nächsten Frame scrollen - direkt nach dem innerHTML-Update hat
-  // der Browser das Layout des Scroll-Containers noch nicht fertig berechnet.
-  requestAnimationFrame(() => {
-    const weekBlock = currentContainer.querySelector('.calendar-week[data-week-start="' + currentMonday + '"]');
-    weekBlock?.scrollIntoView({ block: 'nearest', inline: 'start' });
-  });
-}
-
-// Ausgelagert aus paint(), damit dieselbe Markup-Erzeugung auch für den
-// Übungs-Detailseiten-Unterlege-Schnappschuss (s. fillExerciseDetailUnderlay()
-// weiter unten) wiederverwendet werden kann, ohne currentContainer
-// anzufassen oder wireEvents() erneut zu verdrahten - reine Lesefunktion,
-// keine Seiteneffekte (nur DB-Reads).
-async function renderDayViewHTML() {
   // Vorwoche, aktuelle Woche, folgende Woche (±1 Woche um die Auswahl) -
   // je ein 7-Tage-Block, s. renderCalendarStrip.
   const currentMonday = mondayOf(state.selectedDate);
@@ -307,7 +277,7 @@ async function renderDayViewHTML() {
     }
   }
 
-  return `
+  currentContainer.innerHTML = `
     <div class="py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <div>
@@ -335,6 +305,15 @@ async function renderDayViewHTML() {
 
     ${state.calendarSheetOpen ? await renderCalendarSheet() : ''}
   `;
+
+  wireEvents();
+
+  // Erst im nächsten Frame scrollen - direkt nach dem innerHTML-Update hat
+  // der Browser das Layout des Scroll-Containers noch nicht fertig berechnet.
+  requestAnimationFrame(() => {
+    const weekBlock = currentContainer.querySelector('.calendar-week[data-week-start="' + currentMonday + '"]');
+    weekBlock?.scrollIntoView({ block: 'nearest', inline: 'start' });
+  });
 }
 
 // Kalenderzeile als Abfolge von Wochenblöcken. Jeder Wochenblock ist genau
@@ -724,224 +703,6 @@ function wireCalendarSheetDrag() {
   handle.addEventListener('pointercancel', endDrag);
 }
 
-// Übungs-Detailseite (Abschnitt 12): Slide-Übergang von rechts beim Öffnen
-// (Tap auf eine Übungszeile) bzw. nach rechts heraus beim Schließen
-// (Zurück-Button oder Wisch-Geste). Bewusst NICHT über withViewTransition()
-// (View Transitions API) gelöst wie die übrigen Reingehen/Zurückgehen-
-// Übergänge der App: Die Wisch-Geste muss dem Finger in Echtzeit folgen,
-// dafür kennt die View Transitions API kein Zwischenstadium (sie snapshotet
-// alt/neu und blendet nur dazwischen). Stattdessen direkt per transform auf
-// #view-container selbst - dieselbe Mechanik (inline transform + transition,
-// per Timeout statt Event auf das Ende gewartet) für programmatisches
-// Öffnen/Schließen wie für die interaktive Geste, analog zum
-// Drag-to-Dismiss-Muster des Kalender-Sheets oben.
-function prefersReducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-const EXERCISE_DETAIL_SLIDE_DURATION_MS = 260;
-const EXERCISE_DETAIL_SLIDE_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
-// Ab wann eine bereits als horizontal erkannte Wisch-Geste beim Loslassen
-// als "schließen" statt "zurückschnappen" gilt.
-const EXERCISE_DETAIL_SWIPE_CLOSE_THRESHOLD_PX = 100;
-// Toleranz, bevor eine Berührung überhaupt einer Richtung zugeordnet wird -
-// verhindert, dass jeder minimale Zitter-Versatz sofort als Richtungs-
-// Entscheidung gewertet wird.
-const EXERCISE_DETAIL_SWIPE_DIRECTION_LOCK_PX = 10;
-
-function resetExerciseDetailTransform() {
-  exerciseDetailDrag = null;
-  currentContainer.classList.remove('exercise-detail-swipe-active');
-  currentContainer.style.transition = '';
-  currentContainer.style.transform = '';
-  removeExerciseDetailUnderlay();
-}
-
-// Schnappschuss der Tagesübersicht, sichtbar hinter der Übungs-Detailseite,
-// solange diese slidet (Öffnen, Zurück-Button, Wisch-Geste) - ohne ihn wäre
-// dort nur ein schwarzer Screen zu sehen, da #view-container während dieser
-// Zeit ausschließlich den Detailseiten-Inhalt enthält (komplettes
-// innerHTML-Replace, kein gleichzeitig existierender Tagesübersicht-DOM).
-// Bewusst NICHT als Kind von #view-container (das ist genau das Element,
-// das per translateX wegslidet - der Schnappschuss soll ja stehen bleiben),
-// sondern als eigenes `position: fixed`-Element direkt in <body>, exakt auf
-// die aktuelle Bounding-Box von #view-container positioniert (per
-// getBoundingClientRect() statt die CSS-Regeln von #view-container
-// nachzubauen - robust gegenüber Safe-Area-Insets etc.). `position: relative`
-// + `z-index: 1` auf #view-container selbst (s. .exercise-detail-swipe-active
-// in styles.css) sorgt dafür, dass der Detailseiten-Inhalt darüber liegt,
-// solange der Unterlage-Schnappschuss existiert - beide bleiben unterhalb
-// von Nav-Scrim/Bottom-Nav (z-index 10/20).
-// `pointer-events: none`, da rein dekorativ - Interaktion muss immer bei der
-// echten Detailseite (oder nach Abschluss bei der echten Tagesübersicht)
-// ankommen, nie beim eingefrorenen Schnappschuss.
-let exerciseDetailUnderlay = null;
-
-function ensureExerciseDetailUnderlay() {
-  if (exerciseDetailUnderlay) return exerciseDetailUnderlay;
-  const rect = currentContainer.getBoundingClientRect();
-  const el = document.createElement('div');
-  el.setAttribute('aria-hidden', 'true');
-  el.className = currentContainer.className;
-  el.style.cssText = `position: fixed; top: ${rect.top}px; left: ${rect.left}px; width: ${rect.width}px; height: ${rect.height}px; overflow: hidden; pointer-events: none; z-index: 0;`;
-  document.body.appendChild(el);
-  exerciseDetailUnderlay = el;
-  return el;
-}
-
-// Wird beim Start jedes Übergangs angestoßen (Öffnen, Zurück-Button,
-// Pointerdown der Wisch-Geste) - liest per renderDayViewHTML() denselben
-// aktuellen Datenstand wie die echte Tagesübersicht, statt eine
-// möglicherweise veraltete DOM-Kopie zu klonen (relevant z. B. beim
-// Schließen, wenn in der Zwischenzeit neue Sätze erfasst wurden).
-async function fillExerciseDetailUnderlay() {
-  const el = ensureExerciseDetailUnderlay();
-  el.innerHTML = await renderDayViewHTML();
-}
-
-function removeExerciseDetailUnderlay() {
-  exerciseDetailUnderlay?.remove();
-  exerciseDetailUnderlay = null;
-}
-
-function slideExerciseDetailIn() {
-  if (prefersReducedMotion()) {
-    removeExerciseDetailUnderlay();
-    return;
-  }
-  currentContainer.style.transition = 'none';
-  currentContainer.style.transform = 'translateX(100%)';
-  // Erzwungener Reflow: Ohne ihn würde der Browser den Sprung auf 100% und
-  // die direkt folgende transition-Zuweisung zu einem einzigen Layout-Schritt
-  // zusammenfassen - es gäbe keine sichtbare Bewegung.
-  void currentContainer.offsetHeight;
-  currentContainer.style.transition = `transform ${EXERCISE_DETAIL_SLIDE_DURATION_MS}ms ${EXERCISE_DETAIL_SLIDE_EASING}`;
-  currentContainer.style.transform = 'translateX(0)';
-  setTimeout(() => {
-    currentContainer.style.transition = '';
-    currentContainer.style.transform = '';
-    removeExerciseDetailUnderlay();
-  }, EXERCISE_DETAIL_SLIDE_DURATION_MS);
-}
-
-// Liefert ein Promise, das erst nach Abschluss der Animation (bzw. sofort bei
-// reduzierter Bewegung) auflöst - der Aufrufer tauscht erst danach den
-// Seiteninhalt zurück zur Tagesübersicht, damit der Sprung nicht sichtbar ist.
-function slideExerciseDetailOut() {
-  if (prefersReducedMotion()) return Promise.resolve();
-  return new Promise((resolve) => {
-    const width = currentContainer.getBoundingClientRect().width;
-    currentContainer.style.transition = `transform ${EXERCISE_DETAIL_SLIDE_DURATION_MS}ms ${EXERCISE_DETAIL_SLIDE_EASING}`;
-    currentContainer.style.transform = `translateX(${width}px)`;
-    setTimeout(() => {
-      currentContainer.style.transition = '';
-      currentContainer.style.transform = '';
-      resolve();
-    }, EXERCISE_DETAIL_SLIDE_DURATION_MS);
-  });
-}
-
-async function closeExerciseDetail() {
-  // Schnappschuss muss stehen, bevor die Detailseite überhaupt zu slidet
-  // beginnt - sonst wäre der schwarze Screen aus dem Nutzer-Feedback direkt
-  // wieder da (s. Kommentar bei fillExerciseDetailUnderlay()).
-  await fillExerciseDetailUnderlay();
-  await slideExerciseDetailOut();
-  removeExerciseDetailUnderlay();
-  state.detailEntryId = null;
-  paint();
-}
-
-// Wisch-Geste (von links nach rechts, ganzflächig - nicht nur vom
-// Bildschirmrand wie iOS' natives Edge-Swipe) schließt die Detailseite.
-// Pointer Events (touch- und mausfähig), analog zu wireCalendarSheetDrag()
-// oben. Richtung wird erst nach EXERCISE_DETAIL_SWIPE_DIRECTION_LOCK_PX
-// Bewegung entschieden ("pending" → "swiping"/"scrolling"): Die Satz-Liste
-// bleibt vertikal scrollbar, nur eine überwiegend horizontale Bewegung nach
-// rechts wird als Schließen-Geste übernommen (preventDefault ab diesem
-// Zeitpunkt, damit Safari sie nicht zusätzlich selbst interpretiert).
-let exerciseDetailDrag = null;
-
-function wireExerciseDetailSwipe() {
-  currentContainer.addEventListener('pointerdown', (e) => {
-    if (!state.detailEntryId) return;
-    exerciseDetailDrag = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, dx: 0, phase: 'pending' };
-    // Schon hier statt erst bei bestätigter Wisch-Richtung angestoßen (Fire-
-    // and-forget, DB-Read) - der Schnappschuss braucht einen kurzen Moment,
-    // soll aber schon fertig sein, sobald der Finger die Richtungs-Sperre
-    // überschreitet. Unnötig gewesen, falls daraus keine Wisch-Geste wird
-    // (Tap, Scroll) - endDrag() räumt ihn in dem Fall wieder ab.
-    fillExerciseDetailUnderlay();
-  });
-
-  currentContainer.addEventListener(
-    'pointermove',
-    (e) => {
-      if (!exerciseDetailDrag || e.pointerId !== exerciseDetailDrag.pointerId) return;
-      const dx = e.clientX - exerciseDetailDrag.startX;
-      const dy = e.clientY - exerciseDetailDrag.startY;
-
-      if (exerciseDetailDrag.phase === 'pending') {
-        if (Math.abs(dx) < EXERCISE_DETAIL_SWIPE_DIRECTION_LOCK_PX && Math.abs(dy) < EXERCISE_DETAIL_SWIPE_DIRECTION_LOCK_PX) {
-          return;
-        }
-        exerciseDetailDrag.phase = Math.abs(dx) > Math.abs(dy) && dx > 0 ? 'swiping' : 'scrolling';
-        if (exerciseDetailDrag.phase === 'swiping') {
-          currentContainer.style.transition = 'none';
-          try {
-            currentContainer.setPointerCapture(e.pointerId);
-          } catch {
-            // Kein aktiver Pointer mit dieser ID (z. B. synthetische Events) -
-            // die Geste funktioniert auch ohne Capture weiter.
-          }
-        }
-      }
-
-      if (exerciseDetailDrag.phase !== 'swiping') return;
-      e.preventDefault();
-      exerciseDetailDrag.dx = Math.max(0, dx);
-      currentContainer.style.transform = `translateX(${exerciseDetailDrag.dx}px)`;
-    },
-    { passive: false }
-  );
-
-  const endDrag = (e) => {
-    if (!exerciseDetailDrag || e.pointerId !== exerciseDetailDrag.pointerId) return;
-    const { dx, phase } = exerciseDetailDrag;
-    exerciseDetailDrag = null;
-    if (phase !== 'swiping') {
-      // Bei pointerdown vorsorglich angestoßener Schnappschuss (s. dort)
-      // wurde nie gebraucht (Tap oder vertikales Scrollen statt Wisch-Geste).
-      removeExerciseDetailUnderlay();
-      return;
-    }
-
-    const width = currentContainer.getBoundingClientRect().width;
-    currentContainer.style.transition = `transform ${EXERCISE_DETAIL_SLIDE_DURATION_MS}ms ${EXERCISE_DETAIL_SLIDE_EASING}`;
-
-    if (dx > EXERCISE_DETAIL_SWIPE_CLOSE_THRESHOLD_PX) {
-      currentContainer.style.transform = `translateX(${width}px)`;
-      setTimeout(() => {
-        currentContainer.style.transition = '';
-        currentContainer.style.transform = '';
-        removeExerciseDetailUnderlay();
-        state.detailEntryId = null;
-        paint();
-      }, EXERCISE_DETAIL_SLIDE_DURATION_MS);
-    } else {
-      currentContainer.style.transform = 'translateX(0)';
-      setTimeout(() => {
-        currentContainer.style.transition = '';
-        currentContainer.style.transform = '';
-        removeExerciseDetailUnderlay();
-      }, EXERCISE_DETAIL_SLIDE_DURATION_MS);
-    }
-  };
-
-  currentContainer.addEventListener('pointerup', endDrag);
-  currentContainer.addEventListener('pointercancel', endDrag);
-}
-
 function wireEvents() {
   currentContainer.querySelectorAll('.calendar-day-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1015,14 +776,11 @@ function wireEvents() {
   // Öffnet die Übungs-Detailseite (Abschnitt 12) statt wie zuvor inline zu
   // expandieren.
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      // Schnappschuss der (noch aktuellen) Tagesübersicht anlegen, bevor sie
-      // gleich durch die Detailseite ersetzt wird - s. Kommentar bei
-      // fillExerciseDetailUnderlay().
-      await fillExerciseDetailUnderlay();
-      state.detailEntryId = btn.dataset.entry;
-      await paint();
-      slideExerciseDetailIn();
+    btn.addEventListener('click', () => {
+      withViewTransition(() => {
+        state.detailEntryId = btn.dataset.entry;
+        paint();
+      }, 'forward');
     });
   });
 }
