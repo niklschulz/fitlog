@@ -2,6 +2,17 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Übungs-Detailseite: Slide-Übergang von rechts, wischbar zum Schließen)
+
+### Added
+- Öffnen der Übungs-Detailseite (Tap auf eine Roster-Zeile im Workout-Tab) slidet jetzt von rechts herein statt der bisherigen Skalierung+Fade
+- Wisch-Geste von links nach rechts (ganzflächig, nicht nur vom Bildschirmrand) schließt die Detailseite interaktiv, dem Finger folgend; unterhalb der Schließen-Schwelle (100px) schnappt sie zurück
+- Eigenständiger, direkt auf `#view-container` per `transform: translateX()` arbeitender Mechanismus (`js/views/workout.js`) statt der generischen View-Transitions-API — die kennt kein Zwischenstadium, dem eine Wisch-Geste in Echtzeit folgen könnte. Analog zum Drag-to-Dismiss-Muster des Kalender-Sheets
+
+### Fixed
+- Nutzer-Feedback nach erstem Testlauf: Hinter der slidenden Detailseite war zunächst nur ein schwarzer Screen zu sehen statt der erwarteten, parallel sichtbaren Tagesübersicht darunter (`#view-container` enthält während des Übergangs ausschließlich den Detailseiten-Inhalt, kein gleichzeitig existierender Tagesübersicht-DOM). Behoben per `position: fixed`-Schnappschuss der Tagesübersicht außerhalb von `#view-container`, exakt auf dessen Bounding-Box positioniert und zu Beginn jedes Übergangs (Öffnen, Zurück-Pfeil, Wisch-Start) frisch aus der DB befüllt
+- Details: [design-system.md](design-system.md#bewegung-liquid-glass-animationen) (Einundfünfzigste Iteration)
+
 ## 2026-09-06 (Verlauf-Datum in die Karte verschoben, Karten-Abstand unten korrigiert)
 
 ### Fixed

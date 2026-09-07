@@ -242,6 +242,29 @@ input[type="number"]::-webkit-outer-spin-button {
   to { left: 10px; width: 7px; }
 }
 
+/* Übungs-Detailseite (Abschnitt 12): Solange sie offen ist, bleibt
+   vertikales Scrollen (Satz-Liste) nativ erlaubt, horizontale Bewegung wird
+   aber nicht mehr von Safari selbst interpretiert, sondern per Pointer
+   Events in js/views/workout.js (wireExerciseDetailSwipe) als
+   Schließen-Geste ausgewertet. Slide-In/-Out selbst laufen über inline
+   transform/transition in JS, nicht über CSS-Keyframes - s. Kommentar bei
+   slideExerciseDetailIn() in workout.js.
+   `position: relative` + `z-index: 1`: Während eines Übergangs (Öffnen,
+   Zurück-Button, Wisch-Geste) legt workout.js einen `position: fixed`-
+   Schnappschuss der Tagesübersicht direkt in <body> an, damit dahinter
+   nicht einfach ein schwarzer Screen zu sehen ist (s.
+   fillExerciseDetailUnderlay() in workout.js) - ohne eigene Positionierung
+   würde #view-container als unpositioniertes Element automatisch HINTER
+   jedem positionierten Geschwister rendern, unabhängig von der
+   DOM-Reihenfolge, und die Detailseite selbst würde vom eigenen Schnappschuss
+   verdeckt. z-index: 1 bleibt bewusst unterhalb von Nav-Scrim/Bottom-Nav
+   (z-index 10/20) - die sollen weiterhin durchgehend sichtbar bleiben. */
+#view-container.exercise-detail-swipe-active {
+  touch-action: pan-y;
+  position: relative;
+  z-index: 1;
+}
+
 /* Großer Kalender (Bottom-Sheet, Abschnitt 11): schiebt sich von unten
    herein/heraus (js/views/workout.js hält die Animationsdauer per
    CALENDAR_SHEET_CLOSE_ANIMATION_MS synchron). */
