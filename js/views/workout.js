@@ -480,11 +480,20 @@ async function renderCalendarSheet() {
     <div id="calendar-sheet-backdrop" class="calendar-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
     <div class="calendar-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" style="height: 88vh; height: 88dvh;">
       <div class="grid grid-cols-3 items-center px-4 pt-3 flex-shrink-0">
-        <div aria-hidden="true"></div>
+        <button id="calendar-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Kalender schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
         <div id="calendar-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
-          <span class="w-9 h-1 rounded-full bg-white/25"></span>
+          <span class="text-card-title">Kalender</span>
         </div>
-        <button id="calendar-sheet-today-btn" class="tap-feedback justify-self-end ${TEXTLINK_ACTION} px-2 py-2 min-h-[44px]">Heute</button>
+        <button id="calendar-sheet-today-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Zu heute springen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <circle cx="12" cy="12" r="7.25" />
+            <circle cx="12" cy="12" r="1.75" />
+          </svg>
+        </button>
       </div>
       <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-6">
         ${monthSections}
@@ -764,6 +773,10 @@ function wireEvents() {
   });
 
   currentContainer.querySelector('#calendar-sheet-backdrop')?.addEventListener('click', () => {
+    closeCalendarSheet();
+  });
+
+  currentContainer.querySelector('#calendar-sheet-close-btn')?.addEventListener('click', () => {
     closeCalendarSheet();
   });
 

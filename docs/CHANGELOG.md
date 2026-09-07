@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Kalender-Sheet: Kopfzeile mit Titel und zwei Glass-Buttons statt Ziehgriff-Balken + Text-Button)
+
+### Changed
+- Grauer Ziehgriff-Balken oben im großen Kalender-Sheet entfernt, stattdessen steht dort "Kalender" als Titel — die Fläche funktioniert weiterhin als Drag-to-Dismiss-Griff, jetzt eben mit sichtbarem Text statt eines reinen Balkens
+- Links davon neuer `.icon-btn-glass`-Button (✕) zum expliziten Schließen des Sheets (bisher nur per Backdrop-Klick oder Ziehgeste möglich)
+- "Heute"-Textbutton rechts durch `.icon-btn-glass`-Button mit Fadenkreuz-/Ziel-Icon ersetzt — Funktion unverändert (scrollt nur zum aktuellen Monat, wählt keinen Tag, schließt das Sheet nicht)
+
 ## 2026-09-07 (h1-Position: Hauptseiten an Workout angeglichen, Unterseiten bewusst zentriert belassen)
 
 ### Fixed
