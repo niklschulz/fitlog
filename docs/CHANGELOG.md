@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Automatisierte Tests für Löschkaskaden, Routine-Wechsel und Tages-Workout-Eindeutigkeit)
+
+### Added
+- Neues `tests/`-Verzeichnis mit automatisierten Tests für die heiklen Datenfunktionen in `js/db.js` (Löschkaskaden bei Übung/Routine, Routine-Wechsel inkl. manuell hinzugefügter Übungen, Eindeutigkeit von `getOrCreateWorkoutForDate`, Sortierung begonnener/unbegonnener Übungen) — bisher gab es kein automatisiertes Qualitätsnetz, jede Änderung musste manuell im Browser nachgeprüft werden
+- Eigenes, rein Dev-seitiges `package.json` nur für dieses Test-Tooling (`node --test` + `fake-indexeddb`, da `db.js` sonst echtes IndexedDB im Browser braucht) — betrifft ausschließlich lokales Testen, die App selbst bleibt weiterhin ohne Build-Schritt/npm (s. ADR 0002, CLAUDE.md)
+- `npm test` ausführen, bevor Änderungen an diesen Funktionen committet werden
+
 ## 2026-09-07 (Service Worker: Cache-first auf die bekannte App-Shell eingeschränkt)
 
 ### Fixed

@@ -1,0 +1,13 @@
+{
+  "name": "fitlog-tests",
+  "private": true,
+  "type": "module",
+  "description": "Nur Dev-Tooling für automatisierte Datenlogik-Tests (js/db.js) - betrifft nicht die Auslieferung der App selbst, die weiterhin ganz ohne Build-Schritt/npm läuft (s. ADR 0002, CLAUDE.md).",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "dexie": "4.0.8",
+    "fake-indexeddb": "^6.0.0"
+  }
+}

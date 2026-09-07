@@ -22,6 +22,15 @@ python3 -m http.server 8420
 
 Dann `http://localhost:8420` öffnen. Kein Build-Schritt, kein `npm install` nötig.
 
+## Tests
+
+Automatisierte Tests für die Datenlogik in `js/db.js` (Löschkaskaden, Routine-Wechsel, Tages-Workout-Eindeutigkeit) — betrifft nur lokales Testen, nicht die App selbst (die bleibt build-frei, s. oben).
+
+```bash
+npm install
+npm test
+```
+
 ## Deployment
 
 Push auf `main` → GitHub Pages deployt automatisch von der Repo-Root. Bei Änderungen an gecachten Dateien (alles außer reinen Inhaltsänderungen in der Datenbank) `CACHE_NAME` in [`sw.js`](sw.js) hochzählen, sonst bekommen Nutzer die alte Version aus dem Service-Worker-Cache weiter ausgeliefert.
