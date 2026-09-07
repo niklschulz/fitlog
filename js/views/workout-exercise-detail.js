@@ -112,7 +112,7 @@ async function paint() {
 
 function renderHeader(exerciseName) {
   return `
-    <div class="flex items-center gap-3">
+    <div class="flex items-start gap-3">
       <button id="detail-back-btn" type="button" class="icon-btn-glass tap-feedback text-ink" aria-label="Zurück">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
           <path d="M15 5l-7 7 7 7" />

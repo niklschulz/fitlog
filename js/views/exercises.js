@@ -15,7 +15,7 @@ async function paint() {
 
   currentContainer.innerHTML = `
     <div class="py-4 flex flex-col gap-4">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-start justify-between gap-3">
         <h1 class="text-screen-title">Übungen</h1>
         ${
           editingId === null

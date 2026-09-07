@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (h1-Position in Screen-Headern vereinheitlicht)
+
+### Fixed
+- In Headern, die ein `<h1>` (`text-screen-title`) neben einem Button/Zurück-Pfeil zeigen (`exercises.js`, `routines.js` Liste/Detail/Übung-hinzufügen, `workout-exercise-detail.js`), zentrierte `items-center` die einzeilige Überschrift vertikal gegen den höheren 44px-Button/Touch-Target — dadurch saß das `<h1>` dort sichtbar tiefer als im Workout-Tab, wo der Block aus Titel + Datums-Unterzeile bereits höher als der Kalender-Button ist und deshalb bündig am oberen Rand sitzt
+- Zeilen jetzt auf `items-start` umgestellt, sodass der Block-/Zeilen-Anfang überall gleich sitzt wie im Workout-Tab. Die beiden reinen Text-Zurückpfeile (`←`) in `routines.js`, die bisher ohne eigenes Zentrieren nur von `items-center` der Zeile profitierten, bekommen zusätzlich `flex items-center justify-center`, damit das Pfeil-Glyph weiterhin mittig im eigenen 44×44px-Tap-Target sitzt (wie `.icon-btn-glass` es bereits nativ tut)
+
 ## 2026-09-07 (Automatisierte Tests für Löschkaskaden, Routine-Wechsel und Tages-Workout-Eindeutigkeit)
 
 ### Added

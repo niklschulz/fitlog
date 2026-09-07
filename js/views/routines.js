@@ -47,7 +47,7 @@ async function renderList() {
 
   return `
     <div class="py-4 flex flex-col gap-4">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-start justify-between gap-3">
         <h1 class="text-screen-title">Routinen</h1>
         <button id="add-routine-btn" class="tap-feedback ${BTN_PRIMARY} px-4 py-2 min-h-[44px]">
           + Neue Routine
@@ -135,8 +135,8 @@ async function renderEditor() {
 
   return `
     <div class="py-4 flex flex-col gap-4">
-      <div class="flex items-center gap-3">
-        <button id="back-to-list-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted">←</button>
+      <div class="flex items-start gap-3">
+        <button id="back-to-list-btn" class="tap-feedback flex items-center justify-center min-w-[44px] min-h-[44px] text-muted">←</button>
         <h1 class="text-screen-title flex-1 truncate">${escapeHtml(routine.name)}</h1>
       </div>
 
@@ -187,8 +187,8 @@ async function renderPicker() {
 
   return `
     <div class="py-4 flex flex-col gap-4">
-      <div class="flex items-center gap-3">
-        <button id="back-to-editor-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted">←</button>
+      <div class="flex items-start gap-3">
+        <button id="back-to-editor-btn" class="tap-feedback flex items-center justify-center min-w-[44px] min-h-[44px] text-muted">←</button>
         <h1 class="text-screen-title flex-1 truncate">Übung hinzufügen</h1>
       </div>
 
