@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Service Worker: Cache-first auf die bekannte App-Shell eingeschränkt)
+
+### Fixed
+- `sw.js` fing bisher ausnahmslos jeden GET-Request ab und cachte jede Antwort, egal woher sie kam — für die aktuelle App (nur eigene, feste Dateien + zwei CDN-Skripte) unproblematisch, aber ein Sicherheits-/Datenschutzrisiko sobald der geplante Sync zum eigenen Server (s. "Sync & Infrastruktur" in `architecture.md`) kommt: Server-Antworten mit echten Trainingsdaten wären unkontrolliert im Browser-Cache gelandet
+- Cache-first läuft jetzt ausschließlich für Requests, deren URL in `APP_SHELL`/`CDN_SHELL` steht (`APP_SHELL_URLS`-Set, zur Laufzeit aus den relativen Pfaden aufgelöst) — alle anderen Requests werden vom `fetch`-Handler gar nicht mehr abgefangen und laufen unverändert direkt ans Netzwerk. Offline-Zugriff auf Trainingsdaten ist davon nicht betroffen (die liegen in IndexedDB, nicht hinter einem GET-Request)
+- Zusätzlich: Bei eigenen App-Shell-Dateien werden nur noch tatsächlich erfolgreiche Antworten (`response.ok`) gecacht, keine Fehlerantworten mehr. CDN-Antworten bleiben unverändert immer opaque (wegen `mode: 'no-cors'`) und werden wie bisher trotzdem gecacht
+
 ## 2026-09-07 (Workout-Tab: veraltete paint()-Aufrufe können Tab-Wechsel nicht mehr überschreiben)
 
 ### Fixed
