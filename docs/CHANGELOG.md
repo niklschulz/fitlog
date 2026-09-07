@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 ("+ Übung hinzufügen" im Workout-Tab: Übungs-Sheet mit Mehrfachauswahl)
+
+### Added
+- Neues Übungs-Sheet (großes Bottom-Sheet, gleiches Muster wie der Kalender): Übungen ansehen, per Mehrfachauswahl gesammelt zum Tages-Workout hinzufügen, direkt im Sheet eine neue Übung anlegen. Erste funktionsfähige Umsetzung von "+ Übung hinzufügen" (bisher reiner Platzhalter seit ADR 0007). Details/Entscheidungen: [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md)
+- Tap auf eine Übung im Sheet öffnet ein zweites, darüber gestapeltes Übungs-Detail-Sheet (Kopfzeile fertig, Inhalt noch Platzhalter — Konzept dafür folgt separat)
+- `addExercisesToWorkout()` in `js/db.js` — fügt mehrere Übungen gesammelt in einer Transaktion zu einem Workout hinzu (`sourceRoutineId: null`, bleiben von Routine-Wechsel/-Entfernen unberührt)
+- Neues Modul `js/sheet.js`: geteilte Bottom-Sheet-Mechanik (Body-Scroll-Sperre, Bottom-Nav-z-index, Drag-to-Dismiss), jetzt gezählt statt reiner An/Aus-Flags, damit mehrere Sheets gleichzeitig offen sein können. Der bisher kalender-spezifische Code in `workout.js` nutzt dieselbe Basis, CSS-Klassen von `.calendar-sheet`/`.calendar-sheet-backdrop` auf generisch `.bottom-sheet`/`.bottom-sheet-backdrop` umbenannt
+
 ## 2026-09-07 (Kalender-Sheet: "Heute"-Icon, größerer Kopfzeilen-Abstand, Scroll-Fix)
 
 ### Changed

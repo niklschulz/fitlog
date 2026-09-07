@@ -242,23 +242,24 @@ input[type="number"]::-webkit-outer-spin-button {
   to { left: 10px; width: 7px; }
 }
 
-/* Großer Kalender (Bottom-Sheet, Abschnitt 11): schiebt sich von unten
-   herein/heraus (js/views/workout.js hält die Animationsdauer per
-   CALENDAR_SHEET_CLOSE_ANIMATION_MS synchron). `top` statt einer festen
-   vh-Höhe (s. CHANGELOG, Zweiundfünfzigste/Dreiundfünfzigste Iteration in
+/* Großes Bottom-Sheet (Kalender, Übungen, Übungs-Detail - s. ADR 0011):
+   schiebt sich von unten herein/heraus (js/sheet.js hält die Animationsdauer
+   per SHEET_CLOSE_ANIMATION_MS synchron). `top` statt einer festen vh-Höhe
+   (s. CHANGELOG, Zweiundfünfzigste/Dreiundfünfzigste Iteration in
    design-system.md) - zusammen mit dem Tailwind-`bottom-0` am Element
    ergibt sich die Höhe automatisch aus dem verfügbaren Platz und reicht
    dadurch exakt bis knapp unter die Dynamic Island/Notch, statt nur
-   zufällig genug Abstand zu lassen. Eigene Klasse statt generischem
-   Utility, da dieses Muster wiederverwendet werden soll, sobald ein
-   zweites großes Sheet dazukommt. */
-.calendar-sheet {
+   zufällig genug Abstand zu lassen. Ursprünglich kalender-spezifisch
+   (`.calendar-sheet`), mit ADR 0011 auf diese generische Klasse
+   umbenannt, da jetzt mehrere Sheets sie teilen (auch gleichzeitig
+   gestapelt, s. Übungs-Sheet + Übungs-Detail-Sheet). */
+.bottom-sheet {
   top: calc(env(safe-area-inset-top) + 8px);
-  animation: calendar-sheet-slide-up 220ms ease-out;
+  animation: bottom-sheet-slide-up 220ms ease-out;
 }
 
-/* Garantiert, dass sich auch der letzte im Sheet gerenderte Monat noch
-   bündig an den oberen Rand scrollen lässt (`scrollIntoView({block:
+/* Garantiert, dass sich auch der letzte im großen Kalender gerenderte Monat
+   noch bündig an den oberen Rand scrollen lässt (`scrollIntoView({block:
    'start'})` beim Öffnen/beim "Heute"-Button, s. workout.js). Ohne diesen
    Puffer bricht der Scroll vorzeitig ab, sobald nach dem Zielmonat nicht
    mehr genug Folge-Inhalt übrig ist, um ihn ganz nach oben zu schieben -
@@ -267,42 +268,44 @@ input[type="number"]::-webkit-outer-spin-button {
    gerenderte Monat und damit der Normalfall dafür, nicht nur ein
    Rand-Fall. `min-height: 100%` bezieht sich auf die Content-Box von
    `#calendar-sheet-months` (definite Höhe durch `flex-1` im umgebenden
-   `.calendar-sheet`) und wächst automatisch mit der Sheet-Höhe auf jedem
-   Gerät mit, statt einen festen Pixel-Puffer zu raten. */
+   `.bottom-sheet`) und wächst automatisch mit der Sheet-Höhe auf jedem
+   Gerät mit, statt einen festen Pixel-Puffer zu raten. Kalender-spezifisch
+   (ID-Selektor), bleibt deshalb hier statt in eine generische Sheet-Regel
+   zu wandern. */
 #calendar-sheet-months > .calendar-sheet-month:last-child {
   min-height: 100%;
 }
 
-.calendar-sheet.closing {
-  animation: calendar-sheet-slide-down 220ms ease-in forwards;
+.bottom-sheet.closing {
+  animation: bottom-sheet-slide-down 220ms ease-in forwards;
 }
 
-@keyframes calendar-sheet-slide-up {
+@keyframes bottom-sheet-slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
 
-@keyframes calendar-sheet-slide-down {
+@keyframes bottom-sheet-slide-down {
   from { transform: translateY(0); }
   to { transform: translateY(100%); }
 }
 
 /* Backdrop-Abdunklung fadet statt hart ein-/auszublenden (vorher ohne
    jede Übergangs-Animation - wirkte "ruckartig", s. CHANGELOG). */
-.calendar-sheet-backdrop {
-  animation: calendar-sheet-backdrop-fade-in 220ms ease-out forwards;
+.bottom-sheet-backdrop {
+  animation: bottom-sheet-backdrop-fade-in 220ms ease-out forwards;
 }
 
-.calendar-sheet-backdrop.closing {
-  animation: calendar-sheet-backdrop-fade-out 220ms ease-in forwards;
+.bottom-sheet-backdrop.closing {
+  animation: bottom-sheet-backdrop-fade-out 220ms ease-in forwards;
 }
 
-@keyframes calendar-sheet-backdrop-fade-in {
+@keyframes bottom-sheet-backdrop-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes calendar-sheet-backdrop-fade-out {
+@keyframes bottom-sheet-backdrop-fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
 }

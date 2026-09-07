@@ -5,10 +5,20 @@ import {
   getWorkoutExercises,
   applyRoutineToWorkout,
   removeRoutineFromWorkout,
+  addExercisesToWorkout,
+  createExercise,
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, withViewTransition } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, INPUT, CARD, LIST_ROW, withViewTransition } from '../utils.js';
+import {
+  lockBodyScroll,
+  unlockBodyScroll,
+  raiseNavAboveSheet,
+  resetNavZIndex,
+  wireSheetDrag,
+  SHEET_CLOSE_ANIMATION_MS,
+} from '../sheet.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
@@ -19,6 +29,18 @@ let state = {
   routinePickerClosing: false,
   calendarSheetOpen: false,
   calendarSheetClosing: false,
+  // Übungs-Sheet (Abschnitt 13): Übungen ansehen/auswählen/neu anlegen, um
+  // sie gesammelt zum Tages-Workout hinzuzufügen, s. ADR 0011.
+  exerciseSheetOpen: false,
+  exerciseSheetClosing: false,
+  exerciseSheetMode: 'list', // 'list' | 'create'
+  exerciseSheetSelectedIds: new Set(),
+  // Übungs-Detail-Sheet: überlagert das Übungs-Sheet (Stapel-Sheet), öffnet
+  // sich bei Tap auf eine Übungszeile. Inhalt bewusst noch Platzhalter -
+  // Konzept für die eigentlichen Details folgt separat.
+  exerciseDetailSheetOpen: false,
+  exerciseDetailSheetClosing: false,
+  exerciseDetailSheetExerciseId: null,
 };
 
 // Erhöht sich bei jedem render()/unmount() (= neue Mount-Instanz dieser
@@ -43,16 +65,28 @@ export async function render(container) {
   state.routinePickerClosing = false;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
+  state.exerciseSheetOpen = false;
+  state.exerciseSheetClosing = false;
+  state.exerciseSheetMode = 'list';
+  state.exerciseSheetSelectedIds = new Set();
+  state.exerciseDetailSheetOpen = false;
+  state.exerciseDetailSheetClosing = false;
+  state.exerciseDetailSheetExerciseId = null;
   await paint();
 }
 
 // Wird von app.js aufgerufen, bevor zu einer anderen View gewechselt wird
-// (s. showView()). Nötig, seit die Bottom-Nav bei offenem Kalender-Sheet
-// nutzbar ist (s. raiseNavAboveCalendarSheet): Ein Tab-Wechsel während
+// (s. showView()). Nötig, seit die Bottom-Nav bei offenem Sheet nutzbar ist
+// (s. raiseNavAboveSheet in js/sheet.js): Ein Tab-Wechsel während
 // offenem/schließendem Sheet würde sonst dauerhaft die Body-Scroll-Sperre
 // und den angehobenen Nav-z-index hinterlassen - und ein noch ausstehender
 // Schließen-Timeout würde nachträglich paint() auf dem inzwischen von der
-// neuen View belegten Container aufrufen.
+// neuen View belegten Container aufrufen. Jedes Sheet, das beim Verlassen
+// noch offen war (open bleibt bei "closing" true, s. closeCalendarSheet()
+// & Co.), hatte genau einen unbeantworteten lockBodyScroll()/
+// raiseNavAboveSheet()-Aufruf - hier wird er exakt einmal pro betroffenem
+// Sheet ausgeglichen, nicht pauschal (s. js/sheet.js zur Zähl-Logik, die
+// gleichzeitig offene Stapel-Sheets wie Übungen+Übungs-Detail erlaubt).
 export function unmount() {
   renderEpoch++;
   if (pendingCalendarSheetCloseTimeout) {
@@ -63,8 +97,26 @@ export function unmount() {
     clearTimeout(pendingRoutinePickerCloseTimeout);
     pendingRoutinePickerCloseTimeout = null;
   }
-  unlockBodyScroll();
-  resetNavZIndex();
+  if (pendingExerciseSheetCloseTimeout) {
+    clearTimeout(pendingExerciseSheetCloseTimeout);
+    pendingExerciseSheetCloseTimeout = null;
+  }
+  if (pendingExerciseDetailSheetCloseTimeout) {
+    clearTimeout(pendingExerciseDetailSheetCloseTimeout);
+    pendingExerciseDetailSheetCloseTimeout = null;
+  }
+  if (state.calendarSheetOpen) {
+    unlockBodyScroll();
+    resetNavZIndex();
+  }
+  if (state.exerciseSheetOpen) {
+    unlockBodyScroll();
+    resetNavZIndex();
+  }
+  if (state.exerciseDetailSheetOpen) {
+    unlockBodyScroll();
+    resetNavZIndex();
+  }
   // War die Übungs-Detailseite (Abschnitt 12) gerade aktiv, hat auch sie
   // noch einen eigenen renderEpoch-Zähler (s. dort) - unconditional
   // aufrufen ist harmlos, falls sie gar nicht aktiv war (kein aktueller
@@ -204,56 +256,9 @@ function allowedSheetMonths() {
   return months;
 }
 
-// Verhindert Scrollen des Workout-Tabs im Hintergrund, während das
-// Kalender-Sheet offen ist.
-//
-// Frühere Version setzte body auf position:fixed (samt negativem
-// top-Offset) - das ist auf dem Papier vom Sheet selbst (ebenfalls
-// position:fixed) unabhängig, hat sich auf einem echten iPhone aber
-// nachweislich auf dessen Positionierung ausgewirkt (Sheet zu weit unten UND
-// weiterhin ein Lücke am unteren Rand statt exakt an bottom:0 zu sitzen) -
-// vermutlich eine WebKit-Eigenheit, wie position:fixed auf body verschachtelte
-// fixed-Elemente behandelt, die sich in der (Chromium-basierten) Testumgebung
-// nicht nachstellen ließ. Stattdessen jetzt der einfachere, body selbst nicht
-// aus dem normalen Fluss nehmende Ansatz: overflow:hidden auf body (blockiert
-// Maus-/Tastatur-/Trackpad-Scroll) plus ein gezielter touchmove-Blocker für
-// iOS' Rubber-Band-Scroll (den overflow:hidden allein auf Safari nicht immer
-// verhindert) - der Blocker lässt Touch-Bewegungen innerhalb des
-// Kalender-Monats-Bereichs explizit durch, damit das Sheet selbst weiter
-// scrollbar bleibt.
-let calendarSheetTouchBlocker = null;
-
-function lockBodyScroll() {
-  document.body.style.overflow = 'hidden';
-  calendarSheetTouchBlocker = (e) => {
-    if (e.target.closest('#calendar-sheet-months')) return;
-    e.preventDefault();
-  };
-  document.addEventListener('touchmove', calendarSheetTouchBlocker, { passive: false });
-}
-
-function unlockBodyScroll() {
-  document.body.style.overflow = '';
-  if (calendarSheetTouchBlocker) {
-    document.removeEventListener('touchmove', calendarSheetTouchBlocker);
-    calendarSheetTouchBlocker = null;
-  }
-}
-
-// Die Bottom-Nav liegt normalerweise unterhalb des Kalender-Sheets
-// (z-20 vs. z-50/51) und wäre dadurch komplett verdeckt. Während das Sheet
-// offen ist, wird ihr z-index per Inline-Style gezielt angehoben (höhere
-// Priorität als jede Klassen-Regel, unabhängig von der CSS-Ladereihenfolge
-// zwischen Tailwind und styles.css) - bewusst nur für die Dauer des
-// Sheet-Lebenszyklus und nicht dauerhaft, damit andere Overlays (z. B. der
-// Routine-Picker) weiterhin unbeeinflusst über der Nav liegen.
-function raiseNavAboveCalendarSheet() {
-  document.getElementById('bottom-nav')?.style.setProperty('z-index', '55');
-}
-
-function resetNavZIndex() {
-  document.getElementById('bottom-nav')?.style.removeProperty('z-index');
-}
+// Body-Scroll-Sperre, Bottom-Nav-z-index-Anhebung und Drag-to-Dismiss sind
+// generisch in js/sheet.js (s. Import oben, ADR 0011) - hier nur noch die
+// Kalender-eigene Verwendung davon (Öffnen/Schließen-Zustand, Ziel-Monat).
 
 // --- Paint ---
 
@@ -331,12 +336,14 @@ async function paint() {
 
       ${renderExerciseRoster(entries, nameById, setsByExercise)}
 
-      <button type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] ${TEXTLINK_ACTION}">
+      <button id="add-exercise-to-workout-btn" type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] ${TEXTLINK_ACTION}">
         Übung hinzufügen
       </button>
     </div>
 
     ${state.calendarSheetOpen ? await renderCalendarSheet() : ''}
+    ${state.exerciseSheetOpen ? await renderExerciseSheet() : ''}
+    ${state.exerciseDetailSheetOpen ? await renderExerciseDetailSheet() : ''}
   `;
 
   // Tab kann während der obigen awaits gewechselt worden sein (s. renderEpoch
@@ -477,8 +484,8 @@ async function renderCalendarSheet() {
   const monthSections = months.map((ym) => renderSheetMonth(ym, datesWithSets)).join('');
 
   return `
-    <div id="calendar-sheet-backdrop" class="calendar-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
-    <div class="calendar-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
+    <div id="calendar-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
+    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
       <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
         <button id="calendar-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Kalender schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -496,7 +503,7 @@ async function renderCalendarSheet() {
           </svg>
         </button>
       </div>
-      <div id="calendar-sheet-months" class="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-6">
+      <div id="calendar-sheet-months" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-6">
         ${monthSections}
       </div>
     </div>
@@ -639,14 +646,13 @@ function closeRoutinePicker() {
   }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
 }
 
-// Öffnet den Kalender, sperrt das Hintergrund-Scrollen (s.
-// lockBodyScroll) und scrollt nach dem Paint zum Monat des aktuell
-// gewählten Tages.
+// Öffnet den Kalender, sperrt das Hintergrund-Scrollen (s. js/sheet.js) und
+// scrollt nach dem Paint zum Monat des aktuell gewählten Tages.
 async function openCalendarSheet() {
   state.calendarSheetOpen = true;
   state.calendarSheetClosing = false;
   lockBodyScroll();
-  raiseNavAboveCalendarSheet();
+  raiseNavAboveSheet();
   // paint() muss vor dem Scroll-Versuch fertig sein - es lädt die
   // Kalenderdaten asynchron (getDatesWithSetsInRange), das innerHTML steht
   // also erst nach dem await tatsächlich im DOM.
@@ -660,15 +666,13 @@ async function openCalendarSheet() {
 }
 
 // Analog zu closeRoutinePicker: erst die Schließen-Animation abspielen
-// (muss zur Dauer von .calendar-sheet.closing in css/styles.css passen),
+// (muss zur Dauer von .bottom-sheet.closing in css/styles.css passen),
 // danach erst wirklich aus dem State/DOM entfernen und das
 // Hintergrund-Scrollen wieder freigeben. finalizeCalendarSheetClose ist der
 // gemeinsame Abschluss-Schritt für diesen Weg UND für das Drag-to-Dismiss
-// (s. wireCalendarSheetDrag) - dort läuft die Animation über eine direkte
-// Transform-Transition statt der CSS-Keyframes, das Zurücksetzen von State
-// und Body-Scroll-Lock ist aber identisch.
-const CALENDAR_SHEET_CLOSE_ANIMATION_MS = 220;
-
+// (s. wireSheetDrag in js/sheet.js) - dort läuft die Animation über eine
+// direkte Transform-Transition statt der CSS-Keyframes, das Zurücksetzen
+// von State und Body-Scroll-Lock ist aber identisch.
 function finalizeCalendarSheetClose() {
   pendingCalendarSheetCloseTimeout = null;
   state.calendarSheetOpen = false;
@@ -681,8 +685,8 @@ function finalizeCalendarSheetClose() {
 // Hält die ID des ausstehenden Abschluss-Timeouts fest (Schließen-Animation
 // noch nicht fertig). Muss in unmount() abgebrochen werden können: Wechselt
 // der Nutzer den Tab, während die Animation noch läuft (jetzt möglich, da
-// die Nav währenddessen nutzbar ist, s. raiseNavAboveCalendarSheet), würde
-// der verzögerte finalizeCalendarSheetClose()-Aufruf sonst noch nachträglich
+// die Nav währenddessen nutzbar ist, s. raiseNavAboveSheet), würde der
+// verzögerte finalizeCalendarSheetClose()-Aufruf sonst noch nachträglich
 // paint() auf dem inzwischen von einer anderen View belegten Container
 // aufrufen und deren Inhalt überschreiben.
 let pendingCalendarSheetCloseTimeout = null;
@@ -691,72 +695,274 @@ function closeCalendarSheet() {
   if (!state.calendarSheetOpen || state.calendarSheetClosing) return;
   state.calendarSheetClosing = true;
   paint();
-  pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
+  pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, SHEET_CLOSE_ANIMATION_MS);
 }
 
-// Drag-to-Dismiss am Ziehgriff: Der Griff selbst wird per Pointer Events
-// (touch- und mausfähig) verfolgt, Sheet und Backdrop werden währenddessen
-// direkt per Inline-Style bewegt/abgeblendet (außerhalb von paint(), da wir
-// hier 1:1 dem Finger folgen müssen statt in Render-Zyklen zu denken).
-// `touch-action: none` auf dem Griff (s. renderCalendarSheet) verhindert,
-// dass Safari die Geste stattdessen als Seiten-Scroll interpretiert.
-const CALENDAR_SHEET_DRAG_CLOSE_THRESHOLD_PX = 120;
-let calendarSheetDrag = null;
-
 function wireCalendarSheetDrag() {
-  const handle = currentContainer.querySelector('#calendar-sheet-handle');
-  const sheetEl = currentContainer.querySelector('.calendar-sheet');
   const backdropEl = currentContainer.querySelector('#calendar-sheet-backdrop');
-  if (!handle || !sheetEl || !backdropEl) return;
-
-  handle.addEventListener('pointerdown', (e) => {
-    if (state.calendarSheetClosing) return;
-    calendarSheetDrag = { startY: e.clientY };
-    sheetEl.style.transition = 'none';
-    backdropEl.style.transition = 'none';
-    try {
-      handle.setPointerCapture(e.pointerId);
-    } catch {
-      // Kein aktiver Pointer mit dieser ID (z. B. bei synthetischen Events) -
-      // die Drag-Logik selbst funktioniert auch ohne Capture weiter, nur
-      // ohne die Garantie, dass Move-Events bei schnellen Gesten am
-      // Element "kleben" bleiben.
-    }
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#calendar-sheet-handle'),
+    // Mehrere `.bottom-sheet`-Elemente können gleichzeitig im DOM stehen
+    // (Übungs-Sheet + Übungs-Detail-Sheet sind gestapelt) - der eindeutige
+    // Backdrop identifiziert zuverlässig sein eigenes Panel als direkten
+    // Nachbarn, statt sich auf die (dann mehrdeutige) generische Klasse zu
+    // verlassen. Kalender-/Übungs-Sheet sind zwar nie gleichzeitig offen,
+    // dieselbe robuste Selektion wird hier trotzdem einheitlich verwendet.
+    sheetEl: backdropEl?.nextElementSibling ?? null,
+    backdropEl,
+    isClosing: () => state.calendarSheetClosing,
+    onDismiss: () => {
+      pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
   });
+}
 
-  handle.addEventListener('pointermove', (e) => {
-    if (!calendarSheetDrag) return;
-    const delta = Math.max(0, e.clientY - calendarSheetDrag.startY);
-    sheetEl.style.transform = `translateY(${delta}px)`;
-    backdropEl.style.opacity = String(1 - Math.min(delta / sheetEl.offsetHeight, 1));
+// --- Übungs-Sheet (Abschnitt 13) ---
+//
+// Zwei Inhalts-Zustände (`state.exerciseSheetMode`) innerhalb desselben
+// Sheets statt eigener Sub-Views, analog zum Muster in exercises.js/
+// routines.js: 'list' (Übungen ansehen/auswählen) und 'create' (Name-
+// Formular für eine neue Übung). Mehrfachauswahl statt Sofort-Hinzufügen
+// (Nutzer-Vorgabe) - `exerciseSheetSelectedIds` sammelt IDs, ein Tap auf den
+// Übungsnamen selbst öffnet stattdessen das gestapelte Übungs-Detail-Sheet
+// (s. unten), Löschen ist bewusst nicht Teil dieses Sheets (Nutzer-Vorgabe -
+// bleibt vorerst dem Übungen-Tab vorbehalten, s. CHANGELOG).
+async function renderExerciseSheet() {
+  const closing = state.exerciseSheetClosing;
+  const workout = await getWorkoutByDate(state.selectedDate);
+  const inWorkoutIds = new Set(workout ? (await getWorkoutExercises(workout.id)).map((e) => e.exerciseId) : []);
+  const allExercises = await db.exercises.orderBy('name').toArray();
+  const selectedIds = state.exerciseSheetSelectedIds;
+  const hasCommitBar = state.exerciseSheetMode === 'list' && selectedIds.size > 0;
+
+  const bodyHtml =
+    state.exerciseSheetMode === 'create'
+      ? renderExerciseCreateForm()
+      : renderExerciseSheetList(allExercises, inWorkoutIds, selectedIds);
+
+  return `
+    <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
+    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
+      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
+        <button id="exercise-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Übungen schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div id="exercise-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+          <span class="text-card-title">Übungen</span>
+        </div>
+        ${
+          state.exerciseSheetMode === 'list'
+            ? `<button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Übung erstellen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>`
+            : '<div aria-hidden="true"></div>'
+        }
+      </div>
+      <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 ${hasCommitBar ? 'pb-4' : 'pb-[calc(env(safe-area-inset-bottom)+112px)]'} flex flex-col gap-2">
+        ${bodyHtml}
+      </div>
+      ${hasCommitBar ? renderExerciseSheetCommitBar(selectedIds.size) : ''}
+    </div>
+  `;
+}
+
+function renderExerciseSheetList(allExercises, inWorkoutIds, selectedIds) {
+  if (allExercises.length === 0) {
+    return `<p class="text-body text-muted text-center py-12">Noch keine Übungen angelegt. Tippe oben rechts auf „+", um die erste zu erstellen.</p>`;
+  }
+
+  return `
+    <ul class="flex flex-col gap-2">
+      ${allExercises
+        .map((ex) => renderExerciseSheetRow(ex, inWorkoutIds.has(ex.id), selectedIds.has(ex.id)))
+        .join('')}
+    </ul>
+  `;
+}
+
+// Führende Spalte zeigt entweder den Auswahl-Kreis (antippbar, toggelt
+// exerciseSheetSelectedIds) oder - für Übungen, die heute schon im Roster
+// stehen - ein rein informatives, deaktiviertes Häkchen-Badge (Nutzer-
+// Vorgabe: sichtbar lassen statt ausblenden, das Sheet dient auch zum
+// Ansehen). Der Name selbst ist immer ein eigenes Tap-Ziel zum Übungs-
+// Detail-Sheet, unabhängig vom Auswahl-/Bereits-Vorhanden-Status.
+function renderExerciseSheetRow(exercise, alreadyInWorkout, isSelected) {
+  const leadingColumn = alreadyInWorkout
+    ? `<span class="min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-hidden="true">
+        <span class="w-6 h-6 rounded-full flex items-center justify-center bg-raised text-muted text-label">✓</span>
+      </span>`
+    : `<button type="button" data-id="${exercise.id}" class="exercise-select-toggle-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-pressed="${isSelected}" aria-label="${escapeHtml(exercise.name)} ${isSelected ? 'abwählen' : 'auswählen'}">
+        <span class="w-6 h-6 rounded-full flex items-center justify-center text-label ${isSelected ? 'bg-accent' : 'border-2 border-white/25'}">${isSelected ? '✓' : ''}</span>
+      </button>`;
+
+  return `
+    <li class="${LIST_ROW} flex items-center gap-3">
+      ${leadingColumn}
+      <button type="button" data-id="${exercise.id}" class="exercise-open-detail-btn tap-feedback flex-1 text-left text-card-title truncate">
+        ${escapeHtml(exercise.name)}
+      </button>
+    </li>
+  `;
+}
+
+function renderExerciseCreateForm() {
+  return `
+    <form id="exercise-create-form" class="flex flex-col gap-3 ${CARD}">
+      <label class="text-label text-muted" for="new-exercise-name">Name</label>
+      <input
+        id="new-exercise-name"
+        name="name"
+        type="text"
+        autocomplete="off"
+        placeholder="z. B. Kniebeuge"
+        class="bg-base ${INPUT}"
+        required
+      />
+      <div class="flex gap-3">
+        <button type="submit" class="tap-feedback flex-1 ${BTN_PRIMARY} py-3 min-h-[44px]">
+          Erstellen
+        </button>
+        <button type="button" id="exercise-create-cancel-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  `;
+}
+
+// Nicht Teil der scrollenden Liste, sondern eine eigene, nicht schrumpfende
+// Flex-Zone unter ihr (nur gerendert, solange ≥1 Übung ausgewählt ist) -
+// bekommt dieselbe Bottom-Nav-Abstandsreserve wie sonst die Kalender-Liste
+// (die Nav schwebt während offenem Sheet per raiseNavAboveSheet über allem),
+// damit der Button nicht dahinter verschwindet.
+function renderExerciseSheetCommitBar(count) {
+  return `
+    <div class="flex-shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+112px)]">
+      <button type="button" id="exercise-sheet-commit-btn" class="tap-feedback w-full ${BTN_PRIMARY} py-3 min-h-[44px]">
+        Hinzufügen (${count})
+      </button>
+    </div>
+  `;
+}
+
+async function openExerciseSheet() {
+  state.exerciseSheetOpen = true;
+  state.exerciseSheetClosing = false;
+  state.exerciseSheetMode = 'list';
+  state.exerciseSheetSelectedIds = new Set();
+  lockBodyScroll();
+  raiseNavAboveSheet();
+  await paint();
+}
+
+function finalizeExerciseSheetClose() {
+  pendingExerciseSheetCloseTimeout = null;
+  state.exerciseSheetOpen = false;
+  state.exerciseSheetClosing = false;
+  unlockBodyScroll();
+  resetNavZIndex();
+  paint();
+}
+
+let pendingExerciseSheetCloseTimeout = null;
+
+function closeExerciseSheet() {
+  if (!state.exerciseSheetOpen || state.exerciseSheetClosing) return;
+  state.exerciseSheetClosing = true;
+  paint();
+  pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+}
+
+function wireExerciseSheetDrag() {
+  const backdropEl = currentContainer.querySelector('#exercise-sheet-backdrop');
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#exercise-sheet-handle'),
+    sheetEl: backdropEl?.nextElementSibling ?? null,
+    backdropEl,
+    isClosing: () => state.exerciseSheetClosing,
+    onDismiss: () => {
+      pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
   });
+}
 
-  const endDrag = (e) => {
-    if (!calendarSheetDrag) return;
-    const delta = Math.max(0, e.clientY - calendarSheetDrag.startY);
-    calendarSheetDrag = null;
+// --- Übungs-Detail-Sheet ---
+//
+// Überlagert das Übungs-Sheet (Stapel-Sheet, höhere z-Ebene) statt es zu
+// ersetzen - Tap auf eine Übungszeile öffnet dieses zweite Sheet obendrauf,
+// das darunterliegende bleibt offen/sichtbar. Inhalt ist bewusst noch ein
+// Platzhalter (Konzept für die eigentlichen Details/Löschen-Aktion folgt
+// separat, s. CHANGELOG) - Kopfzeile und Sheet-Mechanik sind aber bereits
+// vollständig, damit später nur noch der Body-Inhalt ergänzt werden muss.
+async function renderExerciseDetailSheet() {
+  const closing = state.exerciseDetailSheetClosing;
+  const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
+  const name = exercise?.name ?? 'Gelöschte Übung';
 
-    sheetEl.style.transition = `transform ${CALENDAR_SHEET_CLOSE_ANIMATION_MS}ms ease`;
-    backdropEl.style.transition = `opacity ${CALENDAR_SHEET_CLOSE_ANIMATION_MS}ms ease`;
+  return `
+    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-[52] bg-black/50"></div>
+    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
+      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
+        <button id="exercise-detail-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div id="exercise-detail-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px] px-2" style="touch-action: none;">
+          <span class="text-card-title truncate">${escapeHtml(name)}</span>
+        </div>
+        <div aria-hidden="true"></div>
+      </div>
+      <div class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
+        <p class="text-body text-muted text-center py-12">Weitere Details folgen.</p>
+      </div>
+    </div>
+  `;
+}
 
-    if (delta > CALENDAR_SHEET_DRAG_CLOSE_THRESHOLD_PX) {
-      sheetEl.style.transform = 'translateY(100%)';
-      backdropEl.style.opacity = '0';
-      pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
-    } else {
-      sheetEl.style.transform = 'translateY(0)';
-      backdropEl.style.opacity = '1';
-      setTimeout(() => {
-        sheetEl.style.transition = '';
-        sheetEl.style.transform = '';
-        backdropEl.style.transition = '';
-        backdropEl.style.opacity = '';
-      }, CALENDAR_SHEET_CLOSE_ANIMATION_MS);
-    }
-  };
+async function openExerciseDetailSheet(exerciseId) {
+  state.exerciseDetailSheetExerciseId = exerciseId;
+  state.exerciseDetailSheetOpen = true;
+  state.exerciseDetailSheetClosing = false;
+  lockBodyScroll();
+  raiseNavAboveSheet();
+  await paint();
+}
 
-  handle.addEventListener('pointerup', endDrag);
-  handle.addEventListener('pointercancel', endDrag);
+function finalizeExerciseDetailSheetClose() {
+  pendingExerciseDetailSheetCloseTimeout = null;
+  state.exerciseDetailSheetOpen = false;
+  state.exerciseDetailSheetClosing = false;
+  state.exerciseDetailSheetExerciseId = null;
+  unlockBodyScroll();
+  resetNavZIndex();
+  paint();
+}
+
+let pendingExerciseDetailSheetCloseTimeout = null;
+
+function closeExerciseDetailSheet() {
+  if (!state.exerciseDetailSheetOpen || state.exerciseDetailSheetClosing) return;
+  state.exerciseDetailSheetClosing = true;
+  paint();
+  pendingExerciseDetailSheetCloseTimeout = setTimeout(finalizeExerciseDetailSheetClose, SHEET_CLOSE_ANIMATION_MS);
+}
+
+function wireExerciseDetailSheetDrag() {
+  const backdropEl = currentContainer.querySelector('#exercise-detail-sheet-backdrop');
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#exercise-detail-sheet-handle'),
+    sheetEl: backdropEl?.nextElementSibling ?? null,
+    backdropEl,
+    isClosing: () => state.exerciseDetailSheetClosing,
+    onDismiss: () => {
+      pendingExerciseDetailSheetCloseTimeout = setTimeout(finalizeExerciseDetailSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
+  });
 }
 
 function wireEvents() {
@@ -843,4 +1049,77 @@ function wireEvents() {
       }, 'forward');
     });
   });
+
+  // --- Übungs-Sheet (Abschnitt 13) ---
+
+  currentContainer.querySelector('#add-exercise-to-workout-btn')?.addEventListener('click', () => {
+    openExerciseSheet();
+  });
+
+  currentContainer.querySelector('#exercise-sheet-backdrop')?.addEventListener('click', () => {
+    closeExerciseSheet();
+  });
+
+  currentContainer.querySelector('#exercise-sheet-close-btn')?.addEventListener('click', () => {
+    closeExerciseSheet();
+  });
+
+  currentContainer.querySelector('#exercise-sheet-new-btn')?.addEventListener('click', () => {
+    state.exerciseSheetMode = 'create';
+    paint();
+  });
+
+  currentContainer.querySelector('#exercise-create-cancel-btn')?.addEventListener('click', () => {
+    state.exerciseSheetMode = 'list';
+    paint();
+  });
+
+  currentContainer.querySelector('#exercise-create-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = e.target.elements.name.value.trim();
+    if (!name) return;
+
+    const exercise = await createExercise(name);
+    state.exerciseSheetSelectedIds.add(exercise.id);
+    state.exerciseSheetMode = 'list';
+    paint();
+  });
+
+  wireExerciseSheetDrag();
+
+  currentContainer.querySelectorAll('.exercise-select-toggle-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      if (state.exerciseSheetSelectedIds.has(id)) {
+        state.exerciseSheetSelectedIds.delete(id);
+      } else {
+        state.exerciseSheetSelectedIds.add(id);
+      }
+      paint();
+    });
+  });
+
+  currentContainer.querySelectorAll('.exercise-open-detail-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      openExerciseDetailSheet(btn.dataset.id);
+    });
+  });
+
+  currentContainer.querySelector('#exercise-sheet-commit-btn')?.addEventListener('click', async () => {
+    const workout = await getOrCreateWorkoutForDate(state.selectedDate);
+    await addExercisesToWorkout(workout.id, [...state.exerciseSheetSelectedIds]);
+    closeExerciseSheet();
+  });
+
+  // --- Übungs-Detail-Sheet ---
+
+  currentContainer.querySelector('#exercise-detail-sheet-backdrop')?.addEventListener('click', () => {
+    closeExerciseDetailSheet();
+  });
+
+  currentContainer.querySelector('#exercise-detail-sheet-close-btn')?.addEventListener('click', () => {
+    closeExerciseDetailSheet();
+  });
+
+  wireExerciseDetailSheetDrag();
 }

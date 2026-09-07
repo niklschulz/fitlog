@@ -239,6 +239,33 @@ export async function removeRoutineFromWorkout(workoutId) {
   });
 }
 
+// Fügt mehrere Übungen gesammelt manuell zu einem Workout hinzu (Übungs-Sheet
+// im Workout-Tab, Mehrfachauswahl - s. Abschnitt 13). `sourceRoutineId: null`
+// ist entscheidend, damit applyRoutineToWorkout/removeRoutineFromWorkout
+// diese Einträge nicht mit aufräumen (s. deren Kommentare oben sowie ADR
+// 0007, "Manuell hinzugefügte Übungen bleiben unberührt"). Eine Transaktion
+// statt N unabhängiger Adds, damit bei einem Fehler nicht nur ein Teil der
+// Auswahl im Roster landet.
+export async function addExercisesToWorkout(workoutId, exerciseIds) {
+  await db.transaction('rw', db.workoutExercises, async () => {
+    const entries = await getWorkoutExercises(workoutId);
+    let order = entries.length;
+    const ts = nowISO();
+    for (const exerciseId of exerciseIds) {
+      await db.workoutExercises.add({
+        id: generateId(),
+        workoutId,
+        exerciseId,
+        order: order++,
+        sourceRoutineId: null,
+        startedAt: null,
+        createdAt: ts,
+        updatedAt: ts,
+      });
+    }
+  });
+}
+
 // Markiert eine Übung im Workout als begonnen (einmalig, beim ersten
 // erfassten Satz) - Grundlage der dynamischen Sortierung, s. Sortierregel.
 export async function markWorkoutExerciseStarted(workoutId, exerciseId) {
