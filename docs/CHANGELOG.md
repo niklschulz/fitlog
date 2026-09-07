@@ -2,11 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
-## 2026-09-07 (h1-Position in Screen-Headern vereinheitlicht)
+## 2026-09-07 (h1-Position: Hauptseiten an Workout angeglichen, Unterseiten bewusst zentriert belassen)
 
 ### Fixed
-- In Headern, die ein `<h1>` (`text-screen-title`) neben einem Button/Zurück-Pfeil zeigen (`exercises.js`, `routines.js` Liste/Detail/Übung-hinzufügen, `workout-exercise-detail.js`), zentrierte `items-center` die einzeilige Überschrift vertikal gegen den höheren 44px-Button/Touch-Target — dadurch saß das `<h1>` dort sichtbar tiefer als im Workout-Tab, wo der Block aus Titel + Datums-Unterzeile bereits höher als der Kalender-Button ist und deshalb bündig am oberen Rand sitzt
-- Zeilen jetzt auf `items-start` umgestellt, sodass der Block-/Zeilen-Anfang überall gleich sitzt wie im Workout-Tab. Die beiden reinen Text-Zurückpfeile (`←`) in `routines.js`, die bisher ohne eigenes Zentrieren nur von `items-center` der Zeile profitierten, bekommen zusätzlich `flex items-center justify-center`, damit das Pfeil-Glyph weiterhin mittig im eigenen 44×44px-Tap-Target sitzt (wie `.icon-btn-glass` es bereits nativ tut)
+- Auf den vier über die Bottom-Nav erreichbaren Hauptseiten (`exercises.js`, `routines.js`-Liste) sowie Workout und Profil soll die `<h1>` (`text-screen-title`) immer an derselben Position sitzen. Ursache der bisherigen Abweichung: `items-center` zentrierte die einzeilige Überschrift in `exercises.js`/`routines.js`-Liste vertikal gegen den höheren 44px-Button daneben, wodurch sie dort sichtbar tiefer saß als im Workout-Tab, wo der Block aus Titel + Datums-Unterzeile bereits höher als der Kalender-Button ist und deshalb bündig am oberen Rand sitzt. Diese beiden Header-Zeilen laufen jetzt auf `items-start`, wodurch der obere Rand von Überschrift und Button überall gleich sitzt wie im Workout-Tab
+
+### Entschieden
+- Auf Unterseiten (Routine-Detail, „Übung hinzufügen", Übungs-Detailseite — alle mit Zurück-Pfeil statt Bottom-Nav erreichbar) bleibt bzw. kehrt die ursprüngliche `items-center`-Zentrierung zurück: Der Zurück-Pfeil/Glass-Button soll dort optisch zentriert neben der einzeiligen Überschrift stehen, auch wenn die `<h1>` dadurch nicht exakt an derselben Y-Position wie auf den Hauptseiten sitzt. Bewusster Nutzer-Entscheid nach Vergleich beider Varianten im Browser — eine global identische h1-Position UND eine zentrierte Button-Optik sind bei einer einzeiligen Überschrift neben einem 44px-Button nicht gleichzeitig erreichbar, ohne die Blockhöhe künstlich anzugleichen (z. B. per unsichtbarer Platzhalter-Zeile) oder den Button zu verkleinern — beides wurde als nicht gewünscht verworfen
 
 ## 2026-09-07 (Automatisierte Tests für Löschkaskaden, Routine-Wechsel und Tages-Workout-Eindeutigkeit)
 

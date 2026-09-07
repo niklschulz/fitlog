@@ -135,8 +135,8 @@ async function renderEditor() {
 
   return `
     <div class="py-4 flex flex-col gap-4">
-      <div class="flex items-start gap-3">
-        <button id="back-to-list-btn" class="tap-feedback flex items-center justify-center min-w-[44px] min-h-[44px] text-muted">←</button>
+      <div class="flex items-center gap-3">
+        <button id="back-to-list-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted">←</button>
         <h1 class="text-screen-title flex-1 truncate">${escapeHtml(routine.name)}</h1>
       </div>
 
@@ -187,8 +187,8 @@ async function renderPicker() {
 
   return `
     <div class="py-4 flex flex-col gap-4">
-      <div class="flex items-start gap-3">
-        <button id="back-to-editor-btn" class="tap-feedback flex items-center justify-center min-w-[44px] min-h-[44px] text-muted">←</button>
+      <div class="flex items-center gap-3">
+        <button id="back-to-editor-btn" class="tap-feedback min-w-[44px] min-h-[44px] text-muted">←</button>
         <h1 class="text-screen-title flex-1 truncate">Übung hinzufügen</h1>
       </div>
 
