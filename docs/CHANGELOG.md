@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Kalender-Sheet reicht jetzt bis knapp unter die Dynamic Island)
+
+### Changed
+- Feste `height: 88vh/88dvh` des großen Kalender-Sheets durch `top: calc(env(safe-area-inset-top) + 8px)` in der `.calendar-sheet`-CSS-Klasse ersetzt — zusammen mit dem bestehenden `bottom-0` ergibt sich die Höhe automatisch aus dem tatsächlich sicher verfügbaren Platz, statt aus einem empirisch geschätzten Prozentwert. Wiederverwendbar für künftige weitere große Sheets, ohne die Berechnung zu duplizieren
+
 ## 2026-09-07 (Kalender-Sheet: Kopfzeile mit Titel und zwei Glass-Buttons statt Ziehgriff-Balken + Text-Button)
 
 ### Changed

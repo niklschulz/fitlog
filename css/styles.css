@@ -244,8 +244,16 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* Großer Kalender (Bottom-Sheet, Abschnitt 11): schiebt sich von unten
    herein/heraus (js/views/workout.js hält die Animationsdauer per
-   CALENDAR_SHEET_CLOSE_ANIMATION_MS synchron). */
+   CALENDAR_SHEET_CLOSE_ANIMATION_MS synchron). `top` statt einer festen
+   vh-Höhe (s. CHANGELOG, Zweiundfünfzigste/Dreiundfünfzigste Iteration in
+   design-system.md) - zusammen mit dem Tailwind-`bottom-0` am Element
+   ergibt sich die Höhe automatisch aus dem verfügbaren Platz und reicht
+   dadurch exakt bis knapp unter die Dynamic Island/Notch, statt nur
+   zufällig genug Abstand zu lassen. Eigene Klasse statt generischem
+   Utility, da dieses Muster wiederverwendet werden soll, sobald ein
+   zweites großes Sheet dazukommt. */
 .calendar-sheet {
+  top: calc(env(safe-area-inset-top) + 8px);
   animation: calendar-sheet-slide-up 220ms ease-out;
 }
 
