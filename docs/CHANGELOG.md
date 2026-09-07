@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-07 (Kalender-Sheet: "Heute"-Icon, größerer Kopfzeilen-Abstand, Scroll-Fix)
+
+### Changed
+- "Heute"-Button-Icon von einem Fadenkreuz auf das bestehende Kalender-Icon (wie "Kalender öffnen" im Workout-Header) mit zusätzlichem gefülltem Punkt für den heutigen Tag umgestellt
+- Abstand zwischen der Kopfzeile (Schließen-/Heute-Button) und dem Kalender-Inhalt vergrößert (`pb-6` auf der Kopfzeile statt keinem Abstand)
+
+### Fixed
+- Der automatische Scroll-Sprung zum aktuellen Monat beim Öffnen landete nach der größeren Sheet-Höhe (vorheriger Eintrag) nicht mehr bündig oben — es fehlte nach dem aktuellen Monat genug Folge-Inhalt, damit `scrollIntoView` bis ganz nach oben scrollen konnte, sichtbar als abgeschnittener Rest des Vormonats über der Monatsüberschrift. Betraf praktisch jedes Öffnen. Behoben durch eine Mindesthöhe (100 % der Sheet-Höhe) auf dem jeweils letzten gerenderten Monat
+
 ## 2026-09-07 (Kalender-Sheet reicht jetzt bis knapp unter die Dynamic Island)
 
 ### Changed

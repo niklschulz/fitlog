@@ -257,6 +257,22 @@ input[type="number"]::-webkit-outer-spin-button {
   animation: calendar-sheet-slide-up 220ms ease-out;
 }
 
+/* Garantiert, dass sich auch der letzte im Sheet gerenderte Monat noch
+   bündig an den oberen Rand scrollen lässt (`scrollIntoView({block:
+   'start'})` beim Öffnen/beim "Heute"-Button, s. workout.js). Ohne diesen
+   Puffer bricht der Scroll vorzeitig ab, sobald nach dem Zielmonat nicht
+   mehr genug Folge-Inhalt übrig ist, um ihn ganz nach oben zu schieben -
+   der aktuelle Monat ist wegen `calendarSheetMaxMonth()` (immer nur ein
+   Monat in der Zukunft, s. ADR 0008/0009) fast immer der vorletzte
+   gerenderte Monat und damit der Normalfall dafür, nicht nur ein
+   Rand-Fall. `min-height: 100%` bezieht sich auf die Content-Box von
+   `#calendar-sheet-months` (definite Höhe durch `flex-1` im umgebenden
+   `.calendar-sheet`) und wächst automatisch mit der Sheet-Höhe auf jedem
+   Gerät mit, statt einen festen Pixel-Puffer zu raten. */
+#calendar-sheet-months > .calendar-sheet-month:last-child {
+  min-height: 100%;
+}
+
 .calendar-sheet.closing {
   animation: calendar-sheet-slide-down 220ms ease-in forwards;
 }

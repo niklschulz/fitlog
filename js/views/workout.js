@@ -479,7 +479,7 @@ async function renderCalendarSheet() {
   return `
     <div id="calendar-sheet-backdrop" class="calendar-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
     <div class="calendar-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
-      <div class="grid grid-cols-3 items-center px-4 pt-3 flex-shrink-0">
+      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
         <button id="calendar-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Kalender schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
             <path d="M6 6l12 12M18 6L6 18" />
@@ -490,8 +490,9 @@ async function renderCalendarSheet() {
         </div>
         <button id="calendar-sheet-today-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Zu heute springen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <circle cx="12" cy="12" r="7.25" />
-            <circle cx="12" cy="12" r="1.75" />
+            <rect x="4" y="5.5" width="16" height="15" rx="3" />
+            <path d="M8 3.5v4M16 3.5v4M4 10.5h16" />
+            <circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none" />
           </svg>
         </button>
       </div>
