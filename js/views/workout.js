@@ -379,8 +379,6 @@ async function paint() {
 
     ${state.calendarSheetOpen ? await renderCalendarSheet() : ''}
     ${state.exerciseSheetOpen ? renderExerciseSheet() : ''}
-    ${state.exerciseCreateSheetOpen ? renderExerciseCreateSheet() : ''}
-    ${state.exerciseDetailSheetOpen ? await renderExerciseDetailSheet() : ''}
   `;
 
   // Tab kann während der obigen awaits gewechselt worden sein (s. renderEpoch
@@ -1264,6 +1262,11 @@ function wireExerciseSheetBodyEvents() {
 // bleibt das `<input>` beim Tippen so oder so unangetastet, ganz ohne das
 // erst kürzlich für die Übungssuche gelöste Repaint-Problem überhaupt erst
 // zu riskieren.
+// Chips bewusst flach (`px-3 py-1`, kein erzwungenes `min-h-[44px]` wie
+// sonst überall in der App) - Nutzer-Wunsch, da hier viele Chips dicht an
+// dicht in einem Raster stehen und die sonst übliche 44px-Touch-Ziel-Höhe
+// das Raster unnötig aufbläht. Bewusste, lokal begrenzte Ausnahme vom
+// Touch-Ziel-Standard.
 function renderExerciseCreateSheetMuscleChip(muscle, role) {
   const isSelected =
     role === 'primary'
@@ -1280,7 +1283,7 @@ function renderExerciseCreateSheetMuscleChip(muscle, role) {
       type="button"
       data-role="${role}"
       data-muscle="${muscle.id}"
-      class="muscle-chip-btn tap-feedback rounded-full px-4 py-2 min-h-[44px] text-body ${isSelected ? 'bg-accent text-base' : 'bg-white/[0.08] text-ink'} ${isDisabled ? 'opacity-40 pointer-events-none' : ''}"
+      class="muscle-chip-btn tap-feedback rounded-full px-3 py-1 text-body ${isSelected ? 'bg-accent text-base' : 'bg-white/[0.08] text-ink'} ${isDisabled ? 'opacity-40 pointer-events-none' : ''}"
       ${isDisabled ? 'disabled' : ''}
     >
       ${escapeHtml(muscle.name)}
@@ -1289,8 +1292,6 @@ function renderExerciseCreateSheetMuscleChip(muscle, role) {
 }
 
 function renderExerciseCreateSheetContent() {
-  const canSubmit = state.exerciseCreateSheetName.trim().length > 0;
-
   return `
     <form id="exercise-create-sheet-form" class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
@@ -1299,7 +1300,7 @@ function renderExerciseCreateSheetContent() {
           id="exercise-create-sheet-name-input"
           type="text"
           autocomplete="off"
-          placeholder="z. B. Kniebeuge"
+          placeholder="z. B. Latzug"
           value="${escapeHtml(state.exerciseCreateSheetName)}"
           class="w-full bg-white/[0.08] rounded-btn py-3 px-3 text-ink min-h-[44px]"
         />
@@ -1316,24 +1317,31 @@ function renderExerciseCreateSheetContent() {
           ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'secondary')).join('')}
         </div>
       </div>
-      <button
-        type="submit"
-        id="exercise-create-sheet-submit-btn"
-        class="tap-feedback w-full ${BTN_PRIMARY} py-3 min-h-[44px] disabled:opacity-20"
-        ${canSubmit ? '' : 'disabled'}
-      >
-        Erstellen
-      </button>
     </form>
   `;
 }
 
+// Kopfzeile bewusst ohne `closing`-Fallunterscheidung mehr (anders als die
+// übrigen Sheets): Diese Funktion wird seit der Fünfundsechzigsten Iteration
+// nur noch genau einmal beim Öffnen aufgerufen (s. openExerciseCreateSheet)
+// - die closing-Animation läuft seitdem über direktes `classList.add()` auf
+// den bereits bestehenden Elementen statt über ein Neu-Rendern mit
+// `closing: true`, s. closeExerciseCreateSheet(). "Erstellen" ist jetzt ein
+// Glass-Button mit Haken-Icon oben rechts statt eines Buttons unten
+// (Nutzer-Wunsch) - `text-accent` + dezentes grünes Glimmen im aktivierten
+// Zustand, `disabled:`-Varianten übernehmen automatisch den deaktivierten
+// Look, sobald `submitBtn.disabled` gesetzt wird (s.
+// wireExerciseCreateSheetContentEvents). `form="exercise-create-sheet-form"`
+// verbindet den Button mit dem Formular, obwohl er außerhalb von dessen
+// DOM-Teilbaum sitzt (natives HTML-Attribut, seit Langem in Safari
+// unterstützt) - dadurch bleibt die Kopfzeile stabil und wird nie mit
+// neu gerendert, während Formularfelder/Chips sich ändern.
 function renderExerciseCreateSheet() {
-  const closing = state.exerciseCreateSheetClosing;
+  const canSubmit = state.exerciseCreateSheetName.trim().length > 0;
 
   return `
-    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-[52] bg-black/50"></div>
-    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
+    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[52] bg-black/50"></div>
+    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
       <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="exercise-create-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -1343,7 +1351,18 @@ function renderExerciseCreateSheet() {
         <div id="exercise-create-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
           <span class="text-card-title">Neue Übung</span>
         </div>
-        <div aria-hidden="true"></div>
+        <button
+          id="exercise-create-sheet-submit-btn"
+          type="submit"
+          form="exercise-create-sheet-form"
+          class="icon-btn-glass tap-feedback justify-self-end text-accent shadow-[0_0_16px_rgba(163,230,53,0.35)] disabled:text-ink disabled:shadow-none disabled:opacity-30"
+          aria-label="Übung erstellen"
+          ${canSubmit ? '' : 'disabled'}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
       </div>
       <div id="exercise-create-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
         ${renderExerciseCreateSheetContent()}
@@ -1352,6 +1371,13 @@ function renderExerciseCreateSheet() {
   `;
 }
 
+// Öffnet OHNE das globale paint() - das würde den kompletten Sheet-Teilbaum
+// des bereits offenen Übungs-Sheets mit neu aufbauen (Backdrop/Panel
+// destroy-und-neu-erzeugen), wodurch dessen Slide-/Fade-Animation trotz
+// bereits sichtbarem Sheet erneut abspielen würde (Nutzer-Beobachtung, s.
+// CHANGELOG). Stattdessen wird nur dieses Sheet direkt ans Ende des
+// Containers angehängt - alles andere (inkl. des Übungs-Sheets darunter)
+// bleibt exakt so bestehen, wie es war, und wird schlicht überlagert.
 async function openExerciseCreateSheet() {
   state.exerciseCreateSheetOpen = true;
   state.exerciseCreateSheetClosing = false;
@@ -1360,24 +1386,36 @@ async function openExerciseCreateSheet() {
   state.exerciseCreateSheetSecondaryMuscleIds = new Set();
   lockBodyScroll();
   raiseNavAboveSheet();
-  await paint();
+  currentContainer.insertAdjacentHTML('beforeend', renderExerciseCreateSheet());
+  wireExerciseCreateSheetEvents();
 }
 
+// Entfernt Backdrop + Panel direkt aus dem DOM (kein paint() mehr, s.
+// openExerciseCreateSheet) - beide Referenzen werden VOR dem ersten Entfernen
+// eingesammelt, da `nextElementSibling` nach dem Entfernen des Backdrops
+// nicht mehr auffindbar wäre.
 function finalizeExerciseCreateSheetClose() {
   pendingExerciseCreateSheetCloseTimeout = null;
   state.exerciseCreateSheetOpen = false;
   state.exerciseCreateSheetClosing = false;
   unlockBodyScroll();
   resetNavZIndex();
-  paint();
+  const backdrop = currentContainer?.querySelector('#exercise-create-sheet-backdrop');
+  backdrop?.nextElementSibling?.remove();
+  backdrop?.remove();
 }
 
 let pendingExerciseCreateSheetCloseTimeout = null;
 
+// Setzt die `closing`-Klasse direkt auf die bestehenden Elemente (statt sie
+// über ein Neu-Rendern zu erzeugen) - spielt dieselbe CSS-Schließen-
+// Animation ab, ohne dass dabei irgendetwas anderes im DOM angefasst wird.
 function closeExerciseCreateSheet() {
   if (!state.exerciseCreateSheetOpen || state.exerciseCreateSheetClosing) return;
   state.exerciseCreateSheetClosing = true;
-  paint();
+  const backdrop = currentContainer.querySelector('#exercise-create-sheet-backdrop');
+  backdrop?.nextElementSibling?.classList.add('closing');
+  backdrop?.classList.add('closing');
   pendingExerciseCreateSheetCloseTimeout = setTimeout(finalizeExerciseCreateSheetClose, SHEET_CLOSE_ANIMATION_MS);
 }
 
@@ -1395,8 +1433,9 @@ function wireExerciseCreateSheetDrag() {
 }
 
 // Ersetzt nur `#exercise-create-sheet-content` (Muskel-Chip-Taps) - Backdrop/
-// Panel/Kopfzeile bleiben unangetastet, aus demselben Grund wie beim
-// Übungs-Sheet (keine erneute Slide-Animation, s. dort).
+// Panel/Kopfzeile (inkl. des "Erstellen"-Glass-Buttons) bleiben unangetastet,
+// aus demselben Grund wie beim Übungs-Sheet (keine erneute Slide-Animation,
+// s. dort).
 function repaintExerciseCreateSheetContentInPlace() {
   const content = currentContainer?.querySelector('#exercise-create-sheet-content');
   if (!content) return;
@@ -1407,6 +1446,11 @@ function repaintExerciseCreateSheetContentInPlace() {
 function wireExerciseCreateSheetContentEvents() {
   currentContainer.querySelector('#exercise-create-sheet-name-input')?.addEventListener('input', (e) => {
     state.exerciseCreateSheetName = e.target.value;
+    // Kopfzeile wird hier bewusst NICHT neu gerendert (bleibt stabil) - nur
+    // das `disabled`-Property des dort sitzenden Glass-Buttons wird direkt
+    // umgeschaltet, den optischen Wechsel (grünes Glimmen an/aus) übernehmen
+    // Tailwinds `disabled:`-Varianten automatisch über die native
+    // `:disabled`-Pseudoklasse.
     const submitBtn = currentContainer.querySelector('#exercise-create-sheet-submit-btn');
     if (submitBtn) submitBtn.disabled = !e.target.value.trim();
   });
@@ -1475,14 +1519,18 @@ function wireExerciseCreateSheetEvents() {
 // Platzhalter (Konzept für die eigentlichen Details/Löschen-Aktion folgt
 // separat, s. CHANGELOG) - Kopfzeile und Sheet-Mechanik sind aber bereits
 // vollständig, damit später nur noch der Body-Inhalt ergänzt werden muss.
+// Kopfzeile ohne `closing`-Fallunterscheidung, aus demselben Grund wie beim
+// Neue-Übung-Sheet (s. renderExerciseCreateSheet): diese Funktion wird nur
+// noch genau einmal beim Öffnen aufgerufen, die closing-Animation läuft über
+// direktes `classList.add()` auf den bestehenden Elementen, s.
+// closeExerciseDetailSheet().
 async function renderExerciseDetailSheet() {
-  const closing = state.exerciseDetailSheetClosing;
   const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
   const name = exercise?.name ?? 'Gelöschte Übung';
 
   return `
-    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-[52] bg-black/50"></div>
-    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
+    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[52] bg-black/50"></div>
+    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
       <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
         <button id="exercise-detail-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -1501,15 +1549,23 @@ async function renderExerciseDetailSheet() {
   `;
 }
 
+// Öffnet OHNE das globale paint() - aus demselben Grund wie beim
+// Neue-Übung-Sheet (s. openExerciseCreateSheet): das Übungs-Sheet darunter
+// darf beim Stapeln nicht neu aufgebaut werden, sonst spielt dessen
+// Slide-/Fade-Animation erneut ab, obwohl es bereits sichtbar ist.
 async function openExerciseDetailSheet(exerciseId) {
   state.exerciseDetailSheetExerciseId = exerciseId;
   state.exerciseDetailSheetOpen = true;
   state.exerciseDetailSheetClosing = false;
   lockBodyScroll();
   raiseNavAboveSheet();
-  await paint();
+  currentContainer.insertAdjacentHTML('beforeend', await renderExerciseDetailSheet());
+  wireExerciseDetailSheetEvents();
 }
 
+// Entfernt Backdrop + Panel direkt aus dem DOM (kein paint() mehr, s.
+// openExerciseDetailSheet) - beide Referenzen werden VOR dem ersten Entfernen
+// eingesammelt, s. finalizeExerciseCreateSheetClose.
 function finalizeExerciseDetailSheetClose() {
   pendingExerciseDetailSheetCloseTimeout = null;
   state.exerciseDetailSheetOpen = false;
@@ -1517,7 +1573,9 @@ function finalizeExerciseDetailSheetClose() {
   state.exerciseDetailSheetExerciseId = null;
   unlockBodyScroll();
   resetNavZIndex();
-  paint();
+  const backdrop = currentContainer?.querySelector('#exercise-detail-sheet-backdrop');
+  backdrop?.nextElementSibling?.remove();
+  backdrop?.remove();
 }
 
 let pendingExerciseDetailSheetCloseTimeout = null;
@@ -1525,7 +1583,9 @@ let pendingExerciseDetailSheetCloseTimeout = null;
 function closeExerciseDetailSheet() {
   if (!state.exerciseDetailSheetOpen || state.exerciseDetailSheetClosing) return;
   state.exerciseDetailSheetClosing = true;
-  paint();
+  const backdrop = currentContainer.querySelector('#exercise-detail-sheet-backdrop');
+  backdrop?.nextElementSibling?.classList.add('closing');
+  backdrop?.classList.add('closing');
   pendingExerciseDetailSheetCloseTimeout = setTimeout(finalizeExerciseDetailSheetClose, SHEET_CLOSE_ANIMATION_MS);
 }
 
@@ -1540,6 +1600,18 @@ function wireExerciseDetailSheetDrag() {
       pendingExerciseDetailSheetCloseTimeout = setTimeout(finalizeExerciseDetailSheetClose, SHEET_CLOSE_ANIMATION_MS);
     },
   });
+}
+
+function wireExerciseDetailSheetEvents() {
+  currentContainer.querySelector('#exercise-detail-sheet-backdrop')?.addEventListener('click', () => {
+    closeExerciseDetailSheet();
+  });
+
+  currentContainer.querySelector('#exercise-detail-sheet-close-btn')?.addEventListener('click', () => {
+    closeExerciseDetailSheet();
+  });
+
+  wireExerciseDetailSheetDrag();
 }
 
 function wireEvents() {
@@ -1634,17 +1706,9 @@ function wireEvents() {
   });
 
   wireExerciseSheetEvents();
-  wireExerciseCreateSheetEvents();
-
-  // --- Übungs-Detail-Sheet ---
-
-  currentContainer.querySelector('#exercise-detail-sheet-backdrop')?.addEventListener('click', () => {
-    closeExerciseDetailSheet();
-  });
-
-  currentContainer.querySelector('#exercise-detail-sheet-close-btn')?.addEventListener('click', () => {
-    closeExerciseDetailSheet();
-  });
-
-  wireExerciseDetailSheetDrag();
+  // Neue-Übung-Sheet und Übungs-Detail-Sheet werden nicht mehr über das
+  // globale paint()/wireEvents() verdrahtet, sondern jeweils direkt aus
+  // ihrer eigenen open...Sheet()-Funktion heraus (s. dort) - sie sind
+  // gestapelte Sheets, die das Übungs-Sheet darunter beim Öffnen/Schließen
+  // nicht neu aufbauen dürfen.
 }

@@ -2,6 +2,17 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Neue-Übung-Sheet & Übungs-Detail-Sheet: Stapeln ohne Neu-Animation des darunterliegenden Sheets, Styling-Feinschliff)
+
+### Fixed
+- Öffnen/Schließen des Neue-Übung-Sheets und des Übungs-Detail-Sheets ließ das darunterliegende Übungs-Sheet sichtbar "verschwinden und neu einfliegen" — Ursache: beide riefen dafür das globale `paint()` auf, das `currentContainer.innerHTML` komplett neu aufbaut und damit auch das bereits offene Übungs-Sheet (dessen `.bottom-sheet`/`.bottom-sheet-backdrop`-Klassen bei jeder DOM-Einfügung ihre Slide-/Fade-Animation erneut abspielen) unnötig mit ersetzt
+- Beide Sheets öffnen/schließen jetzt per direkter DOM-Manipulation (`insertAdjacentHTML`/`classList.add('closing')`/`.remove()`) statt über das globale `paint()` — das Übungs-Sheet darunter bleibt beim Stapeln vollständig unangetastet, keine erneute Animation mehr beim Öffnen oder Schließen
+
+### Changed
+- "Erstellen"-Aktion im Neue-Übung-Sheet ist jetzt ein Glass-Button mit Haken-Icon oben rechts in der Kopfzeile (statt eines Buttons unten im Formular) — grünes Glimmen (`shadow`) im aktivierten Zustand, gedimmt und ohne Glimmen bei fehlendem Namen
+- Muskel-Chips flacher (`px-3 py-1` statt `px-4 py-2` mit erzwungener 44px-Mindesthöhe) — bewusste Ausnahme vom sonst üblichen 44px-Touch-Ziel-Standard, da hier viele Chips dicht an dicht stehen
+- Platzhaltertext im Namensfeld von "z. B. Kniebeuge" zu "z. B. Latzug" geändert
+
 ## 2026-09-09 (Neue-Übung-Sheet: eigenes gestapeltes Sheet mit Muskel-Zuordnung)
 
 ### Added
