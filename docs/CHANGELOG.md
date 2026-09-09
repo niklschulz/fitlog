@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Muskelgruppen-Filter im Übungs-Sheet)
+
+### Added
+- Filter-Button unter dem Suchfeld im Übungs-Sheet, 1:1 im Muster der bestehenden Routine-Auswahl (Dropdown-Pill mit Popup-Liste): "Alle Muskelgruppen" oder eine der acht festen Muskelgruppen wählbar
+- Filtert die Übungsliste, wenn die gewählte Muskelgruppe primär *oder* sekundär an einer Übung beteiligt ist — kombiniert korrekt mit der Textsuche (beide Kriterien werden gemeinsam angewendet)
+
 ## 2026-09-09 (Übungen ↔ Muskelgruppen verknüpft: primär + sekundär)
 
 ### Added

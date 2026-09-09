@@ -7,6 +7,7 @@ import {
   removeRoutineFromWorkout,
   addExercisesToWorkout,
   createExercise,
+  MUSCLE_GROUPS,
   todayISODate,
   toISODate,
 } from '../db.js';
@@ -36,6 +37,11 @@ let state = {
   exerciseSheetMode: 'list', // 'list' | 'create'
   exerciseSheetSelectedIds: new Set(),
   exerciseSheetSearch: '',
+  // Muskelgruppen-Filter (Dropdown-Pill, analog zur Routine-Auswahl oben) -
+  // null = "Alle Muskelgruppen" (kein Filter aktiv), sonst eine MUSCLE_GROUPS-id.
+  exerciseSheetMuscleFilterId: null,
+  exerciseSheetMuscleFilterOpen: false,
+  exerciseSheetMuscleFilterClosing: false,
   // Übungs-Detail-Sheet: überlagert das Übungs-Sheet (Stapel-Sheet), öffnet
   // sich bei Tap auf eine Übungszeile. Inhalt bewusst noch Platzhalter -
   // Konzept für die eigentlichen Details folgt separat.
@@ -71,6 +77,9 @@ export async function render(container) {
   state.exerciseSheetMode = 'list';
   state.exerciseSheetSelectedIds = new Set();
   state.exerciseSheetSearch = '';
+  state.exerciseSheetMuscleFilterId = null;
+  state.exerciseSheetMuscleFilterOpen = false;
+  state.exerciseSheetMuscleFilterClosing = false;
   state.exerciseDetailSheetOpen = false;
   state.exerciseDetailSheetClosing = false;
   state.exerciseDetailSheetExerciseId = null;
@@ -102,6 +111,10 @@ export function unmount() {
   if (pendingExerciseSheetCloseTimeout) {
     clearTimeout(pendingExerciseSheetCloseTimeout);
     pendingExerciseSheetCloseTimeout = null;
+  }
+  if (pendingExerciseSheetMuscleFilterCloseTimeout) {
+    clearTimeout(pendingExerciseSheetMuscleFilterCloseTimeout);
+    pendingExerciseSheetMuscleFilterCloseTimeout = null;
   }
   if (pendingExerciseDetailSheetCloseTimeout) {
     clearTimeout(pendingExerciseDetailSheetCloseTimeout);
@@ -648,6 +661,22 @@ function closeRoutinePicker() {
   }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
 }
 
+// Analog zu closeRoutinePicker(), s. dort für die Begründung von Timing/
+// Aufräum-Timeout.
+let pendingExerciseSheetMuscleFilterCloseTimeout = null;
+
+function closeExerciseSheetMuscleFilter() {
+  if (!state.exerciseSheetMuscleFilterOpen || state.exerciseSheetMuscleFilterClosing) return;
+  state.exerciseSheetMuscleFilterClosing = true;
+  paint();
+  pendingExerciseSheetMuscleFilterCloseTimeout = setTimeout(() => {
+    pendingExerciseSheetMuscleFilterCloseTimeout = null;
+    state.exerciseSheetMuscleFilterOpen = false;
+    state.exerciseSheetMuscleFilterClosing = false;
+    paint();
+  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+}
+
 // Öffnet den Kalender, sperrt das Hintergrund-Scrollen (s. js/sheet.js) und
 // scrollt nach dem Paint zum Monat des aktuell gewählten Tages.
 async function openCalendarSheet() {
@@ -759,7 +788,20 @@ function renderExerciseSheet() {
   const hasCommitBar = state.exerciseSheetMode === 'list' && selectedIds.size > 0;
 
   const query = state.exerciseSheetSearch.trim().toLowerCase();
-  const filteredExercises = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
+  let filteredExercises = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
+
+  // Muskelgruppen-Filter: trifft, wenn die gewählte Muskelgruppe entweder
+  // primär oder sekundär an der Übung beteiligt ist (nicht nur primär) -
+  // z. B. soll ein "Trizeps"-Filter auch enge Bankdrücken-Varianten zeigen,
+  // bei denen Trizeps nur sekundär mitarbeitet. Übungen ohne Zuordnung
+  // (primaryMuscleId/secondaryMuscleIds `undefined`, s. ADR 0013) fallen bei
+  // aktivem Filter automatisch raus.
+  const muscleFilterId = state.exerciseSheetMuscleFilterId;
+  if (muscleFilterId) {
+    filteredExercises = filteredExercises.filter(
+      (ex) => ex.primaryMuscleId === muscleFilterId || (ex.secondaryMuscleIds ?? []).includes(muscleFilterId)
+    );
+  }
 
   const bodyHtml =
     state.exerciseSheetMode === 'create'
@@ -790,6 +832,7 @@ function renderExerciseSheet() {
           }
         </div>
         ${state.exerciseSheetMode === 'list' ? renderExerciseSheetSearchBar() : ''}
+        ${state.exerciseSheetMode === 'list' ? renderExerciseSheetMuscleFilter() : ''}
         <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 ${hasCommitBar ? 'pb-4' : 'pb-[calc(env(safe-area-inset-bottom)+112px)]'} flex flex-col gap-2">
           ${bodyHtml}
         </div>
@@ -830,6 +873,62 @@ function renderExerciseSheetSearchBar() {
           class="w-full bg-white/[0.08] rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]"
         />
       </div>
+    </div>
+  `;
+}
+
+// Dropdown-Pill für den Muskelgruppen-Filter - 1:1 dasselbe visuelle/
+// interaktive Muster wie die Routine-Auswahl oben im Roster
+// (`renderRoutineSection()`/`renderRoutinePicker()`): `bg-surface
+// rounded-btn`-Pille mit Label + morphendem Chevron/X-Icon
+// (`renderDropdownIcon()`, geteilt mit der Routine-Auswahl), öffnet beim Tap
+// ein `absolute` positioniertes Popup mit Options-Liste + eigenem,
+// bildschirmfüllendem Backdrop zum Schließen bei Klick außerhalb. Eigener
+// State (`exerciseSheetMuscleFilterOpen/-Closing`) statt Wiederverwendung
+// von `routinePickerOpen`, da beide unabhängig voneinander offen sein
+// können müssten (hier: nie gleichzeitig sichtbar, da unterschiedliche
+// Sheets/Views, aber konzeptionell getrennte Zustände).
+function renderExerciseSheetMuscleFilter() {
+  const selected = MUSCLE_GROUPS.find((m) => m.id === state.exerciseSheetMuscleFilterId);
+  const label = selected ? selected.name : 'Alle Muskelgruppen';
+  const visible = state.exerciseSheetMuscleFilterOpen;
+
+  return `
+    <div class="px-4 pb-4 flex-shrink-0">
+      <div class="relative">
+        <button id="exercise-sheet-muscle-filter-btn" type="button" class="tap-feedback w-full bg-surface rounded-btn pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
+          <span class="text-card-title truncate">${escapeHtml(label)}</span>
+          ${renderDropdownIcon(state.exerciseSheetMuscleFilterOpen, state.exerciseSheetMuscleFilterClosing)}
+        </button>
+        ${visible ? renderExerciseSheetMuscleFilterPicker() : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderExerciseSheetMuscleFilterPicker() {
+  const closing = state.exerciseSheetMuscleFilterClosing;
+  const selectedId = state.exerciseSheetMuscleFilterId;
+
+  const optionsHtml = [{ id: '', name: 'Alle Muskelgruppen' }, ...MUSCLE_GROUPS]
+    .map(
+      (m) => `
+        <li>
+          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-surface text-ink text-body flex items-center justify-between">
+            <span>${escapeHtml(m.name)}</span>
+            ${(m.id === '' ? selectedId === null : selectedId === m.id) ? '<span class="text-accent">✓</span>' : ''}
+          </button>
+        </li>
+      `
+    )
+    .join('');
+
+  return `
+    <div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-surface rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
+      <ul class="flex flex-col gap-1 max-h-64 overflow-y-auto">
+        ${optionsHtml}
+      </ul>
     </div>
   `;
 }
@@ -922,6 +1021,9 @@ async function openExerciseSheet() {
   state.exerciseSheetMode = 'list';
   state.exerciseSheetSelectedIds = new Set();
   state.exerciseSheetSearch = '';
+  state.exerciseSheetMuscleFilterId = null;
+  state.exerciseSheetMuscleFilterOpen = false;
+  state.exerciseSheetMuscleFilterClosing = false;
   lockBodyScroll();
   raiseNavAboveSheet();
   await loadExerciseSheetCache();
@@ -1027,6 +1129,26 @@ function wireExerciseSheetEvents() {
       newInput.focus();
       newInput.setSelectionRange(cursorPos, cursorPos);
     }
+  });
+
+  currentContainer.querySelector('#exercise-sheet-muscle-filter-btn')?.addEventListener('click', () => {
+    if (state.exerciseSheetMuscleFilterOpen) {
+      closeExerciseSheetMuscleFilter();
+    } else {
+      state.exerciseSheetMuscleFilterOpen = true;
+      paint();
+    }
+  });
+
+  currentContainer.querySelector('#exercise-sheet-muscle-filter-backdrop')?.addEventListener('click', () => {
+    closeExerciseSheetMuscleFilter();
+  });
+
+  currentContainer.querySelectorAll('.pick-muscle-filter-option-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.exerciseSheetMuscleFilterId = btn.dataset.muscle === '' ? null : btn.dataset.muscle;
+      closeExerciseSheetMuscleFilter();
+    });
   });
 
   wireExerciseSheetDrag();
