@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Übungs-Sheet: Dropdown springt nicht mehr, Filter-Button-Farbe angeglichen)
+
+### Fixed
+- Öffnen/Schließen des Muskelgruppen-Filters ließ das komplette Sheet sichtbar neu von unten hereinrutschen (beim Schließen sogar zweifach) — Backdrop und Sheet-Panel tragen ihre Einstiegs-Animation als CSS-Property, die bei jedem `innerHTML`-Neuaufbau erneut abspielte. Behoben: Nur noch zwei innere, stabile Teilbäume (`#exercise-sheet-header-action`, `#exercise-sheet-content`) werden bei Sheet-internen Interaktionen (Suche, Filter, Modus-Wechsel, Auswahl) ausgetauscht, Backdrop/Panel bleiben dabei unangetastet — nur echtes Öffnen/Schließen des gesamten Sheets löst noch die Animation aus
+
+### Changed
+- Filter-Button-Hintergrund von `bg-surface` auf `bg-white/[0.08]` geändert, passt jetzt farblich zum Suchfeld direkt darüber
+
 ## 2026-09-09 (Muskelgruppen-Filter im Übungs-Sheet)
 
 ### Added
