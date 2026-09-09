@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Übungs-Sheet-Zeilen: Muskel-Untertitel, eckiges Auswahl-Kästchen rechts, Commit-Button ohne Zähler)
+
+### Changed
+- Übungszeilen im Übungs-Sheet zeigen jetzt den primären Muskel als Untertitel unter dem Namen (`text-label text-muted uppercase`, wie beim Untertitel im Routine-Auswahl-Popup) — Übungen ohne Zuordnung bleiben ohne Untertitel
+- Auswahl-Kästchen von rundem Kreis links auf eckiges Kästchen (`rounded-btn`) rechts geändert, Name-Block dadurch linksbündig als eigene Spalte
+- "Hinzufügen"-Button zeigt keine Auswahl-Anzahl mehr ("Hinzufügen" statt "Hinzufügen (n)")
+- Abstand des "Hinzufügen"-Buttons zur Bottom-Nav verringert (`+88px` statt `+112px` Bottom-Padding)
+
 ## 2026-09-09 (Haken-Icon im Haken-Button vergrößert)
 
 ### Changed

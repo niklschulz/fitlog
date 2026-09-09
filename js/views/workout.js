@@ -845,7 +845,7 @@ function renderExerciseSheetContent() {
     <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 ${hasCommitBar ? 'pb-4' : 'pb-[calc(env(safe-area-inset-bottom)+112px)]'} flex flex-col gap-2">
       ${renderExerciseSheetBody()}
     </div>
-    ${hasCommitBar ? renderExerciseSheetCommitBar(state.exerciseSheetSelectedIds.size) : ''}
+    ${hasCommitBar ? renderExerciseSheetCommitBar() : ''}
   `;
 }
 
@@ -1051,41 +1051,54 @@ function renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, t
   `;
 }
 
-// Führende Spalte zeigt entweder den Auswahl-Kreis (antippbar, toggelt
+// Titel + primärer Muskel als Untertitel (analog zum Übungsanzahl-Untertitel
+// im Routine-Picker, s. renderRoutinePickerPopup weiter oben: `text-label
+// text-muted uppercase` unter dem Titel) - Übungen ohne primäre
+// Muskelzuordnung (`primaryMuscleId` null/unbekannt) bekommen keinen
+// Untertitel, statt eine leere/erfundene Zeile anzuzeigen. Die Auswahl-
+// Fläche sitzt rechts (Nutzer-Vorgabe, s. Referenz-Screenshot) und zeigt
+// entweder ein eckiges, antippbares Auswahl-Kästchen (togglet
 // exerciseSheetSelectedIds) oder - für Übungen, die heute schon im Roster
 // stehen - ein rein informatives, deaktiviertes Häkchen-Badge (Nutzer-
 // Vorgabe: sichtbar lassen statt ausblenden, das Sheet dient auch zum
-// Ansehen). Der Name selbst ist immer ein eigenes Tap-Ziel zum Übungs-
-// Detail-Sheet, unabhängig vom Auswahl-/Bereits-Vorhanden-Status.
+// Ansehen). Der Name-Block selbst ist immer ein eigenes Tap-Ziel zum
+// Übungs-Detail-Sheet, unabhängig vom Auswahl-/Bereits-Vorhanden-Status.
 function renderExerciseSheetRow(exercise, alreadyInWorkout, isSelected) {
-  const leadingColumn = alreadyInWorkout
+  const muscleName = MUSCLE_GROUPS.find((m) => m.id === exercise.primaryMuscleId)?.name;
+
+  const trailingColumn = alreadyInWorkout
     ? `<span class="min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-hidden="true">
-        <span class="w-6 h-6 rounded-full flex items-center justify-center bg-raised text-muted text-label">✓</span>
+        <span class="w-6 h-6 rounded-btn flex items-center justify-center bg-raised text-muted text-label">✓</span>
       </span>`
     : `<button type="button" data-id="${exercise.id}" class="exercise-select-toggle-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-pressed="${isSelected}" aria-label="${escapeHtml(exercise.name)} ${isSelected ? 'abwählen' : 'auswählen'}">
-        <span class="w-6 h-6 rounded-full flex items-center justify-center text-label ${isSelected ? 'bg-accent' : 'border-2 border-white/25'}">${isSelected ? '✓' : ''}</span>
+        <span class="w-6 h-6 rounded-btn flex items-center justify-center text-label ${isSelected ? 'bg-accent' : 'border-2 border-white/25'}">${isSelected ? '✓' : ''}</span>
       </button>`;
 
   return `
     <li class="${LIST_ROW} flex items-center gap-3">
-      ${leadingColumn}
-      <button type="button" data-id="${exercise.id}" class="exercise-open-detail-btn tap-feedback flex-1 text-left text-card-title truncate">
-        ${escapeHtml(exercise.name)}
+      <button type="button" data-id="${exercise.id}" class="exercise-open-detail-btn tap-feedback flex-1 min-w-0 flex flex-col gap-0.5 text-left">
+        <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
+        ${muscleName ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleName)}</span>` : ''}
       </button>
+      ${trailingColumn}
     </li>
   `;
 }
 
 // Nicht Teil der scrollenden Liste, sondern eine eigene, nicht schrumpfende
 // Flex-Zone unter ihr (nur gerendert, solange ≥1 Übung ausgewählt ist) -
-// bekommt dieselbe Bottom-Nav-Abstandsreserve wie sonst die Kalender-Liste
-// (die Nav schwebt während offenem Sheet per raiseNavAboveSheet über allem),
-// damit der Button nicht dahinter verschwindet.
-function renderExerciseSheetCommitBar(count) {
+// bekommt eine eigene, kleinere Bottom-Nav-Abstandsreserve als sonst z. B.
+// die Kalender-Liste (112px), auf Nutzer-Wunsch näher an die Nav gerückt
+// (die während offenem Sheet per raiseNavAboveSheet über allem schwebt),
+// aber weiterhin groß genug, um den Button nicht dahinter verschwinden zu
+// lassen. Zählt bewusst nicht mehr die Auswahl mit ("Hinzufügen (n)") -
+// Nutzer-Vorgabe, die Auswahl-Anzahl ist über die Häkchen in der Liste
+// ohnehin sichtbar.
+function renderExerciseSheetCommitBar() {
   return `
-    <div class="flex-shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+112px)]">
+    <div class="flex-shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+88px)]">
       <button type="button" id="exercise-sheet-commit-btn" class="tap-feedback w-full ${BTN_PRIMARY} py-3 min-h-[44px]">
-        Hinzufügen (${count})
+        Hinzufügen
       </button>
     </div>
   `;
