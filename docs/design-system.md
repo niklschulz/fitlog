@@ -378,6 +378,8 @@ Behoben durch denselben Kniff wie beim "+"-Button-Fix (Zweiundsechzigste Iterati
 - `:disabled` unverändert auf den neutralen Grundzustand (kein Grün) — da kein eigener `box-shadow` mehr existiert, muss der deaktivierte Zustand ihn auch nicht mehr zurücksetzen, nur noch `background`/`border-color`/`color`/`opacity`
 - Per `getComputedStyle()` im Browser exakt verifiziert (u. a. `boxShadow` identisch zum Wert von `.icon-btn-glass`), nicht nur visuell
 
+**Achtundsechzigste Iteration – Haken-Icon vergrößert (2026-09-09):** Nutzer-Wunsch, Haken im Erstellen-Button (Neue-Übung-Sheet) von `w-5 h-5` (20px, Standardgröße aller übrigen Icon-Button-Symbole wie ✕) auf `w-6 h-6` (24px) vergrößert — bewusste Ausnahme von der sonst einheitlichen 20px-Icon-Größe, da dieser Button durch die deckende grüne Füllung (s. Siebenundsechzigste Iteration) stärker hervortritt als die neutralen Glass-Buttons und ein größeres Icon dazu passender wirkt. Bleibt innerhalb des unveränderten 44×44px-Kreises mittig zentriert.
+
 **Sechzehnte Iteration – "Reps" statt "Wdh.", Satz-Daten in der Roster-Zeile (2026-09-04):**
 - Stepper-Label auf der Übungs-Detailseite von "Wdh." auf "Reps" geändert (Nutzer-Vorgabe)
 - Die Roster-Zeile im Workout-Tab (`renderExerciseRow`, `workout.js`) zeigt jetzt zusätzlich zur Satz-Anzahl rechts oben eine Zeile mit den tatsächlichen Satz-Werten unter dem Titel (`50 kg × 10`, mehrere Sätze durch " · " getrennt) — vorher war dort nur die Anzahl sichtbar, die konkreten Werte erst nach Öffnen der Detailseite. Zeile bleibt leer/entfällt ganz, solange noch keine Sätze erfasst sind

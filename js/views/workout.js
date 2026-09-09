@@ -1359,7 +1359,7 @@ function renderExerciseCreateSheet() {
           aria-label="Übung erstellen"
           ${canSubmit ? '' : 'disabled'}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
             <path d="M5 13l4 4L19 7" />
           </svg>
         </button>

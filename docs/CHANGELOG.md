@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Haken-Icon im Haken-Button vergrößert)
+
+### Changed
+- Haken-Icon im Erstellen-Button des Neue-Übung-Sheets von `w-5 h-5` (20px) auf `w-6 h-6` (24px) vergrößert
+
 ## 2026-09-09 (Haken-Button: Deckkraft erhöht, Glow entfernt, Standard-Glass-Schatten, Haken leicht grün)
 
 ### Changed
