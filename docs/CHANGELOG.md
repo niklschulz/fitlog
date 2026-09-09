@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Übungs-Sheet: mehr Abstand zwischen Kopfzeile und Suchfeld)
+
+### Changed
+- Kopfzeilen-`pb-3` auf `pb-5` erhöht, damit das Suchfeld nicht so dicht unter den Icon-Buttons klebt
+
 ## 2026-09-09 (Suchfeld-Hintergrund im Übungs-Sheet aufgehellt)
 
 ### Changed

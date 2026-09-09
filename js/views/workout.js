@@ -770,7 +770,7 @@ function renderExerciseSheet() {
     <div id="exercise-sheet-root">
       <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
       <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
-        <div class="grid grid-cols-3 items-center px-4 pt-3 pb-3 flex-shrink-0">
+        <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
           <button id="exercise-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Übungen schließen">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
               <path d="M6 6l12 12M18 6L6 18" />
