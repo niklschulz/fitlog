@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Workout-Tab: einzelne Übung aus dem Tages-Roster entfernen)
+
+### Added
+- Neue Funktion `removeExerciseFromWorkout(entryId)` in `js/db.js` — entfernt einen einzelnen `workoutExercises`-Eintrag, ohne die Übung selbst oder andere Einträge anzutasten
+- "⋮"-Button rechts in der Kopfzeile jeder Roster-Karte im Workout-Tab öffnet ein kleines Kontextmenü mit "Übung entfernen" (Bestätigungsdialog) — nur für noch unbegonnene Übungen (keine Sätze erfasst) angeboten, damit bereits erfasste Sätze nie über diesen Weg verloren gehen (dieselbe Regel wie bei Routine-Wechsel/-Entfernen und Übung/Routine löschen, s. ADR 0007)
+- Test `removeExerciseFromWorkout entfernt nur den gewählten Eintrag, Übung und übrige Einträge bleiben unberührt` in `tests/db.test.js`
+
 ## 2026-09-09 (Löschen-Button auf der Übungs-Detailseite)
 
 ### Added

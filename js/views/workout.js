@@ -6,13 +6,14 @@ import {
   applyRoutineToWorkout,
   removeRoutineFromWorkout,
   addExercisesToWorkout,
+  removeExerciseFromWorkout,
   createExercise,
   deleteExercise,
   MUSCLE_GROUPS,
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, LIST_ROW, withViewTransition } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -29,6 +30,10 @@ let state = {
   detailEntryId: null, // workoutExercises.id der geöffneten Übungs-Detailseite (Abschnitt 12), oder null für die Tagesübersicht
   routinePickerOpen: false,
   routinePickerClosing: false,
+  // Kleines Kontextmenü ("Übung entfernen") am "⋮"-Button jeder Roster-Karte
+  // - nur eine Karte kann gleichzeitig ihr Menü offen haben.
+  exerciseRosterMenuEntryId: null,
+  exerciseRosterMenuClosing: false,
   calendarSheetOpen: false,
   calendarSheetClosing: false,
   // Übungs-Sheet (Abschnitt 13): Übungen ansehen/auswählen, um sie gesammelt
@@ -80,6 +85,8 @@ export async function render(container) {
   state.detailEntryId = null;
   state.routinePickerOpen = false;
   state.routinePickerClosing = false;
+  state.exerciseRosterMenuEntryId = null;
+  state.exerciseRosterMenuClosing = false;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
   state.exerciseSheetOpen = false;
@@ -121,6 +128,10 @@ export function unmount() {
   if (pendingRoutinePickerCloseTimeout) {
     clearTimeout(pendingRoutinePickerCloseTimeout);
     pendingRoutinePickerCloseTimeout = null;
+  }
+  if (pendingExerciseRosterMenuCloseTimeout) {
+    clearTimeout(pendingExerciseRosterMenuCloseTimeout);
+    pendingExerciseRosterMenuCloseTimeout = null;
   }
   if (pendingExerciseSheetCloseTimeout) {
     clearTimeout(pendingExerciseSheetCloseTimeout);
@@ -637,8 +648,16 @@ function renderExerciseRoster(entries, nameById, setsByExercise) {
   `;
 }
 
-// Tap öffnet die Übungs-Detailseite (Abschnitt 12) statt wie zuvor eine
-// Inline-Akkordeon-Erweiterung - s. exercise-row-toggle in wireEvents().
+// Tap auf Titel/Sätze öffnet die Übungs-Detailseite (Abschnitt 12) statt wie
+// zuvor eine Inline-Akkordeon-Erweiterung - s. exercise-row-toggle in
+// wireEvents(). Der "⋮"-Button rechts in der Kopfzeile der Karte öffnet ein
+// kleines Kontextmenü zum Entfernen der Übung aus dem heutigen Workout (s.
+// renderExerciseRosterMenu) - bewusst nur für noch unbegonnene Übungen
+// (entry.startedAt === null, keine Sätze erfasst) angeboten, dieselbe Regel
+// wie bei jeder bestehenden workoutExercises-Kaskade (Routine-Wechsel,
+// Übung/Routine löschen, s. ADR 0007) - bereits erfasste Sätze dürfen nie
+// verloren gehen. Kein Menü-Button für begonnene Übungen, statt eines
+// Menüs mit einem einzigen, dauerhaft deaktivierten Eintrag.
 function renderExerciseRow(entry, name, sets) {
   const label = name ?? 'Gelöschte Übung';
   const setRows = sets
@@ -646,15 +665,80 @@ function renderExerciseRow(entry, name, sets) {
       renderSetTimelineRow(i + 1, renderSetValues(s.weight, s.reps), { isLast: i === sets.length - 1 })
     )
     .join('');
+  const canRemove = entry.startedAt === null;
+  const menuOpen = state.exerciseRosterMenuEntryId === entry.id;
 
   return `
-    <li class="bg-surface rounded-card overflow-hidden">
-      <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1">
-        <span class="text-card-title ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
-        ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
-      </button>
+    <li class="relative">
+      <div class="bg-surface rounded-card overflow-hidden flex items-start">
+        <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left px-4 py-3 min-h-[44px] flex flex-col gap-1">
+          <span class="text-card-title truncate ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
+          ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
+        </button>
+        ${
+          canRemove
+            ? `<button
+                type="button"
+                data-entry="${entry.id}"
+                class="exercise-roster-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] mt-1 mr-1 flex items-center justify-center text-muted"
+                aria-label="Optionen für ${escapeHtml(label)}"
+                aria-haspopup="true"
+                aria-expanded="${menuOpen}"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                  <circle cx="12" cy="5" r="1.75" />
+                  <circle cx="12" cy="12" r="1.75" />
+                  <circle cx="12" cy="19" r="1.75" />
+                </svg>
+              </button>`
+            : ''
+        }
+      </div>
+      ${menuOpen ? renderExerciseRosterMenu(entry) : ''}
     </li>
   `;
+}
+
+// Kleines Kontextmenü, optisch an das bestehende Popup-Muster angelehnt
+// (dieselbe `.routine-picker-popup`-Ein-/Ausblend-Animation und `bg-[#363636]`-
+// Fläche wie beim Muskelgruppen-Filter-Popup im Übungs-Sheet) - eigener,
+// unsichtbarer Vollbild-Backdrop zum Schließen bei Klick außerhalb. Sitzt als
+// Geschwister-Element NACH der `overflow-hidden`-Karte im `<li>` (nicht
+// darin), sonst würde die Karte das Popup an ihren abgerundeten Ecken
+// abschneiden.
+function renderExerciseRosterMenu(entry) {
+  const closing = state.exerciseRosterMenuClosing;
+  return `
+    <div id="exercise-roster-menu-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute right-0 top-[calc(100%+4px)] z-40 bg-[#363636] rounded-card p-1 min-w-[190px] shadow-lg shadow-black/40">
+      <button type="button" data-entry="${entry.id}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+        Übung entfernen
+      </button>
+    </div>
+  `;
+}
+
+// Analog zu closeRoutinePicker() weiter unten (gleiche Animation/Timeout-
+// Konstante) - kein lockBodyScroll()/raiseNavAboveSheet() nötig, das leichte
+// Kontextmenü ist wie der Routine-Picker kein echtes Sheet.
+let pendingExerciseRosterMenuCloseTimeout = null;
+
+function openExerciseRosterMenu(entryId) {
+  state.exerciseRosterMenuEntryId = entryId;
+  state.exerciseRosterMenuClosing = false;
+  paint();
+}
+
+function closeExerciseRosterMenu() {
+  if (!state.exerciseRosterMenuEntryId || state.exerciseRosterMenuClosing) return;
+  state.exerciseRosterMenuClosing = true;
+  paint();
+  pendingExerciseRosterMenuCloseTimeout = setTimeout(() => {
+    pendingExerciseRosterMenuCloseTimeout = null;
+    state.exerciseRosterMenuEntryId = null;
+    state.exerciseRosterMenuClosing = false;
+    paint();
+  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
 }
 
 // --- Events ---
@@ -1737,6 +1821,33 @@ function wireEvents() {
         paint();
       }, 'forward');
     });
+  });
+
+  // "⋮"-Kontextmenü zum Entfernen einer noch unbegonnenen Übung aus dem
+  // heutigen Workout (s. renderExerciseRosterMenu weiter oben).
+  currentContainer.querySelectorAll('.exercise-roster-menu-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (state.exerciseRosterMenuEntryId === btn.dataset.entry) {
+        closeExerciseRosterMenu();
+      } else {
+        openExerciseRosterMenu(btn.dataset.entry);
+      }
+    });
+  });
+
+  currentContainer.querySelector('#exercise-roster-menu-backdrop')?.addEventListener('click', () => {
+    closeExerciseRosterMenu();
+  });
+
+  currentContainer.querySelector('.exercise-roster-remove-btn')?.addEventListener('click', async (e) => {
+    const entryId = e.currentTarget.dataset.entry;
+    if (!confirm('Übung aus dem heutigen Workout entfernen? Sie bleibt weiterhin in der Übungsliste erhalten.')) {
+      return;
+    }
+    await removeExerciseFromWorkout(entryId);
+    state.exerciseRosterMenuEntryId = null;
+    state.exerciseRosterMenuClosing = false;
+    await paint();
   });
 
   // --- Übungs-Sheet (Abschnitt 13) ---

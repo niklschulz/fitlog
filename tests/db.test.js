@@ -18,6 +18,8 @@ import {
   getWorkoutExercises,
   applyRoutineToWorkout,
   removeRoutineFromWorkout,
+  removeExerciseFromWorkout,
+  addExercisesToWorkout,
   markWorkoutExerciseStarted,
   addSet,
 } from '../js/db.js';
@@ -104,6 +106,21 @@ test('applyRoutineToWorkout lässt manuell hinzugefügte Übungen beim Routine-W
   const entries = await getWorkoutExercises(workout.id);
   assert.equal(entries.length, 1);
   assert.equal(entries[0].exerciseId, manualExercise.id);
+});
+
+test('removeExerciseFromWorkout entfernt nur den gewählten Eintrag, Übung und übrige Einträge bleiben unberührt', async () => {
+  const exerciseA = await createExercise('Übung A');
+  const exerciseB = await createExercise('Übung B');
+  const workout = await getOrCreateWorkoutForDate('2026-01-10');
+  await addExercisesToWorkout(workout.id, [exerciseA.id, exerciseB.id]);
+
+  const [entryA] = await getWorkoutExercises(workout.id);
+  await removeExerciseFromWorkout(entryA.id);
+
+  const remaining = await getWorkoutExercises(workout.id);
+  assert.equal(remaining.length, 1);
+  assert.equal(remaining[0].exerciseId, exerciseB.id);
+  assert.ok(await db.exercises.get(exerciseA.id), 'die Übung selbst muss erhalten bleiben');
 });
 
 test('getOrCreateWorkoutForDate legt pro Datum nur ein einziges Workout an', async () => {

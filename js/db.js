@@ -320,6 +320,18 @@ export async function removeRoutineFromWorkout(workoutId) {
   });
 }
 
+// Entfernt eine einzelne Übung aus dem Tages-Roster (nicht die Übung selbst
+// - die bleibt in der Datenbank und in allen Routinen erhalten). Anders als
+// die Kaskaden-Funktionen oben (die mehrere Einträge anhand einer Regel
+// entfernen) eine gezielte Einzel-Aktion ohne eigene startedAt-Prüfung - die
+// aufrufende UI bietet diese Aktion von vornherein nur für unbegonnene
+// Einträge an (s. js/views/workout.js), damit bereits erfasste Sätze nie
+// durch diesen Weg verloren gehen (dieselbe Grundregel wie bei jeder
+// anderen workoutExercises-Kaskade, s. ADR 0007).
+export async function removeExerciseFromWorkout(entryId) {
+  await db.workoutExercises.delete(entryId);
+}
+
 // Fügt mehrere Übungen gesammelt manuell zu einem Workout hinzu (Übungs-Sheet
 // im Workout-Tab, Mehrfachauswahl - s. Abschnitt 13). `sourceRoutineId: null`
 // ist entscheidend, damit applyRoutineToWorkout/removeRoutineFromWorkout
