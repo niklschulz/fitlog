@@ -765,7 +765,7 @@ function wireCalendarSheetDrag() {
 // im Suchfeld neu aus der DB zu fragen: Die Suche selbst ist ein reiner
 // In-Memory-Filter über die bereits geladene Liste (Datenmenge einer
 // Einzelnutzer-App ist dafür klein genug, s. ADR 0009) - dadurch kann
-// `renderExerciseSheet()` synchron bleiben und `repaintExerciseSheetContentInPlace()`
+// `renderExerciseSheet()` synchron bleiben und `repaintExerciseSheetBodyInPlace()`
 // (s. dort) ohne jeden `await` auskommen. Das ist kein Stil-Detail, sondern
 // nötig: Ein volles `paint()` (mit eigenen DB-Abfragen) bei jedem Zeichen
 // würde erstens unnötig oft den kompletten restlichen Tab neu laden und
@@ -807,10 +807,18 @@ function renderExerciseSheetHeaderAction() {
     : '<div aria-hidden="true"></div>';
 }
 
-function renderExerciseSheetContent() {
+// Reine Listen-/Formular-Inhalt von `#exercise-sheet-body` - ausgelagert,
+// damit die Sucheingabe (s. repaintExerciseSheetBodyInPlace()) NUR diesen
+// engsten möglichen Teilbaum ersetzen kann, ohne Suchfeld, Muskel-Filter
+// oder Kopfzeile anzufassen. Wichtig, nicht nur Kosmetik: Das <input>
+// selbst darf beim Tippen nie zerstört/neu erzeugt werden (s. CHANGELOG) -
+// sonst bricht sowohl die gefühlte Reaktionsgeschwindigkeit als auch iOS'
+// natives Key-Repeat beim Gedrückthalten der Löschen-Taste, das denselben
+// fokussierten DOM-Knoten über die ganze Wiederholungs-Geste hinweg
+// voraussetzt.
+function renderExerciseSheetBody() {
   const { allExercises, inWorkoutIds } = exerciseSheetCache;
   const selectedIds = state.exerciseSheetSelectedIds;
-  const hasCommitBar = state.exerciseSheetMode === 'list' && selectedIds.size > 0;
 
   const query = state.exerciseSheetSearch.trim().toLowerCase();
   let filteredExercises = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
@@ -828,18 +836,21 @@ function renderExerciseSheetContent() {
     );
   }
 
-  const bodyHtml =
-    state.exerciseSheetMode === 'create'
-      ? renderExerciseCreateForm()
-      : renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, allExercises.length);
+  return state.exerciseSheetMode === 'create'
+    ? renderExerciseCreateForm()
+    : renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, allExercises.length);
+}
+
+function renderExerciseSheetContent() {
+  const hasCommitBar = state.exerciseSheetMode === 'list' && state.exerciseSheetSelectedIds.size > 0;
 
   return `
     ${state.exerciseSheetMode === 'list' ? renderExerciseSheetSearchBar() : ''}
     ${state.exerciseSheetMode === 'list' ? renderExerciseSheetMuscleFilter() : ''}
     <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 ${hasCommitBar ? 'pb-4' : 'pb-[calc(env(safe-area-inset-bottom)+112px)]'} flex flex-col gap-2">
-      ${bodyHtml}
+      ${renderExerciseSheetBody()}
     </div>
-    ${hasCommitBar ? renderExerciseSheetCommitBar(selectedIds.size) : ''}
+    ${hasCommitBar ? renderExerciseSheetCommitBar(state.exerciseSheetSelectedIds.size) : ''}
   `;
 }
 
@@ -884,6 +895,20 @@ function repaintExerciseSheetContentInPlace() {
   if (!content) return;
   content.innerHTML = renderExerciseSheetContent();
   wireExerciseSheetContentEvents();
+}
+
+// Ersetzt NUR `#exercise-sheet-body` - der engste mögliche Teilbaum, der bei
+// einer Sucheingabe tatsächlich betroffen ist (Suchfeld, Muskel-Filter und
+// Kopfzeile bleiben unangetastet). Entscheidend: Das Such-`<input>` selbst
+// liegt außerhalb von `#exercise-sheet-body` und wird hier nie berührt -
+// Fokus, Cursor-Position und iOS' natives Key-Repeat (Löschen-Taste
+// gedrückt halten) funktionieren dadurch komplett nativ, ganz ohne
+// manuelles `.focus()`/`setSelectionRange()`-Nachstellen wie zuvor.
+function repaintExerciseSheetBodyInPlace() {
+  const body = currentContainer?.querySelector('#exercise-sheet-body');
+  if (!body) return;
+  body.innerHTML = renderExerciseSheetBody();
+  wireExerciseSheetBodyEvents();
 }
 
 // Eigene, nicht scrollende Flex-Zone zwischen Kopfzeile und Liste (nur im
@@ -1177,22 +1202,16 @@ function wireExerciseSheetContentEvents() {
     repaintExerciseSheetContentInPlace();
   });
 
-  // Liest die Cursor-Position vor dem Neu-Rendern aus, aktualisiert nur den
-  // Suchbegriff im State, rendert synchron per Teil-Repaint neu und setzt
-  // Fokus + Cursor-Position direkt danach zurück. Ohne das würde jeder
-  // Tastendruck das <input>-Element per innerHTML-Ersetzung zerstören und
-  // neu erzeugen - Fokus und Cursor wären weg, man müsste nach jedem
-  // Zeichen erneut antippen.
+  // Aktualisiert nur den Suchbegriff im State und rendert per
+  // repaintExerciseSheetBodyInPlace() ausschließlich `#exercise-sheet-body`
+  // neu - das Such-`<input>` selbst wird dabei nie angefasst, Fokus und
+  // Cursor-Position bleiben deshalb automatisch erhalten (kein manuelles
+  // Nachstellen mehr nötig, anders als beim vorherigen, zu breiten
+  // Content-Repaint, s. CHANGELOG).
   const searchInput = currentContainer.querySelector('#exercise-sheet-search-input');
   searchInput?.addEventListener('input', (e) => {
-    const cursorPos = e.target.selectionStart;
     state.exerciseSheetSearch = e.target.value;
-    repaintExerciseSheetContentInPlace();
-    const newInput = currentContainer.querySelector('#exercise-sheet-search-input');
-    if (newInput) {
-      newInput.focus();
-      newInput.setSelectionRange(cursorPos, cursorPos);
-    }
+    repaintExerciseSheetBodyInPlace();
   });
 
   currentContainer.querySelector('#exercise-sheet-muscle-filter-btn')?.addEventListener('click', () => {
@@ -1215,6 +1234,23 @@ function wireExerciseSheetContentEvents() {
     });
   });
 
+  wireExerciseSheetBodyEvents();
+
+  currentContainer.querySelector('#exercise-sheet-commit-btn')?.addEventListener('click', async () => {
+    const workout = await getOrCreateWorkoutForDate(state.selectedDate);
+    await addExercisesToWorkout(workout.id, [...state.exerciseSheetSelectedIds]);
+    closeExerciseSheet();
+  });
+}
+
+// Listener für alles innerhalb von `#exercise-sheet-body` - aufgerufen sowohl
+// aus wireExerciseSheetContentEvents() (nach vollem Content-Repaint) als auch
+// aus repaintExerciseSheetBodyInPlace() (nach dem engen Teil-Repaint bei
+// jedem Tastendruck im Suchfeld, s. dort). Auswahl-Toggle löst trotzdem den
+// breiteren Content-Repaint aus (nicht nur den Body-Repaint), da sich dabei
+// die außerhalb von `#exercise-sheet-body` liegende Commit-Leiste
+// mit-ändern kann (erscheint/verschwindet je nach Auswahl-Anzahl).
+function wireExerciseSheetBodyEvents() {
   currentContainer.querySelectorAll('.exercise-select-toggle-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
@@ -1231,12 +1267,6 @@ function wireExerciseSheetContentEvents() {
     btn.addEventListener('click', () => {
       openExerciseDetailSheet(btn.dataset.id);
     });
-  });
-
-  currentContainer.querySelector('#exercise-sheet-commit-btn')?.addEventListener('click', async () => {
-    const workout = await getOrCreateWorkoutForDate(state.selectedDate);
-    await addExercisesToWorkout(workout.id, [...state.exerciseSheetSelectedIds]);
-    closeExerciseSheet();
   });
 }
 

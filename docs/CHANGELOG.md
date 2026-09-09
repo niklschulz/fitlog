@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Suchfeld im Übungs-Sheet: träges Tippen und fehlendes Key-Repeat behoben)
+
+### Fixed
+- Suchfeld fühlte sich auf echten Geräten träge an, Gedrückthalten der Löschen-Taste löschte nur ein Zeichen statt zu wiederholen — Ursache: Jeder Tastendruck zerstörte und erzeugte das `<input>`-Element per zu breitem `innerHTML`-Repaint neu (samt Muskel-Filter-Zeile und kompletter Übungsliste), Fokus wurde danach nur manuell nachgestellt. Das unterbrach iOS' natives Key-Repeat, das denselben fokussierten DOM-Knoten voraussetzt
+- Behoben durch einen engeren Teil-Repaint (`repaintExerciseSheetBodyInPlace()`), der nur noch die Liste selbst ersetzt — das Suchfeld wird beim Tippen nie mehr angefasst, Fokus/Cursor/Key-Repeat funktionieren jetzt komplett nativ ohne manuellen Workaround
+
 ## 2026-09-09 ("+"-Button im Übungs-Sheet: Safari-Kompatibilitätsfehler behoben)
 
 ### Fixed
