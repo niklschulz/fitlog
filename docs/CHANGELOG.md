@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Suchfeld-Hintergrund im Übungs-Sheet aufgehellt)
+
+### Changed
+- Suchfeld im Übungs-Sheet nutzt jetzt `bg-white/[0.08]` statt `bg-base` — sitzt direkt auf der `bg-surface`-Sheet-Fläche (kein Kartenkontext), `bg-base` war dort dunkler statt heller als der Hintergrund. Als neue Input-Variante in design-system.md dokumentiert
+- Nebenbei behoben: Tailwinds Play-CDN-JIT löst den Bare-Opacity-Modifier `bg-white/8` nicht korrekt auf (wird zu deckendem Weiß statt 8 % Deckkraft) — Arbitrary-Value-Schreibweise `bg-white/[0.08]` verwenden, sobald ein Opacity-Wert außerhalb der Tailwind-Standardskala gebraucht wird
+
 ## 2026-09-09 (Übungs-Sheet: Live-Textsuche)
 
 ### Added

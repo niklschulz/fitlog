@@ -802,9 +802,14 @@ function renderExerciseSheet() {
 // Eigene, nicht scrollende Flex-Zone zwischen Kopfzeile und Liste (nur im
 // 'list'-Zustand) - Lupe als absolut positioniertes Icon links im Feld
 // (`pointer-events-none`, damit Klicks durchgereicht werden), sonst dasselbe
-// visuelle Muster wie andere Inputs (`rounded-btn`, `bg-base` innerhalb der
-// `bg-surface`-Sheet-Fläche, `min-h-[44px]`), nur mit angepasstem
-// Innenabstand links statt der geteilten `INPUT`-Konstante.
+// visuelle Muster wie andere Inputs (`rounded-btn`, `min-h-[44px]`), nur mit
+// angepasstem Innenabstand links statt der geteilten `INPUT`-Konstante.
+// Hintergrund bewusst `bg-white/8` statt des sonst üblichen `bg-base`: Das
+// Feld sitzt hier direkt auf der `bg-surface`-Sheet-Fläche, nicht wie sonst
+// innerhalb einer zusätzlichen Karte - `bg-base` (dunkler als `bg-surface`)
+// wäre dort nicht als "heller = Eingabefeld" lesbar. Ein halbtransparentes
+// Weiß hebt sich unabhängig vom exakten darunterliegenden Farbwert ab, s.
+// design-system.md "Input" für die etablierte Variante.
 function renderExerciseSheetSearchBar() {
   return `
     <div class="px-4 pb-4 flex-shrink-0">
@@ -822,7 +827,7 @@ function renderExerciseSheetSearchBar() {
           autocomplete="off"
           placeholder="Suche"
           value="${escapeHtml(state.exerciseSheetSearch)}"
-          class="w-full bg-base rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]"
+          class="w-full bg-white/[0.08] rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]"
         />
       </div>
     </div>
