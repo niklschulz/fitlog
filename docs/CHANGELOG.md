@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Muskelgruppen-Filter-Popup: Farbe, Zeilenabstand, kein Scroll mehr)
+
+### Changed
+- Popup-Hintergrund optisch an Suchfeld/Filter-Button angeglichen (`#363636`, deckend statt `bg-white/[0.08]` — Letzteres ließ die dahinterliegende Übungsliste sichtbar durchscheinen, da das Popup über scrollbarem Inhalt liegt statt auf blankem Sheet-Hintergrund). Zeilen bekommen `#464646` zur Abhebung vom Popup-Hintergrund
+- Zeilenabstand im Popup verringert (`gap-0.5` statt `gap-1`) — die Einträge sind einzeilig ohne Untertitel
+- `max-h`/Scroll entfernt — alle neun Einträge (8 Muskelgruppen + "Alle") passen jetzt immer vollständig ohne Scrollen
+
 ## 2026-09-09 (Übungs-Sheet: Dropdown springt nicht mehr, Filter-Button-Farbe angeglichen)
 
 ### Fixed
