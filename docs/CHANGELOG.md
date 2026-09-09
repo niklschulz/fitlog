@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Übungs-Sheet: Zeilenabstand verringert)
+
+### Changed
+- Abstand zwischen den Übungszeilen im Übungs-Sheet von `gap-2` (8px) auf `gap-1` (4px) verringert — durch den seit dem vorigen Eintrag zweizeiligen Zeileninhalt (Name + Muskel-Untertitel) wirkte der bisherige Abstand zu großzügig
+
 ## 2026-09-09 (Übungs-Sheet-Zeilen: Muskel-Untertitel, eckiges Auswahl-Kästchen rechts, Commit-Button ohne Zähler)
 
 ### Changed

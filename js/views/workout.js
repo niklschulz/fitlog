@@ -1043,7 +1043,7 @@ function renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, t
   }
 
   return `
-    <ul class="flex flex-col gap-2">
+    <ul class="flex flex-col gap-1">
       ${filteredExercises
         .map((ex) => renderExerciseSheetRow(ex, inWorkoutIds.has(ex.id), selectedIds.has(ex.id)))
         .join('')}

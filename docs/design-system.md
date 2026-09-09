@@ -388,6 +388,8 @@ Behoben durch denselben Kniff wie beim "+"-Button-Fix (Zweiundsechzigste Iterati
 - **"Hinzufügen"-Button zählt die Auswahl nicht mehr** (`Hinzufügen (n)` → `Hinzufügen`) — die Häkchen in der Liste zeigen die Auswahl bereits an, `renderExerciseSheetCommitBar()` braucht dafür keinen `count`-Parameter mehr
 - **Abstand zur Bottom-Nav verringert**: `pb-[calc(env(safe-area-inset-bottom)+112px)]` → `+88px` (112px ist weiterhin der Standard für die Kalender-Liste, hier bewusst als lokale Ausnahme kleiner) — per `getBoundingClientRect()` verifiziert: 12px Abstand zwischen Button-Unterkante und Nav-Oberkante, spürbar näher als zuvor, ohne dass die schwebende Nav (`raiseNavAboveSheet()`) den Button verdeckt
 
+**Siebzigste Iteration – Übungs-Sheet-Zeilenabstand verringert (2026-09-09):** Direkte Folge der Neunundsechzigsten Iteration — durch den seitdem zweizeiligen Zeileninhalt (Name + Muskel-Untertitel) wirkte der bisherige Listen-`gap-2` (8px) zwischen den Zeilen zu großzügig. Auf `gap-1` (4px) verringert (`renderExerciseSheetList()`), dichter, ohne dass benachbarte Zeilen optisch verschmelzen.
+
 **Sechzehnte Iteration – "Reps" statt "Wdh.", Satz-Daten in der Roster-Zeile (2026-09-04):**
 - Stepper-Label auf der Übungs-Detailseite von "Wdh." auf "Reps" geändert (Nutzer-Vorgabe)
 - Die Roster-Zeile im Workout-Tab (`renderExerciseRow`, `workout.js`) zeigt jetzt zusätzlich zur Satz-Anzahl rechts oben eine Zeile mit den tatsächlichen Satz-Werten unter dem Titel (`50 kg × 10`, mehrere Sätze durch " · " getrennt) — vorher war dort nur die Anzahl sichtbar, die konkreten Werte erst nach Öffnen der Detailseite. Zeile bleibt leer/entfällt ganz, solange noch keine Sätze erfasst sind
