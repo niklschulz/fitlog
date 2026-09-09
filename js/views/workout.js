@@ -650,14 +650,22 @@ function renderExerciseRoster(entries, nameById, setsByExercise) {
 
 // Tap auf Titel/Sätze öffnet die Übungs-Detailseite (Abschnitt 12) statt wie
 // zuvor eine Inline-Akkordeon-Erweiterung - s. exercise-row-toggle in
-// wireEvents(). Der "⋮"-Button rechts in der Kopfzeile der Karte öffnet ein
-// kleines Kontextmenü zum Entfernen der Übung aus dem heutigen Workout (s.
-// renderExerciseRosterMenu) - bewusst nur für noch unbegonnene Übungen
+// wireEvents(). Zwei gleichwertige Wege, eine noch unbegonnene Übung aus dem
+// heutigen Workout zu entfernen (kein Bestätigungsdialog bei beiden, s.
+// Kommentar bei removeExerciseFromWorkout in js/db.js): der "⋮"-Button
+// öffnet ein kleines Kontextmenü (s. renderExerciseRosterMenu), und die
+// ganze Karte lässt sich nach links wischen (klassische iOS-Lösch-Geste,
+// s. wireExerciseRosterSwipe) - ein Swipe über SWIPE_DELETE_THRESHOLD_PX
+// hinaus löscht sofort, ein kürzerer Swipe rastet am roten "Entfernen"-
+// Button ein. Beide Wege bewusst nur für noch unbegonnene Übungen
 // (entry.startedAt === null, keine Sätze erfasst) angeboten, dieselbe Regel
 // wie bei jeder bestehenden workoutExercises-Kaskade (Routine-Wechsel,
 // Übung/Routine löschen, s. ADR 0007) - bereits erfasste Sätze dürfen nie
-// verloren gehen. Kein Menü-Button für begonnene Übungen, statt eines
-// Menüs mit einem einzigen, dauerhaft deaktivierten Eintrag.
+// verloren gehen. Titel-Zeile eigens in eine `items-center`-Flex-Zeile
+// zusammen mit dem "⋮"-Button ausgelagert (statt beide gegen die gesamte,
+// durch die Satz-Liste unterschiedlich hohe Karte auszurichten), damit der
+// Button immer exakt auf Höhe des Titels sitzt, unabhängig von der Anzahl
+// der Sätze darunter.
 function renderExerciseRow(entry, name, sets) {
   const label = name ?? 'Gelöschte Übung';
   const setRows = sets
@@ -667,50 +675,91 @@ function renderExerciseRow(entry, name, sets) {
     .join('');
   const canRemove = entry.startedAt === null;
   const menuOpen = state.exerciseRosterMenuEntryId === entry.id;
+  const titleClasses = `text-card-title truncate ${name ? '' : 'italic text-muted'}`;
 
-  return `
-    <li class="relative">
-      <div class="bg-surface rounded-card overflow-hidden flex items-start">
-        <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left px-4 py-3 min-h-[44px] flex flex-col gap-1">
-          <span class="text-card-title truncate ${name ? '' : 'italic text-muted'}">${escapeHtml(label)}</span>
+  if (!canRemove) {
+    return `
+      <li class="relative">
+        <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1 bg-surface rounded-card overflow-hidden">
+          <span class="${titleClasses}">${escapeHtml(label)}</span>
           ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
         </button>
-        ${
-          canRemove
-            ? `<button
-                type="button"
-                data-entry="${entry.id}"
-                class="exercise-roster-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] mt-1 mr-1 flex items-center justify-center text-muted"
-                aria-label="Optionen für ${escapeHtml(label)}"
-                aria-haspopup="true"
-                aria-expanded="${menuOpen}"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                  <circle cx="12" cy="5" r="1.75" />
-                  <circle cx="12" cy="12" r="1.75" />
-                  <circle cx="12" cy="19" r="1.75" />
-                </svg>
-              </button>`
-            : ''
-        }
+      </li>
+    `;
+  }
+
+  // Titel-Button und "⋮"-Button sind hier bewusst zwei ECHTE Geschwister-
+  // Elemente in einer gemeinsamen `items-center`-Flex-Zeile, kein `<button>`
+  // im anderen verschachtelt (ungültiges HTML - der Browser hätte das
+  // äußere `<button>` sonst automatisch direkt nach dem Titel geschlossen
+  // und den Rest der Karte inkl. Satz-Liste und "⋮"-Button unkontrolliert
+  // aus dem eigentlich beabsichtigten Element herausgerissen). Die
+  // Satz-Liste ist reiner Anzeige-Inhalt ohne eigenes Tap-Ziel - Tippen
+  // irgendwo auf der Oberfläche (außer dem "⋮"-Button) öffnet die
+  // Detailseite über die Pointer-Auswertung in wireExerciseRosterSwipe()
+  // (Tap-Erkennung dort), NICHT über einen `click`-Handler: Während einer
+  // Swipe-Geste ruft dieselbe Oberfläche `setPointerCapture()` auf, das
+  // leitet den nachfolgenden `click` auf die Oberfläche selbst um statt auf
+  // ein angetipptes Kind-Element - ein `click`-Handler auf dem Titel-Button
+  // würde für Maus/Touch-Taps dadurch nie zuverlässig auslösen. Der Titel-
+  // Button bleibt trotzdem ein echtes `<button>` mit eigenem `click`-Handler
+  // in wireEvents() (unten), rein für Tastatur-Bedienung (Tab + Enter/
+  // Leertaste lösen `click` direkt am fokussierten Element aus, ganz ohne
+  // Pointer-Capture-Umweg).
+  return `
+    <li class="relative">
+      <div class="relative rounded-card overflow-hidden">
+        <div class="absolute inset-0 flex justify-end">
+          <button
+            type="button"
+            data-entry="${entry.id}"
+            class="exercise-roster-swipe-delete-btn tap-feedback w-[${SWIPE_REVEAL_PX}px] flex items-center justify-center bg-red-500 text-white text-label font-semibold"
+            aria-label="${escapeHtml(label)} aus dem heutigen Workout entfernen"
+          >
+            Entfernen
+          </button>
+        </div>
+        <div data-entry="${entry.id}" class="exercise-roster-swipe-surface relative z-10 bg-surface" style="touch-action: pan-y;">
+          <div class="flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
+            <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
+              <span class="${titleClasses}">${escapeHtml(label)}</span>
+            </button>
+            <button
+              type="button"
+              data-entry="${entry.id}"
+              class="exercise-roster-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
+              aria-label="Optionen für ${escapeHtml(label)}"
+              aria-haspopup="true"
+              aria-expanded="${menuOpen}"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                <circle cx="12" cy="5" r="1.75" />
+                <circle cx="12" cy="12" r="1.75" />
+                <circle cx="12" cy="19" r="1.75" />
+              </svg>
+            </button>
+          </div>
+          ${sets.length > 0 ? `<ul class="flex flex-col px-4 pb-3 -mt-2">${setRows}</ul>` : ''}
+        </div>
       </div>
       ${menuOpen ? renderExerciseRosterMenu(entry) : ''}
     </li>
   `;
 }
 
-// Kleines Kontextmenü, optisch an das bestehende Popup-Muster angelehnt
-// (dieselbe `.routine-picker-popup`-Ein-/Ausblend-Animation und `bg-[#363636]`-
-// Fläche wie beim Muskelgruppen-Filter-Popup im Übungs-Sheet) - eigener,
-// unsichtbarer Vollbild-Backdrop zum Schließen bei Klick außerhalb. Sitzt als
-// Geschwister-Element NACH der `overflow-hidden`-Karte im `<li>` (nicht
-// darin), sonst würde die Karte das Popup an ihren abgerundeten Ecken
-// abschneiden.
+// Kleines Kontextmenü im selben Liquid-Glass-Look wie die Bottom-Nav
+// (`.popup-glass`, s. css/styles.css - bewusste, vom Nutzer angefragte
+// Ausnahme vom sonst auf Navigation beschränkten Glass-Look, s. dortiger
+// Kommentar), Ein-/Ausblend-Animation weiterhin die geteilte
+// `.routine-picker-popup`-Klasse. Eigener, unsichtbarer Vollbild-Backdrop
+// zum Schließen bei Klick außerhalb. Sitzt als Geschwister-Element NACH der
+// `overflow-hidden`-Karte im `<li>` (nicht darin), sonst würde die Karte das
+// Popup an ihren abgerundeten Ecken abschneiden.
 function renderExerciseRosterMenu(entry) {
   const closing = state.exerciseRosterMenuClosing;
   return `
     <div id="exercise-roster-menu-backdrop" class="fixed inset-0 z-30"></div>
-    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute right-0 top-[calc(100%+4px)] z-40 bg-[#363636] rounded-card p-1 min-w-[190px] shadow-lg shadow-black/40">
+    <div class="routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-[calc(100%+4px)] z-40 rounded-card p-1 min-w-[190px]">
       <button type="button" data-entry="${entry.id}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Übung entfernen
       </button>
@@ -724,6 +773,9 @@ function renderExerciseRosterMenu(entry) {
 let pendingExerciseRosterMenuCloseTimeout = null;
 
 function openExerciseRosterMenu(entryId) {
+  // Eine offene Swipe-Geste auf derselben oder einer anderen Karte schließen
+  // - beide Wege (Menü und Swipe) sollen nie gleichzeitig sichtbar sein.
+  if (openSwipeEntryId) closeSwipeRow(openSwipeEntryId);
   state.exerciseRosterMenuEntryId = entryId;
   state.exerciseRosterMenuClosing = false;
   paint();
@@ -739,6 +791,130 @@ function closeExerciseRosterMenu() {
     state.exerciseRosterMenuClosing = false;
     paint();
   }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+}
+
+// --- Swipe-to-Delete (klassische iOS-Lösch-Geste, s. Mail/Erinnerungen) ---
+
+// Breite des roten "Entfernen"-Bereichs, der beim Wischen sichtbar wird
+// (auch als Tailwind-Arbitrary-Value in renderExerciseRow() interpoliert -
+// Tailwind Play CDN scannt zur Laufzeit die tatsächlichen DOM-Klassen, ein
+// per Template-String zusammengesetzter Klassenname funktioniert dafür
+// genauso wie ein wörtlich im Quelltext stehender, s. ADR 0002). Ab
+// SWIPE_DELETE_THRESHOLD_PX gilt der Swipe als "vollständig" und löst sofort
+// aus - kein Bestätigungsdialog nötig, s. Kommentar bei
+// removeExerciseFromWorkout in js/db.js.
+const SWIPE_REVEAL_PX = 88;
+const SWIPE_DELETE_THRESHOLD_PX = 180;
+const SWIPE_MAX_DRAG_PX = SWIPE_DELETE_THRESHOLD_PX + 40;
+// Unterhalb dieser Bewegung gilt eine Geste als Tap statt als Swipe (s.
+// finishDrag) - bewusst großzügiger als ein reiner "Klick ohne jede
+// Bewegung", da echte Finger/Maus-Taps immer eine minimale Restbewegung
+// haben.
+const TAP_MOVEMENT_PX = 10;
+
+// Welche Roster-Karte (per entryId) gerade aufgezogen/eingerastet ist - wird
+// zu Beginn von wireExerciseRosterSwipe() (läuft nach jedem paint()) auf
+// null zurückgesetzt, da paint() jede Karte stets geschlossen neu aufbaut
+// und dieser Wert sonst mit dem tatsächlichen DOM-Zustand auseinanderlaufen
+// würde (z. B. nach einem Tages-Wechsel während eine Karte noch offen war).
+let openSwipeEntryId = null;
+
+function closeSwipeRow(entryId) {
+  const surface = currentContainer?.querySelector(`.exercise-roster-swipe-surface[data-entry="${entryId}"]`);
+  if (!surface) return;
+  surface.style.transition = 'transform 200ms ease';
+  surface.style.transform = 'translateX(0)';
+  if (openSwipeEntryId === entryId) openSwipeEntryId = null;
+}
+
+// Direkte Style-Manipulation während der Geste statt paint() - muss 1:1 dem
+// Finger folgen, analog zu wireSheetDrag() in js/sheet.js (dort ausführlich
+// begründet). paint() läuft erst nach einer tatsächlichen Löschung.
+// `touch-action: pan-y` auf der Oberfläche (s. renderExerciseRow) lässt
+// vertikales Seiten-Scrollen weiterhin nativ zu, während horizontale
+// Bewegungen an dieses Skript gehen, statt von Safari als Scroll-Geste
+// interpretiert zu werden.
+function wireExerciseRosterSwipe() {
+  openSwipeEntryId = null;
+
+  currentContainer.querySelectorAll('.exercise-roster-swipe-surface').forEach((surface) => {
+    const entryId = surface.dataset.entry;
+    let drag = null;
+
+    surface.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.exercise-roster-menu-btn')) return;
+      if (state.exerciseRosterMenuEntryId) closeExerciseRosterMenu();
+      if (openSwipeEntryId && openSwipeEntryId !== entryId) closeSwipeRow(openSwipeEntryId);
+
+      drag = { startX: e.clientX, startTranslate: openSwipeEntryId === entryId ? -SWIPE_REVEAL_PX : 0 };
+      surface.style.transition = 'none';
+      try {
+        surface.setPointerCapture(e.pointerId);
+      } catch {
+        // Kein aktiver Pointer mit dieser ID - s. wireSheetDrag in
+        // js/sheet.js für dieselbe, dort ausführlicher begründete Situation.
+      }
+    });
+
+    surface.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const translate = Math.min(0, Math.max(-SWIPE_MAX_DRAG_PX, drag.startTranslate + (e.clientX - drag.startX)));
+      surface.style.transform = `translateX(${translate}px)`;
+    });
+
+    const finishDrag = async (e) => {
+      if (!drag) return;
+      const rawDelta = e.clientX - drag.startX;
+      const wasRevealedBeforeThisGesture = drag.startTranslate === -SWIPE_REVEAL_PX;
+      const translate = Math.min(0, Math.max(-SWIPE_MAX_DRAG_PX, drag.startTranslate + rawDelta));
+      drag = null;
+
+      if (translate <= -SWIPE_DELETE_THRESHOLD_PX) {
+        surface.style.transition = 'transform 150ms ease';
+        surface.style.transform = 'translateX(-100%)';
+        await removeExerciseFromWorkout(entryId);
+        await paint();
+        return;
+      }
+
+      // Tap statt Swipe: kaum horizontale Bewegung seit Gestenstart. Öffnet
+      // die Detailseite direkt hier (nicht über den `click` des Titel-
+      // Buttons, s. Kommentar in renderExerciseRow) bzw. schließt eine
+      // bereits aufgezogene Karte wieder, statt zu navigieren.
+      if (Math.abs(rawDelta) < TAP_MOVEMENT_PX) {
+        surface.style.transition = '';
+        surface.style.transform = wasRevealedBeforeThisGesture ? 'translateX(0)' : '';
+        if (wasRevealedBeforeThisGesture) {
+          openSwipeEntryId = null;
+        } else {
+          withViewTransition(() => {
+            state.detailEntryId = entryId;
+            paint();
+          }, 'forward');
+        }
+        return;
+      }
+
+      surface.style.transition = 'transform 200ms ease';
+      if (translate <= -SWIPE_REVEAL_PX / 2) {
+        surface.style.transform = `translateX(${-SWIPE_REVEAL_PX}px)`;
+        openSwipeEntryId = entryId;
+      } else {
+        surface.style.transform = 'translateX(0)';
+        if (openSwipeEntryId === entryId) openSwipeEntryId = null;
+      }
+    };
+
+    surface.addEventListener('pointerup', finishDrag);
+    surface.addEventListener('pointercancel', finishDrag);
+  });
+
+  currentContainer.querySelectorAll('.exercise-roster-swipe-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await removeExerciseFromWorkout(btn.dataset.entry);
+      await paint();
+    });
+  });
 }
 
 // --- Events ---
@@ -1813,9 +1989,15 @@ function wireEvents() {
   });
 
   // Öffnet die Übungs-Detailseite (Abschnitt 12) statt wie zuvor inline zu
-  // expandieren.
+  // expandieren - außer die Karte ist gerade per Swipe aufgezogen: dann
+  // schließt ein Tap die Geste nur wieder, statt zu navigieren (dieselbe
+  // Erwartung wie bei der klassischen iOS-Lösch-Geste).
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (openSwipeEntryId === btn.dataset.entry) {
+        closeSwipeRow(btn.dataset.entry);
+        return;
+      }
       withViewTransition(() => {
         state.detailEntryId = btn.dataset.entry;
         paint();
@@ -1839,16 +2021,17 @@ function wireEvents() {
     closeExerciseRosterMenu();
   });
 
+  // Kein Bestätigungsdialog (Nutzer-Vorgabe, s. Kommentar bei
+  // removeExerciseFromWorkout in js/db.js) - identisch zum Swipe-Weg.
   currentContainer.querySelector('.exercise-roster-remove-btn')?.addEventListener('click', async (e) => {
     const entryId = e.currentTarget.dataset.entry;
-    if (!confirm('Übung aus dem heutigen Workout entfernen? Sie bleibt weiterhin in der Übungsliste erhalten.')) {
-      return;
-    }
     await removeExerciseFromWorkout(entryId);
     state.exerciseRosterMenuEntryId = null;
     state.exerciseRosterMenuClosing = false;
     await paint();
   });
+
+  wireExerciseRosterSwipe();
 
   // --- Übungs-Sheet (Abschnitt 13) ---
 

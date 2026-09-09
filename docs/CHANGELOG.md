@@ -2,6 +2,20 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Roster-Karten: Swipe-to-Delete, Kontextmenü als Liquid Glass, kein Bestätigungsdialog mehr)
+
+### Added
+- Roster-Karten im Workout-Tab lassen sich jetzt nach links wischen (klassische iOS-Lösch-Geste, s. [ADR 0016](decisions/0016-swipe-to-delete-roster.md)) — kurzer Swipe rastet an einem roten "Entfernen"-Button ein, ein vollständiger Swipe löscht sofort. Ergänzt das bestehende "⋮"-Menü, ersetzt es nicht
+
+### Changed
+- Kein Bestätigungsdialog mehr beim Entfernen einer Übung aus dem Tages-Roster (weder per Swipe noch per Menü) — explizite Ausnahme von der sonstigen App-Konvention, da beide Wege ausschließlich Einträge ohne Trainingsdaten betreffen (s. ADR 0016)
+- "⋮"-Button jetzt vertikal exakt auf Höhe des Übungstitels statt an der gesamten, unterschiedlich hohen Karte ausgerichtet
+- Kontextmenü ("Übung entfernen") im selben Liquid-Glass-Look wie die Bottom-Nav (neue CSS-Klasse `.popup-glass`) statt einer deckenden Fläche
+
+### Fixed
+- Ein Zwischenstand verschachtelte den "⋮"-Button versehentlich in den Titel-Button (ungültiges HTML) — verursachte sichtbar kaputtes Layout (u. a. Listenpunkte außerhalb der Karten). Behoben, beide sind jetzt echte Geschwister-Elemente
+- Navigation zur Übungs-Detailseite funktionierte durch `setPointerCapture()` (nötig für die Swipe-Geste) zeitweise nicht mehr zuverlässig per Tap/Klick, da der Browser den `click` während aktiver Pointer-Capture auf die Oberfläche statt auf den Titel-Button umleitet — behoben durch eigene Tap-Erkennung direkt über Pointer Events statt über `click` (s. ADR 0016)
+
 ## 2026-09-09 (Workout-Tab: einzelne Übung aus dem Tages-Roster entfernen)
 
 ### Added
