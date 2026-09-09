@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Neue-Übung-Sheet: eigenes gestapeltes Sheet mit Muskel-Zuordnung)
+
+### Added
+- "+"-Button im Übungs-Sheet öffnet jetzt ein eigenes, darüber gestapeltes Neue-Übung-Sheet (statt eines Inline-Formulars innerhalb des Übungs-Sheets) — Schließen führt nur zum Übungs-Sheet zurück, nicht zum Workout-Tab
+- Formular: Name (optisch wie das Suchfeld), Chip-Auswahl für primären Muskel (Einzelauswahl) und sekundäre Muskeln (Mehrfachauswahl) aus den acht festen Muskelgruppen — bereits primär gewählte Muskelgruppe ist im Sekundär-Raster deaktiviert. Bewusst ohne Notizen-Feld und Kategorie-Auswahl
+- Neu erstellte Übung landet automatisch in der Mehrfachauswahl des Übungs-Sheets, wie zuvor beim Inline-Formular
+
+### Changed
+- `state.exerciseSheetMode` (Inline-Umschaltung Liste/Formular) entfernt — der "+"-Button ist dadurch wieder ein stabiles, nie neu gerendertes Element ohne eigenen Teil-Repaint-Wrapper
+
 ## 2026-09-09 (Suchfeld im Übungs-Sheet: träges Tippen und fehlendes Key-Repeat behoben)
 
 ### Fixed

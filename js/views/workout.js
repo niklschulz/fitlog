@@ -11,7 +11,7 @@ import {
   todayISODate,
   toISODate,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, INPUT, CARD, LIST_ROW, withViewTransition } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, LIST_ROW, withViewTransition } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -30,11 +30,10 @@ let state = {
   routinePickerClosing: false,
   calendarSheetOpen: false,
   calendarSheetClosing: false,
-  // Übungs-Sheet (Abschnitt 13): Übungen ansehen/auswählen/neu anlegen, um
-  // sie gesammelt zum Tages-Workout hinzuzufügen, s. ADR 0011.
+  // Übungs-Sheet (Abschnitt 13): Übungen ansehen/auswählen, um sie gesammelt
+  // zum Tages-Workout hinzuzufügen, s. ADR 0011.
   exerciseSheetOpen: false,
   exerciseSheetClosing: false,
-  exerciseSheetMode: 'list', // 'list' | 'create'
   exerciseSheetSelectedIds: new Set(),
   exerciseSheetSearch: '',
   // Muskelgruppen-Filter (Dropdown-Pill, analog zur Routine-Auswahl oben) -
@@ -48,6 +47,16 @@ let state = {
   exerciseDetailSheetOpen: false,
   exerciseDetailSheetClosing: false,
   exerciseDetailSheetExerciseId: null,
+  // Neue-Übung-Sheet: überlagert ebenfalls das Übungs-Sheet (Stapel-Sheet,
+  // s. exerciseDetailSheet), öffnet sich per "+"-Button. Schließen führt nur
+  // zum Übungs-Sheet zurück (Nutzer-Vorgabe), nicht zum Workout-Tab - ergibt
+  // sich automatisch aus dem Stapel-Sheet-Muster (exerciseSheetOpen bleibt
+  // währenddessen unverändert true).
+  exerciseCreateSheetOpen: false,
+  exerciseCreateSheetClosing: false,
+  exerciseCreateSheetName: '',
+  exerciseCreateSheetPrimaryMuscleId: null,
+  exerciseCreateSheetSecondaryMuscleIds: new Set(),
 };
 
 // Erhöht sich bei jedem render()/unmount() (= neue Mount-Instanz dieser
@@ -74,7 +83,6 @@ export async function render(container) {
   state.calendarSheetClosing = false;
   state.exerciseSheetOpen = false;
   state.exerciseSheetClosing = false;
-  state.exerciseSheetMode = 'list';
   state.exerciseSheetSelectedIds = new Set();
   state.exerciseSheetSearch = '';
   state.exerciseSheetMuscleFilterId = null;
@@ -83,6 +91,11 @@ export async function render(container) {
   state.exerciseDetailSheetOpen = false;
   state.exerciseDetailSheetClosing = false;
   state.exerciseDetailSheetExerciseId = null;
+  state.exerciseCreateSheetOpen = false;
+  state.exerciseCreateSheetClosing = false;
+  state.exerciseCreateSheetName = '';
+  state.exerciseCreateSheetPrimaryMuscleId = null;
+  state.exerciseCreateSheetSecondaryMuscleIds = new Set();
   await paint();
 }
 
@@ -120,6 +133,10 @@ export function unmount() {
     clearTimeout(pendingExerciseDetailSheetCloseTimeout);
     pendingExerciseDetailSheetCloseTimeout = null;
   }
+  if (pendingExerciseCreateSheetCloseTimeout) {
+    clearTimeout(pendingExerciseCreateSheetCloseTimeout);
+    pendingExerciseCreateSheetCloseTimeout = null;
+  }
   if (state.calendarSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
@@ -129,6 +146,10 @@ export function unmount() {
     resetNavZIndex();
   }
   if (state.exerciseDetailSheetOpen) {
+    unlockBodyScroll();
+    resetNavZIndex();
+  }
+  if (state.exerciseCreateSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
   }
@@ -358,6 +379,7 @@ async function paint() {
 
     ${state.calendarSheetOpen ? await renderCalendarSheet() : ''}
     ${state.exerciseSheetOpen ? renderExerciseSheet() : ''}
+    ${state.exerciseCreateSheetOpen ? renderExerciseCreateSheet() : ''}
     ${state.exerciseDetailSheetOpen ? await renderExerciseDetailSheet() : ''}
   `;
 
@@ -750,14 +772,17 @@ function wireCalendarSheetDrag() {
 
 // --- Übungs-Sheet (Abschnitt 13) ---
 //
-// Zwei Inhalts-Zustände (`state.exerciseSheetMode`) innerhalb desselben
-// Sheets statt eigener Sub-Views, analog zum Muster in exercises.js/
-// routines.js: 'list' (Übungen ansehen/auswählen/suchen) und 'create'
-// (Name-Formular für eine neue Übung). Mehrfachauswahl statt Sofort-
-// Hinzufügen (Nutzer-Vorgabe) - `exerciseSheetSelectedIds` sammelt IDs, ein
-// Tap auf den Übungsnamen selbst öffnet stattdessen das gestapelte
-// Übungs-Detail-Sheet (s. unten), Löschen ist bewusst nicht Teil dieses
-// Sheets (Nutzer-Vorgabe - bleibt vorerst dem Übungen-Tab vorbehalten, s.
+// Übungen ansehen/auswählen/suchen/filtern, um sie gesammelt zum
+// Tages-Workout hinzuzufügen. Mehrfachauswahl statt Sofort-Hinzufügen
+// (Nutzer-Vorgabe) - `exerciseSheetSelectedIds` sammelt IDs. Ein Tap auf den
+// Übungsnamen öffnet das gestapelte Übungs-Detail-Sheet, der "+"-Button das
+// gestapelte Neue-Übung-Sheet (beide unten) - "Neue Übung" war bis zur
+// Vierundsechzigsten Iteration ein Inline-Modus *innerhalb* dieses Sheets
+// (`state.exerciseSheetMode`), ist seitdem aber ein eigenes Stapel-Sheet wie
+// das Übungs-Detail-Sheet (Nutzer-Vorgabe: Schließen führt nur zum
+// Übungs-Sheet zurück, nicht zum Workout-Tab - ergibt sich automatisch aus
+// dem Stapel-Muster). Löschen ist bewusst nicht Teil dieses Sheets
+// (Nutzer-Vorgabe - bleibt vorerst dem Übungen-Tab vorbehalten, s.
 // CHANGELOG).
 //
 // Die Übungsliste + der heutige Roster-Stand werden einmalig beim Öffnen
@@ -781,39 +806,13 @@ async function loadExerciseSheetCache() {
   exerciseSheetCache = { allExercises, inWorkoutIds };
 }
 
-// Rein optische Bug-Fix-Historie (s. CHANGELOG): Backdrop und `.bottom-sheet`
-// tragen die Slide-/Fade-Einstiegs-Animation als CSS-`animation`-Property -
-// die spielt bei JEDEM Einfügen dieser Elemente ins DOM erneut ab, nicht nur
-// beim allerersten Öffnen. Würde `renderExerciseSheet()` (das den kompletten
-// `#exercise-sheet-root`-Teilbaum inkl. Backdrop/Panel erzeugt) bei jeder
-// Sheet-interner Interaktion (Suche tippen, Muskel-Filter öffnen/schließen/
-// auswählen, Modus wechseln) neu aufgerufen und eingesetzt, würde das
-// gesamte Sheet dabei jedes Mal sichtbar erneut von unten hereinrutschen.
-// Deshalb bleiben Backdrop und `.bottom-sheet` (samt Kopfzeilen-Grundgerüst:
-// Schließen-Button, Titel/Ziehgriff) nach dem initialen Öffnen unangetastet
-// - nur zwei innere, stabil per ID adressierbare Teilbäume werden bei
-// internen Interaktionen ausgetauscht: `#exercise-sheet-header-action`
-// (der "+"-Button bzw. Platzhalter, ändert sich nur bei Modus-Wechsel) und
-// `#exercise-sheet-content` (Suchfeld, Muskel-Filter, Liste, Commit-Leiste -
-// ändert sich bei Suche/Filter/Auswahl/Modus). s.
-// repaintExerciseSheetContentInPlace().
-function renderExerciseSheetHeaderAction() {
-  return state.exerciseSheetMode === 'list'
-    ? `<button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback text-ink" aria-label="Neue Übung erstellen">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>`
-    : '<div aria-hidden="true"></div>';
-}
-
-// Reine Listen-/Formular-Inhalt von `#exercise-sheet-body` - ausgelagert,
-// damit die Sucheingabe (s. repaintExerciseSheetBodyInPlace()) NUR diesen
-// engsten möglichen Teilbaum ersetzen kann, ohne Suchfeld, Muskel-Filter
-// oder Kopfzeile anzufassen. Wichtig, nicht nur Kosmetik: Das <input>
-// selbst darf beim Tippen nie zerstört/neu erzeugt werden (s. CHANGELOG) -
-// sonst bricht sowohl die gefühlte Reaktionsgeschwindigkeit als auch iOS'
-// natives Key-Repeat beim Gedrückthalten der Löschen-Taste, das denselben
+// Reine Listen-Inhalt von `#exercise-sheet-body` - ausgelagert, damit die
+// Sucheingabe (s. repaintExerciseSheetBodyInPlace()) NUR diesen engsten
+// möglichen Teilbaum ersetzen kann, ohne Suchfeld, Muskel-Filter oder
+// Kopfzeile anzufassen. Wichtig, nicht nur Kosmetik: Das <input> selbst darf
+// beim Tippen nie zerstört/neu erzeugt werden (s. CHANGELOG) - sonst bricht
+// sowohl die gefühlte Reaktionsgeschwindigkeit als auch iOS' natives
+// Key-Repeat beim Gedrückthalten der Löschen-Taste, das denselben
 // fokussierten DOM-Knoten über die ganze Wiederholungs-Geste hinweg
 // voraussetzt.
 function renderExerciseSheetBody() {
@@ -836,17 +835,15 @@ function renderExerciseSheetBody() {
     );
   }
 
-  return state.exerciseSheetMode === 'create'
-    ? renderExerciseCreateForm()
-    : renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, allExercises.length);
+  return renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, allExercises.length);
 }
 
 function renderExerciseSheetContent() {
-  const hasCommitBar = state.exerciseSheetMode === 'list' && state.exerciseSheetSelectedIds.size > 0;
+  const hasCommitBar = state.exerciseSheetSelectedIds.size > 0;
 
   return `
-    ${state.exerciseSheetMode === 'list' ? renderExerciseSheetSearchBar() : ''}
-    ${state.exerciseSheetMode === 'list' ? renderExerciseSheetMuscleFilter() : ''}
+    ${renderExerciseSheetSearchBar()}
+    ${renderExerciseSheetMuscleFilter()}
     <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 ${hasCommitBar ? 'pb-4' : 'pb-[calc(env(safe-area-inset-bottom)+112px)]'} flex flex-col gap-2">
       ${renderExerciseSheetBody()}
     </div>
@@ -854,6 +851,22 @@ function renderExerciseSheetContent() {
   `;
 }
 
+// Rein optische Bug-Fix-Historie (s. CHANGELOG): Backdrop und `.bottom-sheet`
+// tragen die Slide-/Fade-Einstiegs-Animation als CSS-`animation`-Property -
+// die spielt bei JEDEM Einfügen dieser Elemente ins DOM erneut ab, nicht nur
+// beim allerersten Öffnen. Würde `renderExerciseSheet()` (das den kompletten
+// `#exercise-sheet-root`-Teilbaum inkl. Backdrop/Panel erzeugt) bei jeder
+// Sheet-interner Interaktion (Suche tippen, Muskel-Filter öffnen/schließen/
+// auswählen, Auswahl) neu aufgerufen und eingesetzt, würde das gesamte Sheet
+// dabei jedes Mal sichtbar erneut von unten hereinrutschen. Deshalb bleiben
+// Backdrop und `.bottom-sheet` (samt Kopfzeile: Schließen-Button, Titel/
+// Ziehgriff, "+"-Button) nach dem initialen Öffnen unangetastet - nur der
+// stabil per ID adressierbare `#exercise-sheet-content`-Teilbaum (Suchfeld,
+// Muskel-Filter, Liste, Commit-Leiste) wird bei internen Interaktionen
+// ausgetauscht. Der "+"-Button selbst ändert sich seit der
+// Vierundsechzigsten Iteration nie mehr (kein Inline-Modus-Wechsel mehr,
+// "Neue Übung" ist ein eigenes Stapel-Sheet), sitzt deshalb wieder direkt
+// und unverändert im Grid statt in einem eigenen Teil-Repaint-Wrapper.
 function renderExerciseSheet() {
   const closing = state.exerciseSheetClosing;
 
@@ -870,7 +883,11 @@ function renderExerciseSheet() {
           <div id="exercise-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
             <span class="text-card-title">Übungen</span>
           </div>
-          <div id="exercise-sheet-header-action" class="justify-self-end">${renderExerciseSheetHeaderAction()}</div>
+          <button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Übung erstellen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
         </div>
         <div id="exercise-sheet-content" class="flex-1 min-h-0 flex flex-col">
           ${renderExerciseSheetContent()}
@@ -880,17 +897,13 @@ function renderExerciseSheet() {
   `;
 }
 
-// Ersetzt nur `#exercise-sheet-header-action` und `#exercise-sheet-content`
-// (s. Kommentar bei renderExerciseSheetHeaderAction) - komplett synchron,
-// liest wie renderExerciseSheet() nur aus dem bereits geladenen
-// exerciseSheetCache. Deckt alle Sheet-internen Interaktionen ab (Suche,
-// Muskel-Filter, Auswahl, Modus-Wechsel, Übung anlegen) - nur das initiale
-// Öffnen und das Schließen des gesamten Sheets laufen weiterhin über das
-// normale `paint()` (dort SOLL die Slide-Animation spielen).
+// Ersetzt nur `#exercise-sheet-content` (s. Kommentar bei
+// renderExerciseSheet) - komplett synchron, liest wie renderExerciseSheet()
+// nur aus dem bereits geladenen exerciseSheetCache. Deckt alle
+// Sheet-internen Interaktionen ab (Suche, Muskel-Filter, Auswahl) - nur das
+// initiale Öffnen und das Schließen des gesamten Sheets laufen weiterhin
+// über das normale `paint()` (dort SOLL die Slide-Animation spielen).
 function repaintExerciseSheetContentInPlace() {
-  const headerAction = currentContainer?.querySelector('#exercise-sheet-header-action');
-  if (headerAction) headerAction.innerHTML = renderExerciseSheetHeaderAction();
-
   const content = currentContainer?.querySelector('#exercise-sheet-content');
   if (!content) return;
   content.innerHTML = renderExerciseSheetContent();
@@ -911,8 +924,8 @@ function repaintExerciseSheetBodyInPlace() {
   wireExerciseSheetBodyEvents();
 }
 
-// Eigene, nicht scrollende Flex-Zone zwischen Kopfzeile und Liste (nur im
-// 'list'-Zustand) - Lupe als absolut positioniertes Icon links im Feld
+// Eigene, nicht scrollende Flex-Zone zwischen Kopfzeile und Liste - Lupe
+// als absolut positioniertes Icon links im Feld
 // (`pointer-events-none`, damit Klicks durchgereicht werden), sonst dasselbe
 // visuelle Muster wie andere Inputs (`rounded-btn`, `min-h-[44px]`), nur mit
 // angepasstem Innenabstand links statt der geteilten `INPUT`-Konstante.
@@ -1065,31 +1078,6 @@ function renderExerciseSheetRow(exercise, alreadyInWorkout, isSelected) {
   `;
 }
 
-function renderExerciseCreateForm() {
-  return `
-    <form id="exercise-create-form" class="flex flex-col gap-3 ${CARD}">
-      <label class="text-label text-muted" for="new-exercise-name">Name</label>
-      <input
-        id="new-exercise-name"
-        name="name"
-        type="text"
-        autocomplete="off"
-        placeholder="z. B. Kniebeuge"
-        class="bg-base ${INPUT}"
-        required
-      />
-      <div class="flex gap-3">
-        <button type="submit" class="tap-feedback flex-1 ${BTN_PRIMARY} py-3 min-h-[44px]">
-          Erstellen
-        </button>
-        <button type="button" id="exercise-create-cancel-btn" class="tap-feedback px-4 py-3 text-muted min-h-[44px]">
-          Abbrechen
-        </button>
-      </div>
-    </form>
-  `;
-}
-
 // Nicht Teil der scrollenden Liste, sondern eine eigene, nicht schrumpfende
 // Flex-Zone unter ihr (nur gerendert, solange ≥1 Übung ausgewählt ist) -
 // bekommt dieselbe Bottom-Nav-Abstandsreserve wie sonst die Kalender-Liste
@@ -1108,7 +1096,6 @@ function renderExerciseSheetCommitBar(count) {
 async function openExerciseSheet() {
   state.exerciseSheetOpen = true;
   state.exerciseSheetClosing = false;
-  state.exerciseSheetMode = 'list';
   state.exerciseSheetSelectedIds = new Set();
   state.exerciseSheetSearch = '';
   state.exerciseSheetMuscleFilterId = null;
@@ -1168,40 +1155,28 @@ function wireExerciseSheetEvents() {
     closeExerciseSheet();
   });
 
+  // "+"-Button ist seit der Vierundsechzigsten Iteration ein stabiles,
+  // direktes Grid-Kind (nie mehr Teil eines Teil-Repaints, s. Kommentar bei
+  // renderExerciseSheet) - Listener deshalb hier bei den Root-Listenern
+  // statt in wireExerciseSheetContentEvents(), sonst würde sich bei jedem
+  // Such-/Filter-Teil-Repaint ein weiterer, doppelter Listener auf demselben,
+  // nie neu erzeugten Button ansammeln.
+  currentContainer.querySelector('#exercise-sheet-new-btn')?.addEventListener('click', () => {
+    openExerciseCreateSheet();
+  });
+
   wireExerciseSheetDrag();
   wireExerciseSheetContentEvents();
 }
 
-// Verdrahtet `#exercise-sheet-header-action` + `#exercise-sheet-content` -
-// aufgerufen sowohl aus wireExerciseSheetEvents() (nach vollem paint()) als
-// auch aus repaintExerciseSheetContentInPlace() (nach jedem gezielten
-// Teil-Ersetzen dieser beiden Teilbäume, s. dort). Löst diese Interaktionen
-// deshalb bewusst NICHT über das volle paint(), sondern über den Teil-
-// Repaint aus, damit Backdrop/`.bottom-sheet` unangetastet bleiben (keine
-// erneute Slide-Animation, s. Kommentar bei renderExerciseSheetHeaderAction).
+// Verdrahtet `#exercise-sheet-content` - aufgerufen sowohl aus
+// wireExerciseSheetEvents() (nach vollem paint()) als auch aus
+// repaintExerciseSheetContentInPlace() (nach jedem gezielten Teil-Ersetzen
+// dieses Teilbaums, s. dort). Löst diese Interaktionen deshalb bewusst NICHT
+// über das volle paint(), sondern über den Teil-Repaint aus, damit Backdrop/
+// `.bottom-sheet`/Kopfzeile unangetastet bleiben (keine erneute
+// Slide-Animation, s. Kommentar bei renderExerciseSheet).
 function wireExerciseSheetContentEvents() {
-  currentContainer.querySelector('#exercise-sheet-new-btn')?.addEventListener('click', () => {
-    state.exerciseSheetMode = 'create';
-    repaintExerciseSheetContentInPlace();
-  });
-
-  currentContainer.querySelector('#exercise-create-cancel-btn')?.addEventListener('click', () => {
-    state.exerciseSheetMode = 'list';
-    repaintExerciseSheetContentInPlace();
-  });
-
-  currentContainer.querySelector('#exercise-create-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = e.target.elements.name.value.trim();
-    if (!name) return;
-
-    const exercise = await createExercise(name);
-    await loadExerciseSheetCache();
-    state.exerciseSheetSelectedIds.add(exercise.id);
-    state.exerciseSheetMode = 'list';
-    repaintExerciseSheetContentInPlace();
-  });
-
   // Aktualisiert nur den Suchbegriff im State und rendert per
   // repaintExerciseSheetBodyInPlace() ausschließlich `#exercise-sheet-body`
   // neu - das Such-`<input>` selbst wird dabei nie angefasst, Fokus und
@@ -1268,6 +1243,228 @@ function wireExerciseSheetBodyEvents() {
       openExerciseDetailSheet(btn.dataset.id);
     });
   });
+}
+
+// --- Neue-Übung-Sheet ---
+//
+// Überlagert das Übungs-Sheet (Stapel-Sheet, gleiche höhere z-Ebene wie das
+// Übungs-Detail-Sheet - beide werden nur aus dem Übungs-Sheet heraus
+// geöffnet und nie gleichzeitig, s. ADR 0011). Bis zur Vierundsechzigsten
+// Iteration war "Neue Übung" ein Inline-Zustand innerhalb des Übungs-Sheets
+// selbst; jetzt ein eigenes Sheet (Nutzer-Vorgabe) - Schließen führt dadurch
+// automatisch nur zum Übungs-Sheet zurück (dessen `exerciseSheetOpen` bleibt
+// währenddessen unverändert true), nicht zum Workout-Tab.
+//
+// Name-Feld optisch wie das Suchfeld (`bg-white/[0.08]`, Nutzer-Vorgabe) -
+// bewusst OHNE eigenen Teil-Repaint-Mechanismus wie beim Suchfeld: Der
+// eingegebene Name wird zwar bei jedem Zeichen in `state` gespiegelt (damit
+// ein späterer, durch einen Muskel-Chip ausgelöster Repaint ihn nicht
+// verliert), löst dabei aber selbst NIE einen Repaint aus - nur der
+// "Erstellen"-Button wird direkt per DOM-API aktiviert/deaktiviert. Dadurch
+// bleibt das `<input>` beim Tippen so oder so unangetastet, ganz ohne das
+// erst kürzlich für die Übungssuche gelöste Repaint-Problem überhaupt erst
+// zu riskieren.
+function renderExerciseCreateSheetMuscleChip(muscle, role) {
+  const isSelected =
+    role === 'primary'
+      ? state.exerciseCreateSheetPrimaryMuscleId === muscle.id
+      : state.exerciseCreateSheetSecondaryMuscleIds.has(muscle.id);
+  // Bereits als primär gewählte Muskelgruppe ist unter den sekundären
+  // deaktiviert - spiegelt die serverseitige Validierung in
+  // validateMuscleAssignment() (js/db.js), die genau diese Überschneidung
+  // ablehnt, s. ADR 0013.
+  const isDisabled = role === 'secondary' && state.exerciseCreateSheetPrimaryMuscleId === muscle.id;
+
+  return `
+    <button
+      type="button"
+      data-role="${role}"
+      data-muscle="${muscle.id}"
+      class="muscle-chip-btn tap-feedback rounded-full px-4 py-2 min-h-[44px] text-body ${isSelected ? 'bg-accent text-base' : 'bg-white/[0.08] text-ink'} ${isDisabled ? 'opacity-40 pointer-events-none' : ''}"
+      ${isDisabled ? 'disabled' : ''}
+    >
+      ${escapeHtml(muscle.name)}
+    </button>
+  `;
+}
+
+function renderExerciseCreateSheetContent() {
+  const canSubmit = state.exerciseCreateSheetName.trim().length > 0;
+
+  return `
+    <form id="exercise-create-sheet-form" class="flex flex-col gap-6">
+      <div class="flex flex-col gap-2">
+        <label class="text-label text-muted" for="exercise-create-sheet-name-input">Name</label>
+        <input
+          id="exercise-create-sheet-name-input"
+          type="text"
+          autocomplete="off"
+          placeholder="z. B. Kniebeuge"
+          value="${escapeHtml(state.exerciseCreateSheetName)}"
+          class="w-full bg-white/[0.08] rounded-btn py-3 px-3 text-ink min-h-[44px]"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-label text-muted">Primärer Muskel</span>
+        <div class="flex flex-wrap gap-2">
+          ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'primary')).join('')}
+        </div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-label text-muted">Sekundäre Muskeln</span>
+        <div class="flex flex-wrap gap-2">
+          ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'secondary')).join('')}
+        </div>
+      </div>
+      <button
+        type="submit"
+        id="exercise-create-sheet-submit-btn"
+        class="tap-feedback w-full ${BTN_PRIMARY} py-3 min-h-[44px] disabled:opacity-20"
+        ${canSubmit ? '' : 'disabled'}
+      >
+        Erstellen
+      </button>
+    </form>
+  `;
+}
+
+function renderExerciseCreateSheet() {
+  const closing = state.exerciseCreateSheetClosing;
+
+  return `
+    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-[52] bg-black/50"></div>
+    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
+      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
+        <button id="exercise-create-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div id="exercise-create-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+          <span class="text-card-title">Neue Übung</span>
+        </div>
+        <div aria-hidden="true"></div>
+      </div>
+      <div id="exercise-create-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
+        ${renderExerciseCreateSheetContent()}
+      </div>
+    </div>
+  `;
+}
+
+async function openExerciseCreateSheet() {
+  state.exerciseCreateSheetOpen = true;
+  state.exerciseCreateSheetClosing = false;
+  state.exerciseCreateSheetName = '';
+  state.exerciseCreateSheetPrimaryMuscleId = null;
+  state.exerciseCreateSheetSecondaryMuscleIds = new Set();
+  lockBodyScroll();
+  raiseNavAboveSheet();
+  await paint();
+}
+
+function finalizeExerciseCreateSheetClose() {
+  pendingExerciseCreateSheetCloseTimeout = null;
+  state.exerciseCreateSheetOpen = false;
+  state.exerciseCreateSheetClosing = false;
+  unlockBodyScroll();
+  resetNavZIndex();
+  paint();
+}
+
+let pendingExerciseCreateSheetCloseTimeout = null;
+
+function closeExerciseCreateSheet() {
+  if (!state.exerciseCreateSheetOpen || state.exerciseCreateSheetClosing) return;
+  state.exerciseCreateSheetClosing = true;
+  paint();
+  pendingExerciseCreateSheetCloseTimeout = setTimeout(finalizeExerciseCreateSheetClose, SHEET_CLOSE_ANIMATION_MS);
+}
+
+function wireExerciseCreateSheetDrag() {
+  const backdropEl = currentContainer.querySelector('#exercise-create-sheet-backdrop');
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#exercise-create-sheet-handle'),
+    sheetEl: backdropEl?.nextElementSibling ?? null,
+    backdropEl,
+    isClosing: () => state.exerciseCreateSheetClosing,
+    onDismiss: () => {
+      pendingExerciseCreateSheetCloseTimeout = setTimeout(finalizeExerciseCreateSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
+  });
+}
+
+// Ersetzt nur `#exercise-create-sheet-content` (Muskel-Chip-Taps) - Backdrop/
+// Panel/Kopfzeile bleiben unangetastet, aus demselben Grund wie beim
+// Übungs-Sheet (keine erneute Slide-Animation, s. dort).
+function repaintExerciseCreateSheetContentInPlace() {
+  const content = currentContainer?.querySelector('#exercise-create-sheet-content');
+  if (!content) return;
+  content.innerHTML = renderExerciseCreateSheetContent();
+  wireExerciseCreateSheetContentEvents();
+}
+
+function wireExerciseCreateSheetContentEvents() {
+  currentContainer.querySelector('#exercise-create-sheet-name-input')?.addEventListener('input', (e) => {
+    state.exerciseCreateSheetName = e.target.value;
+    const submitBtn = currentContainer.querySelector('#exercise-create-sheet-submit-btn');
+    if (submitBtn) submitBtn.disabled = !e.target.value.trim();
+  });
+
+  currentContainer.querySelectorAll('.muscle-chip-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const { role, muscle } = btn.dataset;
+      if (role === 'primary') {
+        // Erneuter Tap auf die bereits gewählte primäre Muskelgruppe hebt
+        // die Auswahl wieder auf (Toggle, analog zur Routine-Auswahl).
+        state.exerciseCreateSheetPrimaryMuscleId =
+          state.exerciseCreateSheetPrimaryMuscleId === muscle ? null : muscle;
+        // Falls dieselbe Muskelgruppe bereits sekundär gewählt war, dort
+        // entfernen - vermeidet die von validateMuscleAssignment()
+        // abgelehnte primär=sekundär-Überschneidung von vornherein.
+        state.exerciseCreateSheetSecondaryMuscleIds.delete(muscle);
+      } else {
+        if (state.exerciseCreateSheetSecondaryMuscleIds.has(muscle)) {
+          state.exerciseCreateSheetSecondaryMuscleIds.delete(muscle);
+        } else {
+          state.exerciseCreateSheetSecondaryMuscleIds.add(muscle);
+        }
+      }
+      repaintExerciseCreateSheetContentInPlace();
+    });
+  });
+
+  currentContainer.querySelector('#exercise-create-sheet-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = state.exerciseCreateSheetName.trim();
+    if (!name) return;
+
+    const exercise = await createExercise(name, {
+      primaryMuscleId: state.exerciseCreateSheetPrimaryMuscleId,
+      secondaryMuscleIds: [...state.exerciseCreateSheetSecondaryMuscleIds],
+    });
+    await loadExerciseSheetCache();
+    state.exerciseSheetSelectedIds.add(exercise.id);
+    closeExerciseCreateSheet();
+    // Übungs-Sheet dahinter sofort mit der neuen Übung (vorausgewählt)
+    // aktualisieren, statt erst beim nächsten ohnehin fälligen Repaint -
+    // sichtbar, sobald die Schließen-Animation dieses Sheets durchgelaufen
+    // ist und den Blick wieder freigibt.
+    repaintExerciseSheetContentInPlace();
+  });
+}
+
+function wireExerciseCreateSheetEvents() {
+  currentContainer.querySelector('#exercise-create-sheet-backdrop')?.addEventListener('click', () => {
+    closeExerciseCreateSheet();
+  });
+
+  currentContainer.querySelector('#exercise-create-sheet-close-btn')?.addEventListener('click', () => {
+    closeExerciseCreateSheet();
+  });
+
+  wireExerciseCreateSheetDrag();
+  wireExerciseCreateSheetContentEvents();
 }
 
 // --- Übungs-Detail-Sheet ---
@@ -1437,6 +1634,7 @@ function wireEvents() {
   });
 
   wireExerciseSheetEvents();
+  wireExerciseCreateSheetEvents();
 
   // --- Übungs-Detail-Sheet ---
 
