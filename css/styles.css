@@ -127,36 +127,29 @@ input[type="number"]::-webkit-outer-spin-button {
     0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-/* Akzentgrün glimmende Variante für die eine hervorgehobene Bestätigungs-Aktion
+/* Akzentgrün eingefärbte Variante für die eine hervorgehobene Bestätigungs-Aktion
    im Neue-Übung-Sheet (Haken-Button) - bleibt Teil derselben Glass-Button-Familie
-   (Größe/Blur/Press-Feedback kommen weiterhin von .icon-btn-glass, beide Klassen
-   stehen zusammen am Element), überschreibt nur Hintergrund/Rand/Schatten/Farbe
-   mit einer akzentgrün eingefärbten Glasfläche plus nach außen strahlendem
-   Glow-Ring, angelehnt an einen vom Nutzer bereitgestellten Referenz-Screenshot.
-   Bewusst als eigene CSS-Klasse statt Tailwind-Utilities (`shadow-[...]`,
-   `text-accent`) direkt am Element: Das Tailwind-Play-CDN-`<script>` lädt nach
-   `css/styles.css` (s. index.html) und jede seiner Utility-Klassen hätte damit
-   bei gleicher Spezifität immer gewonnen - unvorhersehbar mit einer eigenen CSS-
-   Klasse kombinierbar. Hier übernimmt eine einzige Datei/Kaskade Normal- und
+   (Größe/Blur/Press-Feedback UND der Schatten kommen unverändert von
+   .icon-btn-glass, hier bewusst nicht dupliziert/überschrieben - kein
+   nach außen strahlender Glow mehr, s. Siebenundsechzigste Iteration in
+   design-system.md), überschreibt nur Hintergrund/Rand/Farbe mit einer
+   deutlich deckenderen, akzentgrün eingefärbten Fläche. Bewusst als eigene
+   CSS-Klasse statt Tailwind-Utilities (`bg-[...]`, `text-[...]`) direkt am
+   Element: Das Tailwind-Play-CDN-`<script>` lädt nach `css/styles.css`
+   (s. index.html) und jede seiner Utility-Klassen hätte damit bei gleicher
+   Spezifität immer gewonnen - unvorhersehbar mit einer eigenen CSS-Klasse
+   kombinierbar. Hier übernimmt eine einzige Datei/Kaskade Normal- und
    :disabled-Zustand vollständig, ohne dieses Wettrennen zu riskieren. */
 .icon-btn-glass-accent {
-  background: rgba(163, 230, 53, 0.32);
-  border-color: rgba(163, 230, 53, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 4px 12px rgba(0, 0, 0, 0.35),
-    0 0 10px rgba(163, 230, 53, 0.7),
-    0 0 26px rgba(163, 230, 53, 0.45);
-  color: #F5F5F5; /* ink - heller Haken auf grünem Glas, wie im Referenz-Screenshot */
-  transition: opacity 150ms ease, box-shadow 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  background: rgba(163, 230, 53, 0.72);
+  border-color: rgba(163, 230, 53, 0.85);
+  color: #E4F5C9; /* leicht grün eingefärbtes Weiß - Mischung aus ink (#F5F5F5) und accent (#A3E635) */
+  transition: opacity 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
 .icon-btn-glass-accent:disabled {
   background: rgba(37, 37, 37, 0.55);
   border-color: rgba(255, 255, 255, 0.12);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.35);
   color: #F5F5F5;
   opacity: 0.35;
 }

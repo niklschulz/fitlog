@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Haken-Button: Deckkraft erhöht, Glow entfernt, Standard-Glass-Schatten, Haken leicht grün)
+
+### Changed
+- `.icon-btn-glass-accent` (`css/styles.css`) deutlich deckender (`0.72` statt `0.32` Deckkraft) statt transluzent-glasig
+- Kein eigener Glow mehr — der Button nutzt jetzt exakt denselben `box-shadow` wie jeder neutrale `.icon-btn-glass`-Button, statt eines zusätzlichen, nach außen strahlenden Glow-Rings
+- Haken-Icon leicht grün eingefärbt (`#E4F5C9`, Mischung aus `ink` und `accent`) statt neutralem Weiß
+
 ## 2026-09-09 (Haken-Button im Neue-Übung-Sheet: akzentgrün glimmende Glas-Optik nach Referenz-Screenshot)
 
 ### Changed
