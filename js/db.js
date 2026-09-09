@@ -45,6 +45,25 @@ export function todayISODate() {
   return toISODate(new Date());
 }
 
+// --- Muskelgruppen ---
+//
+// Feste, vom Nutzer nicht bearbeitbare Taxonomie für den künftigen
+// Muskelgruppen-Filter im Übungs-Sheet (s. Diskussion in der Session) -
+// bewusst kein eigenes Dexie-Table wie exercises/routines, s. ADR 0012.
+// `id` ist ein stabiler Slug statt einer UUID, da diese Liste nie zur
+// Laufzeit verändert wird - Übungen werden künftig per `muscleId` (einer
+// dieser acht Werte) darauf verweisen.
+export const MUSCLE_GROUPS = [
+  { id: 'brust', name: 'Brust' },
+  { id: 'schultern', name: 'Schultern' },
+  { id: 'ruecken', name: 'Rücken' },
+  { id: 'bizeps', name: 'Bizeps' },
+  { id: 'trizeps', name: 'Trizeps' },
+  { id: 'bauch', name: 'Bauch' },
+  { id: 'po', name: 'Po' },
+  { id: 'beine', name: 'Beine' },
+];
+
 // --- Exercises ---
 
 export async function createExercise(name) {

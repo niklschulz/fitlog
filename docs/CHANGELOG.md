@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Neuer Entitätstyp Muskel: feste, nicht bearbeitbare Taxonomie)
+
+### Added
+- `MUSCLE_GROUPS`-Konstante in `js/db.js`: acht feste Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) als Vorbereitung für den künftigen Muskelgruppen-Filter im Übungs-Sheet. Bewusst keine Dexie-Tabelle, da vom Nutzer nicht bearbeitbar — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Noch ohne Verwendungsstelle, Verknüpfung mit `exercises` folgt separat
+
 ## 2026-09-09 (Übungs-Sheet: mehr Abstand zwischen Kopfzeile und Suchfeld)
 
 ### Changed

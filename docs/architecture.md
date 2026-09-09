@@ -58,6 +58,8 @@ Sechs Dexie-Tabellen (Schema-Version 2), alle mit UUID-`id`:
 
 Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um `workoutExercises`).
 
+**Feste Referenzdaten (keine Dexie-Tabelle):** `MUSCLE_GROUPS` (`js/db.js`) — die acht Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) für den geplanten Muskelgruppen-Filter im Übungs-Sheet. Bewusst eine exportierte Code-Konstante (`{ id, name }`, `id` ein stabiler Slug) statt einer Dexie-Tabelle, da die Liste vom Nutzer nicht bearbeitbar ist und sich zur Laufzeit nie ändert — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Noch ohne Verwendungsstelle (kein `muscleId`-Feld an `exercises`, keine UI) — folgt als separater Schritt.
+
 ## PWA-Mechanik
 
 - **Manifest** (`manifest.json`): `display: standalone`, Icons, Theme-Farbe `#121212` (s. [design-system.md](design-system.md) für die vollständige Farbpalette)
