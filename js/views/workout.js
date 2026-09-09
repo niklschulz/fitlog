@@ -7,6 +7,7 @@ import {
   removeRoutineFromWorkout,
   addExercisesToWorkout,
   createExercise,
+  deleteExercise,
   MUSCLE_GROUPS,
   todayISODate,
   toISODate,
@@ -1553,7 +1554,14 @@ async function renderExerciseDetailSheet() {
         <div id="exercise-detail-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px] px-2" style="touch-action: none;">
           <span class="text-card-title truncate">${escapeHtml(name)}</span>
         </div>
-        <div aria-hidden="true"></div>
+        <button id="exercise-detail-sheet-delete-btn" type="button" class="icon-btn-glass icon-btn-glass-danger tap-feedback justify-self-end" aria-label="Übung löschen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+            <path d="M4 7h16" />
+            <path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" />
+            <path d="M6 7l1 12.5A2 2 0 0 0 9 21h6a2 2 0 0 0 2-2L18 7" />
+            <path d="M10 11v6M14 11v6" />
+          </svg>
+        </button>
       </div>
       <div class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
         <p class="text-body text-muted text-center py-12">Weitere Details folgen.</p>
@@ -1622,6 +1630,25 @@ function wireExerciseDetailSheetEvents() {
 
   currentContainer.querySelector('#exercise-detail-sheet-close-btn')?.addEventListener('click', () => {
     closeExerciseDetailSheet();
+  });
+
+  // Löschen mit Bestätigungsdialog (CLAUDE.md-Konvention für jedes Löschen
+  // in der App) - deleteExercise() selbst entscheidet, was mit heute schon
+  // begonnenen Sätzen passiert (s. js/db.js, unverändert übernommen von der
+  // bereits bestehenden Löschen-Aktion im Übungen-Tab-Formular). Übungs-Sheet
+  // dahinter direkt mit aktualisiertem Zwischenspeicher neu befüllt, statt
+  // erst beim nächsten ohnehin fälligen Repaint - dieselbe Reihenfolge wie
+  // beim Anlegen einer neuen Übung (s. openExerciseCreateSheet-Submit).
+  currentContainer.querySelector('#exercise-detail-sheet-delete-btn')?.addEventListener('click', async () => {
+    if (!confirm('Übung wirklich löschen? Sie wird aus allen Routinen entfernt, bereits erfasste Sätze bleiben erhalten.')) {
+      return;
+    }
+    const exerciseId = state.exerciseDetailSheetExerciseId;
+    await deleteExercise(exerciseId);
+    await loadExerciseSheetCache();
+    state.exerciseSheetSelectedIds.delete(exerciseId);
+    closeExerciseDetailSheet();
+    repaintExerciseSheetContentInPlace();
   });
 
   wireExerciseDetailSheetDrag();

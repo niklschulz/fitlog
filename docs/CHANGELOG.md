@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Löschen-Button auf der Übungs-Detailseite)
+
+### Added
+- Roter Glass-Button mit Mülleimer-Icon oben rechts im Übungs-Detail-Sheet — löscht die Übung nach Bestätigungsdialog (`deleteExercise()`, identische Kaskaden-Regeln wie im Übungen-Tab-Formular: Routinen-Verknüpfungen und unbegonnene Workout-Einträge entfernt, bereits erfasste Sätze bleiben erhalten). Übungs-Sheet dahinter wird direkt mit aktualisiertem Zwischenspeicher neu befüllt, Sheet schließt sich automatisch
+
+### Changed
+- Neue CSS-Klasse `.icon-btn-glass-danger` (`css/styles.css`) — rote Variante der bestehenden `.icon-btn-glass-accent`-Glasfläche (Tailwind `red-400`, dieselbe Farbe wie die bestehende `DESTRUCTIVE_LINK`-Löschen-Optik)
+
 ## 2026-09-09 (Übungs-Sheet: Zeilenabstand verringert)
 
 ### Changed

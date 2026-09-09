@@ -154,6 +154,19 @@ input[type="number"]::-webkit-outer-spin-button {
   opacity: 0.35;
 }
 
+/* Rote Variante derselben Glass-Button-Familie für die eine hervorgehobene
+   destruktive Aktion (Löschen-Button auf der Übungs-Detailseite) - exakt
+   dasselbe Muster wie .icon-btn-glass-accent oben, nur mit Tailwinds
+   red-400 (#F87171, s. DESTRUCTIVE_LINK in js/utils.js) statt Akzentgrün als
+   Grundfarbe, damit die Löschen-Farbe konsistent zur bereits bestehenden
+   Löschen-Optik der App bleibt (s. Übungen-Tab-Formular). */
+.icon-btn-glass-danger {
+  background: rgba(248, 113, 113, 0.72);
+  border-color: rgba(248, 113, 113, 0.85);
+  color: #F6DBDB; /* leicht rot eingefärbtes Weiß - Mischung aus ink (#F5F5F5) und red-400 (#F87171) */
+  transition: opacity 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
 .nav-btn.active {
   color: #A3E635; /* accent - Hintergrund kommt jetzt von #nav-indicator, s. dort */
 }
