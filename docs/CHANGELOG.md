@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Übungs-Sheet: Live-Textsuche)
+
+### Added
+- Suchfeld im Übungs-Sheet (nur im 'list'-Zustand) - filtert die Übungsliste live beim Tippen (Substring-Match, Groß-/Kleinschreibung ignoriert). Auswahl bleibt beim Suchen erhalten (arbeitet über IDs, nicht Listenpositionen), auch für gerade ausgeblendete Treffer. Eigener Leer-Zustand "Keine Übungen gefunden." getrennt vom "Noch keine Übungen angelegt"-Text
+- Filter (Muskelgruppe/Equipment) sind bewusst noch nicht Teil dieses Schritts - die Datenfelder dafür existieren noch nicht, s. Diskussion in dieser Session
+
+### Changed
+- Übungsliste + heutiger Roster-Stand werden beim Öffnen des Sheets einmalig geladen und zwischengespeichert (`exerciseSheetCache`), statt bei jeder Interaktion neu aus der DB zu fragen - Suche ist ein reiner In-Memory-Filter. `renderExerciseSheet()` ist dadurch synchron geworden
+- Suchfeld-Eingaben laufen über einen gezielten Teil-Repaint (`repaintExerciseSheetInPlace()`, ersetzt nur `#exercise-sheet-root`) statt über das volle `paint()` des gesamten Tabs - vermeidet sowohl unnötige Neu-Renderings des restlichen Workout-Tabs bei jedem Tastendruck als auch einen möglichen Async-Race (mehrere überlappende `paint()`-Aufrufe könnten sonst in falscher Reihenfolge fertig werden). Fokus/Cursor-Position werden danach synchron wiederhergestellt
+
 ## 2026-09-07 ("+ Übung hinzufügen" im Workout-Tab: Übungs-Sheet mit Mehrfachauswahl)
 
 ### Added
