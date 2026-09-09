@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 ("+"-Button im Übungs-Sheet: Safari-Kompatibilitätsfehler behoben)
+
+### Fixed
+- Der "+"-Button in der Kopfzeile saß auf echten iPhones (Safari) nicht mehr flächenbündig am rechten Rand, sondern mittiger — durch den Teil-Repaint-Wrapper `#exercise-sheet-header-action` (voriger Eintrag) war `justify-self-end` auf dem Button statt auf dem tatsächlichen Grid-Item-Wrapper gelandet. Funktionierte in Chromium zufällig trotzdem (neuere, uneinheitlich unterstützte CSS-Erweiterung), nicht aber in Safari. `justify-self-end` jetzt korrekt auf dem Wrapper selbst, spezifikationskonform und browserübergreifend zuverlässig — bei 375px Viewport-Breite verifiziert
+
 ## 2026-09-09 (Muskelgruppen-Filter: Zeilen transparent, Abstände verkleinert)
 
 ### Changed

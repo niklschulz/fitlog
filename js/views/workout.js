@@ -799,7 +799,7 @@ async function loadExerciseSheetCache() {
 // repaintExerciseSheetContentInPlace().
 function renderExerciseSheetHeaderAction() {
   return state.exerciseSheetMode === 'list'
-    ? `<button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Übung erstellen">
+    ? `<button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback text-ink" aria-label="Neue Übung erstellen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
           <path d="M12 5v14M5 12h14" />
         </svg>
@@ -859,7 +859,7 @@ function renderExerciseSheet() {
           <div id="exercise-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
             <span class="text-card-title">Übungen</span>
           </div>
-          <div id="exercise-sheet-header-action">${renderExerciseSheetHeaderAction()}</div>
+          <div id="exercise-sheet-header-action" class="justify-self-end">${renderExerciseSheetHeaderAction()}</div>
         </div>
         <div id="exercise-sheet-content" class="flex-1 min-h-0 flex flex-col">
           ${renderExerciseSheetContent()}
