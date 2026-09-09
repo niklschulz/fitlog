@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Übungen ↔ Muskelgruppen verknüpft: primär + sekundär)
+
+### Added
+- Dexie-Schema-Version 3: `exercises` bekommt `primaryMuscleId` (einzelner Wert, nullable) und `secondaryMuscleIds` (Array, multiEntry-Index für effizientes Filtern). Keine Verknüpfungstabelle nötig — Begründung: [ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md)
+- `createExercise()`/`updateExercise()` (`js/db.js`) validieren eine optionale Muskel-Zuordnung gegen die feste `MUSCLE_GROUPS`-Liste (unbekannte IDs, primär=sekundär-Überschneidung, Duplikate unter den sekundären werden abgelehnt). `updateExercise()` lässt eine bestehende Zuordnung unangetastet, wenn kein drittes Argument übergeben wird — ein reines Umbenennen setzt sie nicht versehentlich zurück
+- Noch keine UI: weder das Übungen-Tab-Formular noch das Übungs-Sheet-Anlage-Formular bieten eine Muskel-Auswahl an, beide rufen die Funktionen weiterhin ohne Muskel-Argument auf. Bestehende Übungen haben keine automatische Migration, bleiben also ohne Zuordnung, bis sie bearbeitet werden
+
 ## 2026-09-09 (Neuer Entitätstyp Muskel: feste, nicht bearbeitbare Taxonomie)
 
 ### Added

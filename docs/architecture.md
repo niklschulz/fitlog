@@ -47,9 +47,9 @@ Das Übungs-Sheet geht für sein Suchfeld noch einen Schritt weiter (s. design-s
 
 ## Datenmodell
 
-Sechs Dexie-Tabellen (Schema-Version 2), alle mit UUID-`id`:
+Sechs Dexie-Tabellen (Schema-Version 3), alle mit UUID-`id`:
 
-- **exercises** — `id, name, createdAt, updatedAt`
+- **exercises** — `id, name, primaryMuscleId (nullable), secondaryMuscleIds (Array, multiEntry-Index), createdAt, updatedAt`. Muskel-Zuordnung seit Schema-Version 3 ([ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md)) — beide IDs stammen aus der festen `MUSCLE_GROUPS`-Liste (s. u.), keine eigene Verknüpfungstabelle (keine Zusatzdaten pro Zuordnung nötig). `createExercise()`/`updateExercise()` validieren gegen die feste Liste; `updateExercise()` lässt eine bestehende Zuordnung unangetastet, wenn kein `muscleAssignment`-Argument übergeben wird (reines Umbenennen). Bestehende, vor Version 3 angelegte Übungen haben beide Felder `undefined`, keine automatische Migration
 - **routines** — `id, name, createdAt, updatedAt`
 - **routineExercises** — Verknüpfungstabelle Routine↔Übung (Vorlage): `id, routineId, exerciseId, order`
 - **workouts** — `id, routineId (nullable), date ('YYYY-MM-DD'), createdAt, updatedAt`. Höchstens ein Workout pro Kalendertag (`date`), unabhängig davon ob Vergangenheit/Gegenwart/Zukunft. Kein `startedAt`/`finishedAt` mehr — kein Konzept von "Training beenden", jeder Tag bleibt dauerhaft bearbeitbar. Begründung: [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md)
@@ -58,7 +58,7 @@ Sechs Dexie-Tabellen (Schema-Version 2), alle mit UUID-`id`:
 
 Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um `workoutExercises`).
 
-**Feste Referenzdaten (keine Dexie-Tabelle):** `MUSCLE_GROUPS` (`js/db.js`) — die acht Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) für den geplanten Muskelgruppen-Filter im Übungs-Sheet. Bewusst eine exportierte Code-Konstante (`{ id, name }`, `id` ein stabiler Slug) statt einer Dexie-Tabelle, da die Liste vom Nutzer nicht bearbeitbar ist und sich zur Laufzeit nie ändert — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Noch ohne Verwendungsstelle (kein `muscleId`-Feld an `exercises`, keine UI) — folgt als separater Schritt.
+**Feste Referenzdaten (keine Dexie-Tabelle):** `MUSCLE_GROUPS` (`js/db.js`) — die acht Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) für den Muskelgruppen-Filter im Übungs-Sheet. Bewusst eine exportierte Code-Konstante (`{ id, name }`, `id` ein stabiler Slug) statt einer Dexie-Tabelle, da die Liste vom Nutzer nicht bearbeitbar ist und sich zur Laufzeit nie ändert — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Seit [ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md) referenziert von `exercises.primaryMuscleId`/`secondaryMuscleIds` (s. o.) — noch ohne UI (weder Übungen-Tab-Formular noch Übungs-Sheet-Anlage-Formular bieten aktuell eine Muskel-Auswahl an), der eigentliche Filter im Übungs-Sheet folgt ebenfalls als separater Schritt.
 
 ## PWA-Mechanik
 

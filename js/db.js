@@ -25,6 +25,24 @@ db.version(2).stores({
   workoutExercises: 'id, workoutId, exerciseId, order, sourceRoutineId, startedAt, createdAt, updatedAt',
 });
 
+// v3: Muskelgruppen-Zuordnung an Übungen (Abschnitt 13, s. ADR 0013) - eine
+// primäre (`primaryMuscleId`, einzelner Wert) und beliebig viele sekundäre
+// Muskelgruppen (`secondaryMuscleIds`, Array). Kein eigenes Verknüpfungs-
+// Table wie bei routineExercises/workoutExercises, da keine Zusatzdaten pro
+// Zuordnung anfallen - `*secondaryMuscleIds` ist ein multiEntry-Index
+// (führendes `*`), erlaubt effizientes Filtern nach einer einzelnen
+// sekundären Muskelgruppe trotz Array-Feld. Bestehende Übungen bekommen
+// keine automatische Migration - beide Felder bleiben bei ihnen `undefined`
+// ("kein Muskel zugeordnet"), bis sie im Formular bearbeitet werden.
+db.version(3).stores({
+  exercises: 'id, name, primaryMuscleId, *secondaryMuscleIds, createdAt, updatedAt',
+  routines: 'id, name, createdAt, updatedAt',
+  routineExercises: 'id, routineId, exerciseId, order',
+  workouts: 'id, routineId, date, createdAt, updatedAt',
+  sets: 'id, workoutId, exerciseId, createdAt, updatedAt',
+  workoutExercises: 'id, workoutId, exerciseId, order, sourceRoutineId, startedAt, createdAt, updatedAt',
+});
+
 export function generateId() {
   return crypto.randomUUID();
 }
@@ -66,15 +84,59 @@ export const MUSCLE_GROUPS = [
 
 // --- Exercises ---
 
-export async function createExercise(name) {
+// Prüft eine Muskel-Zuordnung gegen die feste MUSCLE_GROUPS-Taxonomie (s.
+// ADR 0012): IDs müssen bekannt sein, die primäre Muskelgruppe darf nicht
+// zusätzlich unter den sekundären auftauchen (eine Übung zeigt nicht
+// gleichzeitig primär und sekundär auf denselben Muskel), keine Duplikate
+// unter den sekundären. Wirft bei Verstoß statt still zu korrigieren -
+// diese Funktion wird nur von vertrauenswürdigem Aufrufer-Code (künftiges
+// Zuordnungs-Formular) mit bereits von einer festen Werteliste stammenden
+// IDs aufgerufen, kein Nutzer-Freitext.
+function validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds) {
+  const validIds = new Set(MUSCLE_GROUPS.map((m) => m.id));
+  if (primaryMuscleId !== null && !validIds.has(primaryMuscleId)) {
+    throw new Error(`Unbekannte primäre Muskelgruppe: ${primaryMuscleId}`);
+  }
+  for (const id of secondaryMuscleIds) {
+    if (!validIds.has(id)) {
+      throw new Error(`Unbekannte sekundäre Muskelgruppe: ${id}`);
+    }
+  }
+  if (primaryMuscleId !== null && secondaryMuscleIds.includes(primaryMuscleId)) {
+    throw new Error('Die primäre Muskelgruppe darf nicht zusätzlich als sekundär angegeben werden.');
+  }
+  if (new Set(secondaryMuscleIds).size !== secondaryMuscleIds.length) {
+    throw new Error('Sekundäre Muskelgruppen enthalten Duplikate.');
+  }
+}
+
+// `muscleAssignment` optional ({ primaryMuscleId, secondaryMuscleIds }) -
+// ohne Angabe legt eine neue Übung ohne Muskel-Zuordnung an (Standardfall,
+// solange das Zuordnungs-Formular noch nicht existiert).
+export async function createExercise(name, muscleAssignment = {}) {
+  const { primaryMuscleId = null, secondaryMuscleIds = [] } = muscleAssignment;
+  validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds);
   const ts = nowISO();
-  const exercise = { id: generateId(), name, createdAt: ts, updatedAt: ts };
+  const exercise = { id: generateId(), name, primaryMuscleId, secondaryMuscleIds, createdAt: ts, updatedAt: ts };
   await db.exercises.add(exercise);
   return exercise;
 }
 
-export async function updateExercise(id, name) {
-  await db.exercises.update(id, { name, updatedAt: nowISO() });
+// `muscleAssignment` bewusst optional und standardmäßig nicht gesetzt
+// (statt mit leeren Default-Werten): Nur wenn explizit ein
+// `{ primaryMuscleId, secondaryMuscleIds }`-Objekt übergeben wird, wird die
+// Muskel-Zuordnung ersetzt - ein reines Umbenennen (bisher einziger
+// Aufrufer, s. exercises.js) darf eine bereits bestehende Zuordnung nicht
+// versehentlich auf "kein Muskel" zurücksetzen.
+export async function updateExercise(id, name, muscleAssignment) {
+  const changes = { name, updatedAt: nowISO() };
+  if (muscleAssignment) {
+    const { primaryMuscleId = null, secondaryMuscleIds = [] } = muscleAssignment;
+    validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds);
+    changes.primaryMuscleId = primaryMuscleId;
+    changes.secondaryMuscleIds = secondaryMuscleIds;
+  }
+  await db.exercises.update(id, changes);
 }
 
 // Löschen einer Übung entfernt sie aus allen Routinen und aus allen
