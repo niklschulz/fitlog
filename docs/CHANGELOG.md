@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Haken-Button im Neue-Übung-Sheet: akzentgrün glimmende Glas-Optik nach Referenz-Screenshot)
+
+### Changed
+- Neue CSS-Klasse `.icon-btn-glass-accent` (`css/styles.css`) für hervorgehobene, akzentgrün glimmende Glass-Buttons — löst das dezente Tailwind-`shadow-[...]`-Glimmen vom vorigen Eintrag ab: jetzt eine transluzente grüne Glasfläche mit mehrschichtigem Glow-Ring und hellem Icon, angelehnt an einen vom Nutzer bereitgestellten Referenz-Screenshot. `:disabled` fällt auf dieselbe neutrale Glas-Optik wie alle übrigen `.icon-btn-glass`-Buttons zurück
+- Farbe/Schatten dieses Buttons laufen jetzt vollständig über die eigene CSS-Klasse statt teilweise über Tailwind-Utilities — vermeidet ein Kaskaden-Wettrennen, da das Tailwind-Play-CDN-Skript in `index.html` nach `css/styles.css` lädt und seine Utility-Klassen bei gleicher Spezifität sonst immer gewonnen hätten
+
 ## 2026-09-09 (Neue-Übung-Sheet & Übungs-Detail-Sheet: Stapeln ohne Neu-Animation des darunterliegenden Sheets, Styling-Feinschliff)
 
 ### Fixed

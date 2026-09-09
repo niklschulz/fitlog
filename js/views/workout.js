@@ -1355,7 +1355,7 @@ function renderExerciseCreateSheet() {
           id="exercise-create-sheet-submit-btn"
           type="submit"
           form="exercise-create-sheet-form"
-          class="icon-btn-glass tap-feedback justify-self-end text-accent shadow-[0_0_16px_rgba(163,230,53,0.35)] disabled:text-ink disabled:shadow-none disabled:opacity-30"
+          class="icon-btn-glass icon-btn-glass-accent tap-feedback justify-self-end"
           aria-label="Übung erstellen"
           ${canSubmit ? '' : 'disabled'}
         >
