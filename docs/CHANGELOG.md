@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-09 (Muskelgruppen-Filter: Zeilen transparent, Abstände verkleinert)
+
+### Changed
+- Zeilen-Buttons im Muskelgruppen-Filter-Popup haben keinen eigenen Hintergrund mehr (Korrektur — waren zuvor ungefragt eingefärbt worden), Zeilenabstand weiter verringert (`gap-0`)
+- Abstand zwischen Suchfeld und Filter-Button verkleinert, sitzen jetzt näher beieinander
+
 ## 2026-09-09 (Muskelgruppen-Filter-Popup: Farbe, Zeilenabstand, kein Scroll mehr)
 
 ### Changed
