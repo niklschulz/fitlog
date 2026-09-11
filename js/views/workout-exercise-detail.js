@@ -5,7 +5,7 @@
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, BTN_SECONDARY, CARD } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, renderSegmentedControl, BTN_SECONDARY, CARD } from '../utils.js';
 
 // Anzahl standardmäßig angezeigter (leerer) Satz-Zeilen - bewusst als
 // eigene Variable statt hart im Rendering verankert, Grundlage für eine
@@ -97,7 +97,14 @@ async function paint() {
   const html = `
     <div class="py-4 flex flex-col gap-4">
       ${renderHeader(exerciseName)}
-      ${renderSegmentedControl(workout?.date)}
+      ${renderSegmentedControl(
+        [
+          { key: 'today', label: workout?.date ? formatShortDate(workout.date) : '' },
+          { key: 'history', label: 'Verlauf' },
+          { key: 'stats', label: 'Statistik' },
+        ],
+        state.activeTab
+      )}
       ${state.activeTab === 'today' ? renderTodayTab(todaySets, formWeight, formReps, routineLabel) : ''}
       ${state.activeTab === 'history' ? renderHistoryTab(history) : ''}
       ${state.activeTab === 'stats' ? renderStatsTab() : ''}
@@ -126,26 +133,6 @@ function renderHeader(exerciseName) {
 function formatShortDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
-}
-
-function renderSegmentedControl(workoutDate) {
-  const tabs = [
-    { key: 'today', label: workoutDate ? formatShortDate(workoutDate) : '' },
-    { key: 'history', label: 'Verlauf' },
-    { key: 'stats', label: 'Statistik' },
-  ];
-
-  return `
-    <div class="bg-surface rounded-full p-1 flex gap-1">
-      ${tabs
-        .map(
-          (t) => `
-        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-full py-2 min-h-[36px] text-label ${state.activeTab === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
-      `
-        )
-        .join('')}
-    </div>
-  `;
 }
 
 function renderStepperRow(field, label, value) {

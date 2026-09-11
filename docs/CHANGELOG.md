@@ -2,6 +2,39 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 ("Letzter Monat" zu "Vorheriger Monat")
+
+### Changed
+- Label der dritten Zähler-Spalte im Statistik-Tab von "Letzter Monat" auf "Vorheriger Monat" geändert
+
+## 2026-09-11 (`text-kpi` auf h1-Größe reduziert)
+
+### Changed
+- `text-kpi`-Token (`index.html`) von 34px/700/1.1 auf 21px/700/1.2 geändert — identisch zu `text-screen-title`, betrifft die Zähler-Zeile im Statistik-Tab
+
+## 2026-09-11 (Workouts-pro-Woche: fixes Wochenfenster, Kalenderwoche als X-Achsen-Label)
+
+### Changed
+- Balkendiagramm zeigt jetzt immer genau `HISTORY_WEEKS` (8) Wochen, nicht mehr auf die Wochen seit dem ersten erfassten Training verkürzt (Nutzer-Entscheidung, Sonderfälle gestrichen)
+- X-Achsen-Labels zeigen die ISO-Kalenderwoche ("KW 37") statt des Montags-Datums (neue `isoWeekNumber()` in `js/views/statistics.js`)
+
+## 2026-09-11 (Statistik-Tab: erstes Feature "Workouts pro Woche")
+
+### Added
+- Übersicht-Reiter des Statistik-Tabs bekommt sein erstes echtes Feature: Zähler-Zeile (Diese Woche als Ziel-Fraktion, Dieser Monat, Letzter Monat) plus Balkendiagramm der letzten 8 Wochen, aktuelle Woche hervorgehoben. Zählt Tage mit mindestens einem erfassten Satz (neue `getTrainedDates()` in `js/db.js`), nicht rohe `workouts`-Zeilen (können ohne geloggten Satz entstehen). Vollständig offline, lokale Gerätezeitzone
+- Neue Konstante `WEEKLY_GOAL` (`js/views/statistics.js`, Default 5) — analog zu `DEFAULT_SET_COUNT`, Grundlage für einen künftigen gemeinsamen Einstellungsbereich
+
+### Changed
+- Datumshelfer `addDays`/`daysBetween`/`mondayOf` aus `workout.js` nach `js/db.js` verschoben (jetzt auch vom Statistik-Tab genutzt)
+
+## 2026-09-11 (Statistik-Tab: Überschrift + Reiter-Zeile, Segmented Control zentralisiert)
+
+### Added
+- Statistik-Tab (`js/views/statistics.js`) bekommt Kopfzeile `<h1 class="text-screen-title">Statistik</h1>` (Standard-Muster jedes Haupt-Tabs) und darunter eine Reiter-Zeile (Segmented Control) mit den Reitern "Übersicht"/"Übungen" — beide Reiter-Inhalte vorerst Platzhalter, Inhalt folgt separat. View folgt jetzt dem vollen `render()`/`paint()`/`wireEvents()`-Muster mit eigenem `state.activeTab`
+
+### Changed
+- Segmented-Control-Rendering aus `workout-exercise-detail.js` nach `js/utils.js` extrahiert (`renderSegmentedControl(tabs, activeKey)`, parametrisiert statt fest codierter Drei-Tabs-Liste) und dort als zweiter Anwendungsfall wiederverwendet — Markup/Klassen unverändert
+
 ## 2026-09-11 (Übungen-Tab entfernt, neuer Statistik-Tab als Platzhalter)
 
 ### Removed

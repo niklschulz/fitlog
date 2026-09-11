@@ -11,7 +11,9 @@ import {
   deleteExercise,
   MUSCLE_GROUPS,
   todayISODate,
-  toISODate,
+  addDays,
+  daysBetween,
+  mondayOf,
 } from '../db.js';
 import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
 import {
@@ -173,31 +175,6 @@ export function unmount() {
 }
 
 // --- Datums-Hilfsfunktionen (lokale Zeitzone, kein UTC-Shift) ---
-
-function addDays(dateStr, delta) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  date.setDate(date.getDate() + delta);
-  return toISODate(date);
-}
-
-function daysBetween(fromStr, toStr) {
-  const [fy, fm, fd] = fromStr.split('-').map(Number);
-  const [ty, tm, td] = toStr.split('-').map(Number);
-  const from = new Date(fy, fm - 1, fd);
-  const to = new Date(ty, tm - 1, td);
-  return Math.round((to - from) / 86400000);
-}
-
-// Montag der Woche, die dateStr enthält (ISO-Wochenstart).
-function mondayOf(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const dow = date.getDay(); // 0=So..6=Sa
-  const diff = dow === 0 ? -6 : 1 - dow;
-  date.setDate(date.getDate() + diff);
-  return toISODate(date);
-}
 
 function formatDayLabel(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);

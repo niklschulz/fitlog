@@ -63,6 +63,37 @@ export function todayISODate() {
   return toISODate(new Date());
 }
 
+// 'YYYY-MM-DD' + n Tage (lokale Zeitzone, kein UTC-Shift) - aus workout.js
+// hierher verschoben, da der Statistik-Tab (Workouts-pro-Woche) dieselbe
+// Rechnung für die Wochen-Buckets braucht (s. features.md).
+export function addDays(dateStr, delta) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + delta);
+  return toISODate(date);
+}
+
+// Ganzzahlige Tagesdifferenz zwischen zwei 'YYYY-MM-DD'-Daten (gleicher
+// Grund wie addDays).
+export function daysBetween(fromStr, toStr) {
+  const [fy, fm, fd] = fromStr.split('-').map(Number);
+  const [ty, tm, td] = toStr.split('-').map(Number);
+  const from = new Date(fy, fm - 1, fd);
+  const to = new Date(ty, tm - 1, td);
+  return Math.round((to - from) / 86400000);
+}
+
+// Montag der ISO-Woche, die dateStr enthält - ebenfalls aus workout.js
+// hierher verschoben (gleicher Grund wie daysBetween).
+export function mondayOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const dow = date.getDay(); // 0=So..6=Sa
+  const diff = dow === 0 ? -6 : 1 - dow;
+  date.setDate(date.getDate() + diff);
+  return toISODate(date);
+}
+
 // --- Muskelgruppen ---
 //
 // Feste, vom Nutzer nicht bearbeitbare Taxonomie für den künftigen
@@ -442,4 +473,29 @@ export async function getExerciseSetHistory(exerciseId, excludeWorkoutId) {
       sets: daySets.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
     }))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+// --- Statistik ---
+
+// Tage (als 'YYYY-MM-DD'-Strings, unsortiert, keine Duplikate), an denen
+// mindestens ein Satz erfasst wurde - Grundlage für den Statistik-Tab
+// ("Workouts pro Woche"). Bewusst NICHT die rohen `workouts`-Zeilen gezählt:
+// die entstehen schon beim bloßen Wählen einer Routine oder manuellen
+// Hinzufügen einer Übung (s. getOrCreateWorkoutForDate), auch ganz ohne
+// einen einzigen geloggten Satz - dieselbe "dokumentiert"-Definition wie der
+// grüne Punkt im kleinen Kalender (Workout-Tab, s. workout.js).
+export async function getTrainedDates() {
+  const sets = await db.sets.toArray();
+  if (sets.length === 0) return [];
+
+  const workoutIds = [...new Set(sets.map((s) => s.workoutId))];
+  const workouts = await db.workouts.bulkGet(workoutIds);
+  const dateByWorkoutId = Object.fromEntries(workoutIds.map((id, i) => [id, workouts[i]?.date ?? null]));
+
+  const dates = new Set();
+  for (const s of sets) {
+    const date = dateByWorkoutId[s.workoutId];
+    if (date) dates.add(date); // Workout gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen) - defensiv übersprungen
+  }
+  return [...dates];
 }

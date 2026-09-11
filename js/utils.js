@@ -138,6 +138,29 @@ export function renderSetTimelineRow(number, contentHtml, { isLast = false, circ
 // Wiederverwendet zwischen Roster-Zeile (Workout-Tab) und
 // Übungs-Detailseite (Tages-/Verlauf-Reiter), s. design-system.md
 // Vierundzwanzigste bis Sechsundzwanzigste Iteration.
+// Segmented Control (s. design-system.md, "Segmented Control") - Reiter-Zeile
+// mit gleich breiten Pillen-Segmenten, aktives Segment bg-raised/text-ink,
+// inaktive text-muted, kein Border. Ursprünglich nur auf der
+// Übungs-Detailseite (Tag/Verlauf/Statistik), jetzt auch im Statistik-Tab
+// (Übersicht/Übungen) - deshalb hier extrahiert statt an beiden Stellen
+// dupliziert. `tabs` ist eine Liste aus {key, label}, `activeKey` der Key des
+// aktuell aktiven Segments. Erzeugt nur das Markup; das Wiring (Klick auf
+// `.segmented-tab`, `data-tab`-Attribut auslesen) bleibt Sache der
+// aufrufenden View, da jede View eigenen State und eigene paint()-Logik hat.
+export function renderSegmentedControl(tabs, activeKey) {
+  return `
+    <div class="bg-surface rounded-full p-1 flex gap-1">
+      ${tabs
+        .map(
+          (t) => `
+        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-full py-2 min-h-[36px] text-label ${activeKey === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
+      `
+        )
+        .join('')}
+    </div>
+  `;
+}
+
 export function renderSetValues(weight, reps) {
   return `
     <span class="inline-flex items-baseline gap-1">
