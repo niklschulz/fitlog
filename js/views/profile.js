@@ -1,4 +1,5 @@
 import { getProfile, saveProfile, clearProfile } from '../profile.js';
+import { getSettings, saveSettings } from '../settings.js';
 import { escapeHtml, BTN_PRIMARY, INPUT, CARD, withViewTransition } from '../utils.js';
 
 let currentContainer = null;
@@ -20,10 +21,52 @@ function paint() {
     <div class="py-4 flex flex-col gap-4">
       <h1 class="text-screen-title">Profil</h1>
       ${body}
+      ${renderSettings(getSettings())}
     </div>
   `;
 
   wireEvents();
+}
+
+// Noch ohne Design-Feinschliff - reine Funktions-Umsetzung der beiden bisher
+// hart codierten Konstanten (DEFAULT_SET_COUNT in workout-exercise-detail.js,
+// WEEKLY_GOAL in statistics.js), die genau für diesen Einstellungsbereich
+// vorbereitet waren, s. js/settings.js. Speichert direkt bei `change`
+// (Blur/Enter), kein eigener Speichern-Button nötig.
+function renderSettings(settings) {
+  return `
+    <div class="flex flex-col gap-2">
+      <p class="text-body text-muted">Einstellungen</p>
+      <div class="${CARD} flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <label class="text-label text-muted" for="settings-default-set-count">Standardanzahl Sätze</label>
+          <input
+            id="settings-default-set-count"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            step="1"
+            value="${settings.defaultSetCount}"
+            class="bg-base ${INPUT}"
+          />
+          <p class="text-body text-muted">Lege fest, wie viele Sätze Fitlog für jede Übung standardmäßig vorsehen soll. Du kannst jederzeit mehr oder weniger Sätze absolvieren.</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-label text-muted" for="settings-weekly-goal">Wochenziel (Trainingstage pro Woche)</label>
+          <input
+            id="settings-weekly-goal"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            step="1"
+            value="${settings.weeklyGoal}"
+            class="bg-base ${INPUT}"
+          />
+          <p class="text-body text-muted">Fitlog kann dir anzeigen, wie häufig du in der aktuellen Woche schon trainiert hast. Lege hier dein Wochenziel fest.</p>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderView(profile) {
@@ -135,5 +178,25 @@ function wireEvents() {
       state.mode = 'empty';
       paint();
     }, 'back');
+  });
+
+  currentContainer.querySelector('#settings-default-set-count')?.addEventListener('change', (e) => {
+    const value = parseInt(e.target.value, 10);
+    const settings = getSettings();
+    if (!Number.isInteger(value) || value < 1) {
+      e.target.value = settings.defaultSetCount;
+      return;
+    }
+    saveSettings({ ...settings, defaultSetCount: value });
+  });
+
+  currentContainer.querySelector('#settings-weekly-goal')?.addEventListener('change', (e) => {
+    const value = parseInt(e.target.value, 10);
+    const settings = getSettings();
+    if (!Number.isInteger(value) || value < 1) {
+      e.target.value = settings.weeklyGoal;
+      return;
+    }
+    saveSettings({ ...settings, weeklyGoal: value });
   });
 }

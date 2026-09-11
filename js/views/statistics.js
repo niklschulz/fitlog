@@ -8,13 +8,7 @@
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
 import { getTrainedDates, todayISODate, addDays, mondayOf } from '../db.js';
 import { renderSegmentedControl, CARD } from '../utils.js';
-
-// Wochenziel (Trainings pro Woche) - bewusst als eigene Variable statt hart
-// im Rendering verankert, analog zu DEFAULT_SET_COUNT in
-// workout-exercise-detail.js. Beide sollen künftig in einem gemeinsamen
-// Einstellungsbereich (noch nicht gebaut) editierbar werden, s. Nutzer-Vorgabe
-// zum "Workouts pro Woche"-Feature.
-const WEEKLY_GOAL = 5;
+import { getSettings } from '../settings.js';
 
 // Anzahl der im Balkendiagramm gezeigten Wochen (inkl. aktueller Woche),
 // s. Markdown-Vorgabe "Default: letzte 8 Wochen".
@@ -173,7 +167,7 @@ function renderChart(buckets, weeklyGoal) {
 
 async function renderOverviewTab() {
   const trainedDates = await getTrainedDates();
-  const stats = computeWorkoutsPerWeekStats(trainedDates, WEEKLY_GOAL, HISTORY_WEEKS);
+  const stats = computeWorkoutsPerWeekStats(trainedDates, getSettings().weeklyGoal, HISTORY_WEEKS);
 
   return `
     <div class="flex flex-col gap-2">

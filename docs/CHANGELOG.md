@@ -2,6 +2,32 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Einstellungen-Texte neu formuliert, text-body-Zeilenabstand verringert)
+
+### Changed
+- Beide Erklärungstexte im Profil-Tab neu formuliert
+- `text-body`-Token (`index.html`) von `line-height: 1.45` auf `1.3` verringert (App-weit)
+- `leading-relaxed`-Utility von den beiden Erklärungstexten entfernt (kollidierte mit dem in `text-body` eingebauten `lineHeight`, je nach Tailwind-Generierungsreihenfolge)
+
+## 2026-09-11 (Erklärungstexte: text-body statt text-label)
+
+### Fixed
+- Die beiden neuen Erklärungstexte im Einstellungen-Bereich nutzten `text-label` (600 Gewicht, für kleine Labels gedacht) statt `text-body` (400 Gewicht, "Standard-Fließtext") — als Lauftext wirkte das zu fett. Auf `text-body text-muted` umgestellt, konsistent mit allen anderen Hinweistexten in der App
+
+## 2026-09-11 (Erklärungstexte für die beiden Einstellungsfelder)
+
+### Added
+- Kurzer Erklärungstext unter "Standardanzahl Sätze" und "Wochenziel" im Profil-Tab (`text-label text-muted`, gleiches Muster wie der Sync-Hinweistext im Profil-Bereich)
+
+## 2026-09-11 (Einstellungen-Bereich im Profil-Tab: Standardanzahl Sätze, Wochenziel)
+
+### Added
+- Neuer Einstellungen-Bereich im Profil-Tab: "Standardanzahl Sätze" und "Wochenziel (Trainings pro Woche)" als einfache Zahlenfelder, speichern direkt bei Änderung — noch ohne Design-Feinschliff
+- Neues `js/settings.js` (`localStorage`, analog zu `js/profile.js`) mit `getSettings()`/`saveSettings()`
+
+### Changed
+- Die bisher hart codierten Konstanten `DEFAULT_SET_COUNT` (Übungs-Detailseite) und `WEEKLY_GOAL` (Statistik-Tab) lesen ihren Wert jetzt aus `getSettings()` statt eines festen Defaults
+
 ## 2026-09-11 (Neues Token `bg-highlight`, aktiver Segmented-Control-Tab heller)
 
 ### Added

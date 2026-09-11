@@ -6,13 +6,7 @@
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
 import { escapeHtml, renderSetTimelineRow, renderSetValues, renderSegmentedControl, BTN_SECONDARY, CARD } from '../utils.js';
-
-// Anzahl standardmäßig angezeigter (leerer) Satz-Zeilen - bewusst als
-// eigene Variable statt hart im Rendering verankert, Grundlage für eine
-// spätere Einstellungsmöglichkeit im Profil-Tab (noch nicht gebaut, s.
-// ADR 0010). Zeigt schon vorhandene Sätze werden nie abgeschnitten, nur bis
-// zu dieser Anzahl mit leeren Platzhaltern aufgefüllt.
-const DEFAULT_SET_COUNT = 3;
+import { getSettings } from '../settings.js';
 
 let currentContainer = null;
 let onBack = null;
@@ -163,7 +157,7 @@ function renderSetContent(set) {
 }
 
 function renderTodayTab(sets, formWeight, formReps, routineLabel) {
-  const rowCount = Math.max(sets.length, DEFAULT_SET_COUNT);
+  const rowCount = Math.max(sets.length, getSettings().defaultSetCount);
   const rows = Array.from({ length: rowCount }, (_, i) => sets[i] ?? null);
   const editing = !!state.selectedSetId;
 
