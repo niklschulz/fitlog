@@ -2,6 +2,13 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Workout- und Statistik-Nav-Icon neu, alle Nav-Icons größer)
+
+### Changed
+- Workout-Icon: horizontale Hantel mit echten "Gewichtsscheiben" (abgerundete Kapseln) statt der bisherigen reinen Linien-Variante
+- Statistik-Icon: Liniendiagramm (Achse + ansteigende Trendlinie mit Einbruch) statt der bisherigen drei Balken
+- Alle vier Bottom-Nav-Icons von 22×22px auf 26×26px vergrößert
+
 ## 2026-09-11 ("Letzter Monat" zu "Vorheriger Monat")
 
 ### Changed
