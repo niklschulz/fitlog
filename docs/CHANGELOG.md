@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Roster-Kontextmenü nach iOS-Referenzbild redesignt, Swipe-to-Delete wieder entfernt)
+
+### Changed
+- Kontextmenü ("Übung entfernen") nach einem iOS-Liquid-Glass-Referenzbild angepasst, konsequent mit bereits bestehenden Design-System-Bausteinen: `rounded-sheet` (26px) statt `rounded-card`, überlagernde Positionierung direkt über der Karte statt sauber darunter, Standard-`.popup-glass`-Schatten (identisch zur Bottom-Nav) statt eines eigenen Schatten-Werts — s. [ADR 0017](decisions/0017-kontextmenue-redesign-referenzbild.md)
+
+### Removed
+- Swipe-to-Delete-Geste auf den Roster-Karten (aus dem vorigen Eintrag) komplett entfernt — passte laut Nutzer-Feedback nicht zum jetzigen Kontextmenü-Muster. Das "⋮"-Menü ist wieder der einzige Weg, eine Übung aus dem Tages-Roster zu entfernen (weiterhin ohne Bestätigungsdialog)
+
 ## 2026-09-09 (Roster-Karten: Swipe-to-Delete, Kontextmenü als Liquid Glass, kein Bestätigungsdialog mehr)
 
 ### Added

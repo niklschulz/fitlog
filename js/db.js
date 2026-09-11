@@ -331,13 +331,12 @@ export async function removeRoutineFromWorkout(workoutId) {
 //
 // Bewusst OHNE `confirm()`-Dialog (Nutzer-Vorgabe, abweichend von der
 // sonstigen App-Konvention "jedes Löschen braucht einen Bestätigungsdialog",
-// s. CLAUDE.md) - beide UI-Wege (Kontextmenü, Swipe-Geste) betreffen wie
-// oben beschrieben ausschließlich Einträge ohne jegliche Trainingsdaten:
-// Verlieren geht dabei höchstens die Zuordnung "diese Übung steht heute auf
-// dem Zettel", nie ein erfasster Satz - erneutes Hinzufügen kostet nur ein
-// paar Sekunden über "Übung hinzufügen". Bei der klassischen iOS-Swipe-
-// Geste (Mail u. Ä.) übernimmt außerdem die zweistufige Geste selbst (erst
-// aufziehen, dann antippen bzw. ganz durchziehen) die Rolle der
+// s. CLAUDE.md) - der Weg dahin (Kontextmenü) betrifft wie oben beschrieben
+// ausschließlich Einträge ohne jegliche Trainingsdaten: Verlieren geht dabei
+// höchstens die Zuordnung "diese Übung steht heute auf dem Zettel", nie ein
+// erfasster Satz - erneutes Hinzufügen kostet nur ein paar Sekunden über
+// "Übung hinzufügen". Die Zweistufigkeit des Menüs selbst (erst "⋮"
+// antippen, dann den Eintrag) übernimmt zusätzlich die Rolle der
 // Bestätigung.
 export async function removeExerciseFromWorkout(entryId) {
   await db.workoutExercises.delete(entryId);
