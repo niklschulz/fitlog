@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Segmented Control: rounded-card statt rounded-full)
+
+### Changed
+- Segmented Control (Übungs-Detailseite und Statistik-Tab, `renderSegmentedControl()` in `js/utils.js`) nutzt jetzt `rounded-card` (4px) statt `rounded-full` — Track und Segmente, keine sonstigen Änderungen
+
 ## 2026-09-11 (Workout- und Statistik-Nav-Icon neu, alle Nav-Icons größer)
 
 ### Changed

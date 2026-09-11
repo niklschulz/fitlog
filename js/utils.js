@@ -149,11 +149,11 @@ export function renderSetTimelineRow(number, contentHtml, { isLast = false, circ
 // aufrufenden View, da jede View eigenen State und eigene paint()-Logik hat.
 export function renderSegmentedControl(tabs, activeKey) {
   return `
-    <div class="bg-surface rounded-full p-1 flex gap-1">
+    <div class="bg-surface rounded-card p-1 flex gap-1">
       ${tabs
         .map(
           (t) => `
-        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-full py-2 min-h-[36px] text-label ${activeKey === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
+        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-card py-2 min-h-[36px] text-label ${activeKey === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
       `
         )
         .join('')}
