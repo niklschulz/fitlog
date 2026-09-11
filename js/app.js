@@ -1,10 +1,10 @@
 import { db } from './db.js';
 import * as workout from './views/workout.js';
-import * as exercises from './views/exercises.js';
 import * as routines from './views/routines.js';
+import * as statistics from './views/statistics.js';
 import * as profile from './views/profile.js';
 
-const views = { workout, exercises, routines, profile };
+const views = { workout, routines, statistics, profile };
 
 const viewContainer = document.getElementById('view-container');
 const navButtons = document.querySelectorAll('.nav-btn');

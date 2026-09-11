@@ -25,7 +25,7 @@ fitlog/
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
-│   └── views/              Ein Modul pro Tab (workout.js, exercises.js, routines.js, profile.js),
+│   └── views/              Ein Modul pro Tab (workout.js, routines.js, statistics.js, profile.js),
 │                           jedes exportiert render(container). Außerdem
 │                           workout-exercise-detail.js - kein eigener Tab,
 │                           sondern ein Sub-View, direkt von workout.js
@@ -62,7 +62,7 @@ Sechs Dexie-Tabellen (Schema-Version 3), alle mit UUID-`id`:
 
 Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um `workoutExercises`).
 
-**Feste Referenzdaten (keine Dexie-Tabelle):** `MUSCLE_GROUPS` (`js/db.js`) — die acht Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) für den Muskelgruppen-Filter im Übungs-Sheet. Bewusst eine exportierte Code-Konstante (`{ id, name }`, `id` ein stabiler Slug) statt einer Dexie-Tabelle, da die Liste vom Nutzer nicht bearbeitbar ist und sich zur Laufzeit nie ändert — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Seit [ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md) referenziert von `exercises.primaryMuscleId`/`secondaryMuscleIds` (s. o.). Zuordnung per Chip-Auswahl im Neue-Übung-Sheet möglich ([ADR 0014](decisions/0014-neue-uebung-sheet-gestapelt.md)) und per Dropdown-Pill-Filter im Übungs-Sheet auswertbar — das Übungen-Tab-Formular (`exercises.js`) bietet weiterhin keine Muskel-Auswahl an.
+**Feste Referenzdaten (keine Dexie-Tabelle):** `MUSCLE_GROUPS` (`js/db.js`) — die acht Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) für den Muskelgruppen-Filter im Übungs-Sheet. Bewusst eine exportierte Code-Konstante (`{ id, name }`, `id` ein stabiler Slug) statt einer Dexie-Tabelle, da die Liste vom Nutzer nicht bearbeitbar ist und sich zur Laufzeit nie ändert — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Seit [ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md) referenziert von `exercises.primaryMuscleId`/`secondaryMuscleIds` (s. o.). Zuordnung per Chip-Auswahl im Neue-Übung-Sheet möglich ([ADR 0014](decisions/0014-neue-uebung-sheet-gestapelt.md)) und per Dropdown-Pill-Filter im Übungs-Sheet auswertbar.
 
 ## PWA-Mechanik
 

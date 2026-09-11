@@ -194,7 +194,7 @@ async function renderPicker() {
 
       ${
         allExercises.length === 0
-          ? `<p class="text-body text-muted text-center py-12">Es gibt noch keine Übungen. Lege zuerst welche im Tab "Übungen" an.</p>`
+          ? `<p class="text-body text-muted text-center py-12">Es gibt noch keine Übungen. Lege zuerst welche im Workout-Tab an ("Übung hinzufügen" → "+").</p>`
           : available.length === 0
             ? `<p class="text-body text-muted text-center py-12">Alle vorhandenen Übungen sind bereits Teil dieser Routine.</p>`
             : `<ul class="flex flex-col gap-2">

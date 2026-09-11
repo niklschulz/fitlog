@@ -1,7 +1,7 @@
 // Übungs-Detailseite (Abschnitt 12) - eigenständiges Sub-View-Modul,
 // aufgerufen von workout.js statt in der App-weiten View-Registrierung
 // (app.js). Folgt trotzdem demselben render()/paint()/wireEvents()-Muster
-// wie die echten Views (exercises.js/routines.js), damit sie sich vollständig
+// wie die echten Views (routines.js/profile.js), damit sie sich vollständig
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';

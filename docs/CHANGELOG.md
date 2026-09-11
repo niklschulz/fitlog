@@ -2,6 +2,17 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Übungen-Tab entfernt, neuer Statistik-Tab als Platzhalter)
+
+### Removed
+- Eigenständiger "Übungen"-Tab (`js/views/exercises.js`, zweite Position in der Bottom-Nav) komplett entfernt — Übungen anlegen/löschen läuft seitdem ausschließlich über das Workout-Tab (Neue-Übung-Sheet bzw. Übungs-Detail-Sheet), perspektivisch ergänzt um eine Übungs-Verwaltung in der geplanten Routinen-Verwaltung. `updateExercise()` bleibt trotz aktuell fehlendem Aufrufer in `js/db.js` erhalten (s. [ADR 0018](decisions/0018-uebungen-tab-entfernt.md))
+
+### Added
+- Neuer "Statistik"-Tab (`js/views/statistics.js`) an derselben Position in der Bottom-Nav — vorerst reiner Platzhalter ("Statistik folgt."), Inhalt folgt separat
+
+### Changed
+- Hinweistext im Routine-Editor-Übungs-Picker ("Es gibt noch keine Übungen...") verweist jetzt auf das Workout-Tab statt auf den entfernten Übungen-Tab
+
 ## 2026-09-11 (Roster-Kontextmenü nach iOS-Referenzbild redesignt, Swipe-to-Delete wieder entfernt)
 
 ### Changed

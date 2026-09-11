@@ -903,9 +903,9 @@ function wireCalendarSheetDrag() {
 // (`state.exerciseSheetMode`), ist seitdem aber ein eigenes Stapel-Sheet wie
 // das Übungs-Detail-Sheet (Nutzer-Vorgabe: Schließen führt nur zum
 // Übungs-Sheet zurück, nicht zum Workout-Tab - ergibt sich automatisch aus
-// dem Stapel-Muster). Löschen ist bewusst nicht Teil dieses Sheets
-// (Nutzer-Vorgabe - bleibt vorerst dem Übungen-Tab vorbehalten, s.
-// CHANGELOG).
+// dem Stapel-Muster). Löschen ist bewusst nicht Teil dieses Sheets selbst
+// (Nutzer-Vorgabe) - lebt stattdessen im gestapelten Übungs-Detail-Sheet
+// (roter Löschen-Button, s. weiter unten).
 //
 // Die Übungsliste + der heutige Roster-Stand werden einmalig beim Öffnen
 // geladen und in `exerciseSheetCache` gehalten, statt bei jedem Tastendruck
@@ -1757,11 +1757,10 @@ function wireExerciseDetailSheetEvents() {
 
   // Löschen mit Bestätigungsdialog (CLAUDE.md-Konvention für jedes Löschen
   // in der App) - deleteExercise() selbst entscheidet, was mit heute schon
-  // begonnenen Sätzen passiert (s. js/db.js, unverändert übernommen von der
-  // bereits bestehenden Löschen-Aktion im Übungen-Tab-Formular). Übungs-Sheet
-  // dahinter direkt mit aktualisiertem Zwischenspeicher neu befüllt, statt
-  // erst beim nächsten ohnehin fälligen Repaint - dieselbe Reihenfolge wie
-  // beim Anlegen einer neuen Übung (s. openExerciseCreateSheet-Submit).
+  // begonnenen Sätzen passiert (s. js/db.js). Übungs-Sheet dahinter direkt
+  // mit aktualisiertem Zwischenspeicher neu befüllt, statt erst beim
+  // nächsten ohnehin fälligen Repaint - dieselbe Reihenfolge wie beim
+  // Anlegen einer neuen Übung (s. openExerciseCreateSheet-Submit).
   currentContainer.querySelector('#exercise-detail-sheet-delete-btn')?.addEventListener('click', async () => {
     if (!confirm('Übung wirklich löschen? Sie wird aus allen Routinen entfernt, bereits erfasste Sätze bleiben erhalten.')) {
       return;
