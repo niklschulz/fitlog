@@ -20,6 +20,16 @@ input {
   font-size: 16px;
 }
 
+/* Silbentrennung für Lauftext (text-body) - reagiert automatisch auf die
+   verfügbare Zeilenbreite, ohne dass dafür eigene Breakpoints nötig wären.
+   -webkit-Präfix nötig, da Fitlog auf iOS/Safari (WebKit) läuft. Setzt
+   lang="de" auf <html> voraus (vorhanden), damit die deutschen
+   Trennregeln greifen. */
+.text-body {
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
 /* Zahlen-Inputs: kein Spinner, größere Schrift für schnelles Ablesen */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

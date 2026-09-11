@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Silbentrennung für text-body)
+
+### Added
+- `hyphens: auto`/`-webkit-hyphens: auto` für `text-body` (`css/styles.css`) — automatische Silbentrennung bei schmalen Breiten
+
 ## 2026-09-11 (Einstellungen-Texte neu formuliert, text-body-Zeilenabstand verringert)
 
 ### Changed
