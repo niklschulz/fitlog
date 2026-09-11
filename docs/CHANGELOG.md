@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-11 (Neues Token `bg-highlight`, aktiver Segmented-Control-Tab heller)
+
+### Added
+- Neues Farb-Token `highlight` (`#404040`, `index.html`) — hellerer Grauton für hervorgehobene Auswahl-Zustände
+
+### Changed
+- Aktiver Tab der Segmented Control (`renderSegmentedControl()` in `js/utils.js`) nutzt jetzt `bg-highlight` statt `bg-raised`
+
 ## 2026-09-11 (Segmented Control: rounded-card statt rounded-full)
 
 ### Changed

@@ -139,7 +139,7 @@ export function renderSetTimelineRow(number, contentHtml, { isLast = false, circ
 // Übungs-Detailseite (Tages-/Verlauf-Reiter), s. design-system.md
 // Vierundzwanzigste bis Sechsundzwanzigste Iteration.
 // Segmented Control (s. design-system.md, "Segmented Control") - Reiter-Zeile
-// mit gleich breiten Pillen-Segmenten, aktives Segment bg-raised/text-ink,
+// mit gleich breiten Pillen-Segmenten, aktives Segment bg-highlight/text-ink,
 // inaktive text-muted, kein Border. Ursprünglich nur auf der
 // Übungs-Detailseite (Tag/Verlauf/Statistik), jetzt auch im Statistik-Tab
 // (Übersicht/Übungen) - deshalb hier extrahiert statt an beiden Stellen
@@ -153,7 +153,7 @@ export function renderSegmentedControl(tabs, activeKey) {
       ${tabs
         .map(
           (t) => `
-        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-card py-2 min-h-[36px] text-label ${activeKey === t.key ? 'bg-raised text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
+        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-card py-2 min-h-[36px] text-label ${activeKey === t.key ? 'bg-highlight text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
       `
         )
         .join('')}
