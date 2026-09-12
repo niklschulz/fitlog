@@ -647,15 +647,15 @@ async function renderRoutinePicker(workout) {
 // "Routinen"-Sheet (Top-Level-Sheet wie das Kalender-Sheet, kein
 // Stapel-Sheet) - erreichbar über "Alle Routinen anzeigen" im
 // Routine-Picker-Dropdown oben. Jede Routine als eigene Karte im selben
-// Aufbau wie eine Roster-Karte (bg-surface rounded-card, Titel-Zeile +
-// "⋮"-Kontextmenü-Button, s. renderExerciseRow) - Bearbeiten öffnet den
-// bestehenden Routinen-Editor auf dem Routinen-Tab (s. requestEditRoutine()
+// Aufbau wie eine Roster-Karte (Titel-Zeile + "⋮"-Kontextmenü-Button, s.
+// renderExerciseRow), aber mit `bg-white/[0.08]` statt `bg-surface` - die
+// Karten sitzen direkt auf der ebenfalls `bg-surface`-farbenen Sheet-Fläche
+// (anders als die Roster-Karten, die auf `bg-base` liegen) und brauchen
+// deshalb die hellere "Sheet-Fläche"-Variante, um sich abzuheben (dieselbe
+// Variante wie das Suchfeld im Übungs-Sheet, s. design-system.md). Bearbeiten
+// öffnet den bestehenden Routinen-Editor auf dem Routinen-Tab (s. requestEditRoutine()
 // in routines.js), Löschen ruft deleteRoutine() mit Bestätigungsdialog.
 async function renderRoutinesSheet() {
-  const routines = await db.routines.orderBy('name').toArray();
-  const exerciseCounts = await Promise.all(
-    routines.map((r) => db.routineExercises.where('routineId').equals(r.id).count())
-  );
   const closing = state.routinesSheetClosing;
 
   return `
@@ -673,16 +673,82 @@ async function renderRoutinesSheet() {
         <div></div>
       </div>
       <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
-        ${
-          routines.length === 0
-            ? `<p class="text-body text-muted text-center py-12">Noch keine Routinen angelegt.</p>`
-            : `<ul class="flex flex-col gap-2">
-                ${routines.map((r, i) => renderRoutineSheetCard(r, exerciseCounts[i])).join('')}
-              </ul>`
-        }
+        ${await renderRoutinesSheetContent()}
       </div>
     </div>
   `;
+}
+
+// Ersetzt nur `#routines-sheet-content` (analog zu
+// repaintExerciseSheetContentInPlace() beim Übungs-Sheet) - Öffnen/Schließen
+// des "⋮"-Kontextmenüs an einer Karte sowie das Löschen einer Routine sind
+// reine Sheet-interne Interaktionen und lösen deshalb bewusst NICHT das
+// normale `paint()` aus: Das würde die komplette Workout-Seite (Kalenderzeile,
+// Routine-Picker, Tages-Roster, jeweils mit eigenen DB-Abfragen) samt der
+// gesamten Sheet-Kopfzeile neu aufbauen, statt nur die betroffene Karte -
+// sichtbar als kurzes Neu-Rendern des ganzen Sheets bei jedem Menü-Klick.
+// Anders als beim Übungs-Sheet braucht dieser Teilbaum weiterhin eigene
+// DB-Abfragen (kein Cache wie exerciseSheetCache vorhanden), deshalb async.
+async function renderRoutinesSheetContent() {
+  const routines = await db.routines.orderBy('name').toArray();
+  const exerciseCounts = await Promise.all(
+    routines.map((r) => db.routineExercises.where('routineId').equals(r.id).count())
+  );
+
+  return routines.length === 0
+    ? `<p class="text-body text-muted text-center py-12">Noch keine Routinen angelegt.</p>`
+    : `<ul class="flex flex-col gap-2">
+        ${routines.map((r, i) => renderRoutineSheetCard(r, exerciseCounts[i])).join('')}
+      </ul>`;
+}
+
+async function repaintRoutinesSheetContentInPlace() {
+  const content = currentContainer?.querySelector('#routines-sheet-content');
+  if (!content) return;
+  content.innerHTML = await renderRoutinesSheetContent();
+  wireRoutinesSheetContentEvents();
+}
+
+// Deckt alle Sheet-internen Interaktionen im Routinen-Sheet ab ("⋮"-Menü
+// öffnen/schließen, Bearbeiten, Löschen) - aufgerufen sowohl aus
+// wireEvents() (nach dem initialen vollen paint() beim Öffnen des Sheets)
+// als auch aus repaintRoutinesSheetContentInPlace() (nach jedem gezielten
+// Teil-Repaint), analog zu wireExerciseSheetContentEvents() beim
+// Übungs-Sheet.
+function wireRoutinesSheetContentEvents() {
+  currentContainer.querySelectorAll('.routines-sheet-menu-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (state.routinesSheetMenuRoutineId === btn.dataset.routine) {
+        closeRoutinesSheetMenu();
+      } else {
+        openRoutinesSheetMenu(btn.dataset.routine);
+      }
+    });
+  });
+
+  currentContainer.querySelector('#routines-sheet-menu-backdrop')?.addEventListener('click', () => {
+    closeRoutinesSheetMenu();
+  });
+
+  // Bearbeiten verlässt das Sheet/den Workout-Tab und öffnet den
+  // bestehenden Routinen-Editor direkt für diese Routine - s.
+  // requestEditRoutine() in routines.js für den race-freien Übergabeweg
+  // (Pending-Flag statt Timing-Annahme über den asynchronen paint()-Ablauf
+  // von routines.js).
+  currentContainer.querySelector('.routines-sheet-edit-btn')?.addEventListener('click', (e) => {
+    const routineId = e.currentTarget.dataset.routine;
+    routinesView.requestEditRoutine(routineId);
+    document.querySelector('[data-view="routines"]')?.click();
+  });
+
+  currentContainer.querySelector('.routines-sheet-delete-btn')?.addEventListener('click', async (e) => {
+    const routineId = e.currentTarget.dataset.routine;
+    if (!confirm('Routine wirklich löschen?')) return;
+    await deleteRoutine(routineId);
+    state.routinesSheetMenuRoutineId = null;
+    state.routinesSheetMenuClosing = false;
+    await repaintRoutinesSheetContentInPlace();
+  });
 }
 
 function renderRoutineSheetCard(routine, exerciseCount) {
@@ -690,7 +756,7 @@ function renderRoutineSheetCard(routine, exerciseCount) {
 
   return `
     <li class="relative">
-      <div class="bg-surface rounded-card overflow-hidden">
+      <div class="bg-white/[0.08] rounded-card overflow-hidden">
         <div class="flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
           <div class="flex-1 min-w-0 flex flex-col gap-0.5">
             <span class="text-card-title truncate">${escapeHtml(routine.name)}</span>
@@ -744,18 +810,18 @@ let pendingRoutinesSheetMenuCloseTimeout = null;
 function openRoutinesSheetMenu(routineId) {
   state.routinesSheetMenuRoutineId = routineId;
   state.routinesSheetMenuClosing = false;
-  paint();
+  repaintRoutinesSheetContentInPlace();
 }
 
 function closeRoutinesSheetMenu() {
   if (!state.routinesSheetMenuRoutineId || state.routinesSheetMenuClosing) return;
   state.routinesSheetMenuClosing = true;
-  paint();
+  repaintRoutinesSheetContentInPlace();
   pendingRoutinesSheetMenuCloseTimeout = setTimeout(() => {
     pendingRoutinesSheetMenuCloseTimeout = null;
     state.routinesSheetMenuRoutineId = null;
     state.routinesSheetMenuClosing = false;
-    paint();
+    repaintRoutinesSheetContentInPlace();
   }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
 }
 
@@ -2010,42 +2076,7 @@ function wireEvents() {
     closeRoutinesSheet();
   });
   wireRoutinesSheetDrag();
-
-  // "⋮"-Kontextmenü (Bearbeiten/Löschen) an einer Routinen-Karte im
-  // Routinen-Sheet, s. renderRoutinesSheetMenu weiter oben.
-  currentContainer.querySelectorAll('.routines-sheet-menu-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (state.routinesSheetMenuRoutineId === btn.dataset.routine) {
-        closeRoutinesSheetMenu();
-      } else {
-        openRoutinesSheetMenu(btn.dataset.routine);
-      }
-    });
-  });
-
-  currentContainer.querySelector('#routines-sheet-menu-backdrop')?.addEventListener('click', () => {
-    closeRoutinesSheetMenu();
-  });
-
-  // Bearbeiten verlässt das Sheet/den Workout-Tab und öffnet den
-  // bestehenden Routinen-Editor direkt für diese Routine - s.
-  // requestEditRoutine() in routines.js für den race-freien Übergabeweg
-  // (Pending-Flag statt Timing-Annahme über den asynchronen paint()-Ablauf
-  // von routines.js).
-  currentContainer.querySelector('.routines-sheet-edit-btn')?.addEventListener('click', (e) => {
-    const routineId = e.currentTarget.dataset.routine;
-    routinesView.requestEditRoutine(routineId);
-    document.querySelector('[data-view="routines"]')?.click();
-  });
-
-  currentContainer.querySelector('.routines-sheet-delete-btn')?.addEventListener('click', async (e) => {
-    const routineId = e.currentTarget.dataset.routine;
-    if (!confirm('Routine wirklich löschen?')) return;
-    await deleteRoutine(routineId);
-    state.routinesSheetMenuRoutineId = null;
-    state.routinesSheetMenuClosing = false;
-    await paint();
-  });
+  wireRoutinesSheetContentEvents();
 
   currentContainer.querySelectorAll('.pick-routine-option-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {

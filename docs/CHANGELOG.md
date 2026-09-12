@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-12 (Routinen-Sheet: Kontextmenü ohne vollen Seiten-Neuaufbau)
+
+### Fixed
+- "⋮"-Kontextmenü im Routinen-Sheet öffnen/schließen sowie Löschen einer Routine lösten das volle `paint()` der Workout-Seite aus (sichtbares Neu-Rendern des gesamten Sheets samt Kopfzeile). Neues gezieltes Repaint (`repaintRoutinesSheetContentInPlace()`, analog zum Übungs-Sheet) ersetzt jetzt nur `#routines-sheet-content`
+
+## 2026-09-12 (Routinen-Karten: Sheet-Fläche-Hintergrund statt bg-surface)
+
+### Changed
+- Routinen-Karten im Routinen-Sheet nutzen jetzt `bg-white/[0.08]` (Sheet-Fläche-Variante, wie das Suchfeld im Übungs-Sheet) statt `bg-surface` — vorher kein sichtbarer Kontrast zur gleichfarbigen Sheet-Fläche
+
 ## 2026-09-12 (Routinen-Sheet: Karten mit Bearbeiten/Löschen-Kontextmenü)
 
 ### Added
