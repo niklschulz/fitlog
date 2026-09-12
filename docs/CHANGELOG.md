@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-12 ("+"-Button im Routinen-Sheet für eine neue Routine)
+
+### Added
+- "+"-Button oben rechts in der Kopfzeile des Routinen-Sheets (gleiches Icon/Muster wie im Übungs-Sheet) — noch ohne Funktion, das Erstellen-Sheet folgt separat
+
 ## 2026-09-12 (Routinen-Sheet: Kontextmenü ohne vollen Seiten-Neuaufbau)
 
 ### Fixed

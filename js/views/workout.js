@@ -655,6 +655,11 @@ async function renderRoutinePicker(workout) {
 // Variante wie das Suchfeld im Übungs-Sheet, s. design-system.md). Bearbeiten
 // öffnet den bestehenden Routinen-Editor auf dem Routinen-Tab (s. requestEditRoutine()
 // in routines.js), Löschen ruft deleteRoutine() mit Bestätigungsdialog.
+// "+"-Button oben rechts (`#routines-sheet-new-btn`, gleiches Icon/Muster wie
+// `#exercise-sheet-new-btn` im Übungs-Sheet) ist bewusst noch ohne
+// Funktion/Klick-Handler - das eigentliche Erstellen-Sheet folgt als eigener,
+// späterer Schritt (Nutzer-Vorgabe), analog zu "Übung hinzufügen" im
+// Workout-Tab (ebenfalls erst als Platzhalter ohne Funktion eingeführt).
 async function renderRoutinesSheet() {
   const closing = state.routinesSheetClosing;
 
@@ -670,7 +675,11 @@ async function renderRoutinesSheet() {
         <div id="routines-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
           <span class="text-card-title">Routinen</span>
         </div>
-        <div></div>
+        <button id="routines-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Routine erstellen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
       </div>
       <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
         ${await renderRoutinesSheetContent()}
