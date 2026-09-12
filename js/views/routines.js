@@ -14,9 +14,27 @@ let currentContainer = null;
 // mode: 'list' | 'name-form' | 'editor' | 'picker'
 let state = { mode: 'list', routineId: null };
 
+// Erlaubt anderen Views (aktuell dem "Routinen"-Sheet im Workout-Tab), beim
+// nächsten Mount direkt den Editor einer bestimmten Routine zu öffnen, statt
+// der normalen Liste. Als Pending-Flag statt direktem State-Zugriff, damit
+// kein Timing-Wissen über den (asynchronen) paint()-Ablauf dieser View
+// nötig ist: render() liest das Flag synchron aus, bevor paint() überhaupt
+// aufgerufen wird - ein Aufrufer muss nur requestEditRoutine() VOR dem
+// Auslösen des Tab-Wechsels (Klick auf den Routinen-Nav-Button) aufrufen.
+let pendingEditRoutineId = null;
+
+export function requestEditRoutine(routineId) {
+  pendingEditRoutineId = routineId;
+}
+
 export function render(container) {
   currentContainer = container;
-  state = { mode: 'list', routineId: null };
+  if (pendingEditRoutineId) {
+    state = { mode: 'editor', routineId: pendingEditRoutineId };
+    pendingEditRoutineId = null;
+  } else {
+    state = { mode: 'list', routineId: null };
+  }
   paint();
 }
 

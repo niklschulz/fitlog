@@ -2,6 +2,31 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-12 (Routinen-Sheet: Karten mit Bearbeiten/Löschen-Kontextmenü)
+
+### Added
+- Routinen-Sheet zeigt jetzt Karten (wie eine Roster-Karte) statt reiner Listenzeilen, mit "⋮"-Kontextmenü pro Karte ("Bearbeiten"/"Löschen")
+- "Bearbeiten" öffnet den bestehenden Routinen-Editor direkt für die gewählte Routine (neues `requestEditRoutine()` in `routines.js`)
+- "Löschen" ruft `deleteRoutine()` mit Bestätigungsdialog auf
+
+## 2026-09-12 ("Routinen"-Bottom-Sheet, erster Schritt Routinen-Ausbau)
+
+### Added
+- Neues Bottom-Sheet "Routinen" (Workout-Tab), erreichbar über "Alle Routinen anzeigen" im Routine-Picker-Dropdown — zeigt die Routinen-Liste (Name + Übungs-Anzahl), noch ohne Tap-Aktion
+
+### Changed
+- "Alle Routinen anzeigen" wechselt nicht mehr auf den eigenständigen Routinen-Tab, sondern öffnet das neue Sheet
+
+## 2026-09-11 ("Profil verknüpfen" als Bottom-Sheet)
+
+### Added
+- Sign-In-Icon rechts im umbenannten "Profil verknüpfen"-Button (vorher "Profil hinzufügen")
+- Neues Bottom-Sheet "Profil verknüpfen" (Username/Token, Sheet-Fläche-Input-Variante wie im Neue-Übung-Sheet) ersetzt das bisherige inline Formular
+- `js/views/profile.js` exportiert jetzt `unmount()` (Body-Scroll-Sperre/Nav-z-index-Ausgleich bei offenem Sheet)
+
+### Changed
+- Profil-Tab hat jetzt nur noch zwei Zustände (kein Profil / Profil vorhanden) statt drei (der bisherige "Formular"-Zwischenzustand ist im Sheet aufgegangen)
+
 ## 2026-09-11 (Silbentrennung für text-body)
 
 ### Added

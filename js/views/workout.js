@@ -9,6 +9,7 @@ import {
   removeExerciseFromWorkout,
   createExercise,
   deleteExercise,
+  deleteRoutine,
   MUSCLE_GROUPS,
   todayISODate,
   addDays,
@@ -25,6 +26,7 @@ import {
   SHEET_CLOSE_ANIMATION_MS,
 } from '../sheet.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
+import * as routinesView from './routines.js';
 
 let currentContainer = null;
 let state = {
@@ -32,6 +34,18 @@ let state = {
   detailEntryId: null, // workoutExercises.id der geöffneten Übungs-Detailseite (Abschnitt 12), oder null für die Tagesübersicht
   routinePickerOpen: false,
   routinePickerClosing: false,
+  // "Routinen"-Sheet: erreichbar über "Alle Routinen anzeigen" im
+  // Routine-Picker-Dropdown. Inhalt bewusst noch reine Anzeige (Liste wie im
+  // Routinen-Tab, ohne Tap-Aktion) - Verwaltung (Anlegen/Bearbeiten) folgt
+  // als eigener, späterer Schritt beim gemeinsamen Ausbau des
+  // Routinen-Bereichs.
+  routinesSheetOpen: false,
+  routinesSheetClosing: false,
+  // "⋮"-Kontextmenü (Bearbeiten/Löschen) an einer Routinen-Karte im
+  // Routinen-Sheet - analog zu exerciseRosterMenuEntryId oben, nur eine
+  // Karte kann gleichzeitig ihr Menü offen haben.
+  routinesSheetMenuRoutineId: null,
+  routinesSheetMenuClosing: false,
   // Kleines Kontextmenü ("Übung entfernen") am "⋮"-Button jeder Roster-Karte
   // - nur eine Karte kann gleichzeitig ihr Menü offen haben.
   exerciseRosterMenuEntryId: null,
@@ -87,6 +101,10 @@ export async function render(container) {
   state.detailEntryId = null;
   state.routinePickerOpen = false;
   state.routinePickerClosing = false;
+  state.routinesSheetOpen = false;
+  state.routinesSheetClosing = false;
+  state.routinesSheetMenuRoutineId = null;
+  state.routinesSheetMenuClosing = false;
   state.exerciseRosterMenuEntryId = null;
   state.exerciseRosterMenuClosing = false;
   state.calendarSheetOpen = false;
@@ -151,6 +169,14 @@ export function unmount() {
     clearTimeout(pendingExerciseCreateSheetCloseTimeout);
     pendingExerciseCreateSheetCloseTimeout = null;
   }
+  if (pendingRoutinesSheetCloseTimeout) {
+    clearTimeout(pendingRoutinesSheetCloseTimeout);
+    pendingRoutinesSheetCloseTimeout = null;
+  }
+  if (pendingRoutinesSheetMenuCloseTimeout) {
+    clearTimeout(pendingRoutinesSheetMenuCloseTimeout);
+    pendingRoutinesSheetMenuCloseTimeout = null;
+  }
   if (state.calendarSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
@@ -164,6 +190,10 @@ export function unmount() {
     resetNavZIndex();
   }
   if (state.exerciseCreateSheetOpen) {
+    unlockBodyScroll();
+    resetNavZIndex();
+  }
+  if (state.routinesSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
   }
@@ -368,6 +398,7 @@ async function paint() {
 
     ${state.calendarSheetOpen ? await renderCalendarSheet() : ''}
     ${state.exerciseSheetOpen ? renderExerciseSheet() : ''}
+    ${state.routinesSheetOpen ? await renderRoutinesSheet() : ''}
   `;
 
   // Tab kann während der obigen awaits gewechselt worden sein (s. renderEpoch
@@ -611,6 +642,166 @@ async function renderRoutinePicker(workout) {
       </button>
     </div>
   `;
+}
+
+// "Routinen"-Sheet (Top-Level-Sheet wie das Kalender-Sheet, kein
+// Stapel-Sheet) - erreichbar über "Alle Routinen anzeigen" im
+// Routine-Picker-Dropdown oben. Jede Routine als eigene Karte im selben
+// Aufbau wie eine Roster-Karte (bg-surface rounded-card, Titel-Zeile +
+// "⋮"-Kontextmenü-Button, s. renderExerciseRow) - Bearbeiten öffnet den
+// bestehenden Routinen-Editor auf dem Routinen-Tab (s. requestEditRoutine()
+// in routines.js), Löschen ruft deleteRoutine() mit Bestätigungsdialog.
+async function renderRoutinesSheet() {
+  const routines = await db.routines.orderBy('name').toArray();
+  const exerciseCounts = await Promise.all(
+    routines.map((r) => db.routineExercises.where('routineId').equals(r.id).count())
+  );
+  const closing = state.routinesSheetClosing;
+
+  return `
+    <div id="routines-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
+    <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
+      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
+        <button id="routines-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div id="routines-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+          <span class="text-card-title">Routinen</span>
+        </div>
+        <div></div>
+      </div>
+      <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
+        ${
+          routines.length === 0
+            ? `<p class="text-body text-muted text-center py-12">Noch keine Routinen angelegt.</p>`
+            : `<ul class="flex flex-col gap-2">
+                ${routines.map((r, i) => renderRoutineSheetCard(r, exerciseCounts[i])).join('')}
+              </ul>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function renderRoutineSheetCard(routine, exerciseCount) {
+  const menuOpen = state.routinesSheetMenuRoutineId === routine.id;
+
+  return `
+    <li class="relative">
+      <div class="bg-surface rounded-card overflow-hidden">
+        <div class="flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
+          <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+            <span class="text-card-title truncate">${escapeHtml(routine.name)}</span>
+            <span class="text-label text-muted uppercase">${exerciseCount} Übung${exerciseCount === 1 ? '' : 'en'}</span>
+          </div>
+          <button
+            type="button"
+            data-routine="${routine.id}"
+            class="routines-sheet-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
+            aria-label="Optionen für ${escapeHtml(routine.name)}"
+            aria-haspopup="true"
+            aria-expanded="${menuOpen}"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      ${menuOpen ? renderRoutinesSheetMenu(routine) : ''}
+    </li>
+  `;
+}
+
+// Kontextmenü (Bearbeiten/Löschen) - 1:1 dasselbe Muster wie
+// renderExerciseRosterMenu (Liquid Glass, s. dortiger Kommentar für die
+// Herleitung von rounded-sheet/popup-glass/top-0), nur mit zwei statt einem
+// Eintrag.
+function renderRoutinesSheetMenu(routine) {
+  const closing = state.routinesSheetMenuClosing;
+  return `
+    <div id="routines-sheet-menu-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
+      <button type="button" data-routine="${routine.id}" class="routines-sheet-edit-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+        Bearbeiten
+      </button>
+      <button type="button" data-routine="${routine.id}" class="routines-sheet-delete-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+        Löschen
+      </button>
+    </div>
+  `;
+}
+
+// Analog zu openExerciseRosterMenu/closeExerciseRosterMenu weiter unten
+// (gleiche Animation/Timeout-Konstante) - kein lockBodyScroll()/
+// raiseNavAboveSheet() nötig, das leichte Kontextmenü ist kein echtes Sheet.
+let pendingRoutinesSheetMenuCloseTimeout = null;
+
+function openRoutinesSheetMenu(routineId) {
+  state.routinesSheetMenuRoutineId = routineId;
+  state.routinesSheetMenuClosing = false;
+  paint();
+}
+
+function closeRoutinesSheetMenu() {
+  if (!state.routinesSheetMenuRoutineId || state.routinesSheetMenuClosing) return;
+  state.routinesSheetMenuClosing = true;
+  paint();
+  pendingRoutinesSheetMenuCloseTimeout = setTimeout(() => {
+    pendingRoutinesSheetMenuCloseTimeout = null;
+    state.routinesSheetMenuRoutineId = null;
+    state.routinesSheetMenuClosing = false;
+    paint();
+  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+}
+
+async function openRoutinesSheet() {
+  // Der kleine Dropdown-Picker ist noch offen (Auslöser des Klicks) - ohne
+  // eigene Schließen-Animation ausblenden, da das neue Vollbild-Sheet ihn
+  // ohnehin sofort überdeckt.
+  state.routinePickerOpen = false;
+  state.routinePickerClosing = false;
+  state.routinesSheetOpen = true;
+  state.routinesSheetClosing = false;
+  lockBodyScroll();
+  raiseNavAboveSheet();
+  await paint();
+}
+
+// Analog zu closeCalendarSheet/finalizeCalendarSheetClose weiter oben.
+let pendingRoutinesSheetCloseTimeout = null;
+
+function finalizeRoutinesSheetClose() {
+  pendingRoutinesSheetCloseTimeout = null;
+  state.routinesSheetOpen = false;
+  state.routinesSheetClosing = false;
+  unlockBodyScroll();
+  resetNavZIndex();
+  paint();
+}
+
+function closeRoutinesSheet() {
+  if (!state.routinesSheetOpen || state.routinesSheetClosing) return;
+  state.routinesSheetClosing = true;
+  paint();
+  pendingRoutinesSheetCloseTimeout = setTimeout(finalizeRoutinesSheetClose, SHEET_CLOSE_ANIMATION_MS);
+}
+
+function wireRoutinesSheetDrag() {
+  const backdropEl = currentContainer.querySelector('#routines-sheet-backdrop');
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#routines-sheet-handle'),
+    sheetEl: backdropEl?.nextElementSibling ?? null,
+    backdropEl,
+    isClosing: () => state.routinesSheetClosing,
+    onDismiss: () => {
+      pendingRoutinesSheetCloseTimeout = setTimeout(finalizeRoutinesSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
+  });
 }
 
 function renderExerciseRoster(entries, nameById, setsByExercise) {
@@ -1809,7 +2000,51 @@ function wireEvents() {
   });
 
   currentContainer.querySelector('#go-to-routines-option-btn')?.addEventListener('click', () => {
+    openRoutinesSheet();
+  });
+
+  currentContainer.querySelector('#routines-sheet-backdrop')?.addEventListener('click', () => {
+    closeRoutinesSheet();
+  });
+  currentContainer.querySelector('#routines-sheet-close-btn')?.addEventListener('click', () => {
+    closeRoutinesSheet();
+  });
+  wireRoutinesSheetDrag();
+
+  // "⋮"-Kontextmenü (Bearbeiten/Löschen) an einer Routinen-Karte im
+  // Routinen-Sheet, s. renderRoutinesSheetMenu weiter oben.
+  currentContainer.querySelectorAll('.routines-sheet-menu-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (state.routinesSheetMenuRoutineId === btn.dataset.routine) {
+        closeRoutinesSheetMenu();
+      } else {
+        openRoutinesSheetMenu(btn.dataset.routine);
+      }
+    });
+  });
+
+  currentContainer.querySelector('#routines-sheet-menu-backdrop')?.addEventListener('click', () => {
+    closeRoutinesSheetMenu();
+  });
+
+  // Bearbeiten verlässt das Sheet/den Workout-Tab und öffnet den
+  // bestehenden Routinen-Editor direkt für diese Routine - s.
+  // requestEditRoutine() in routines.js für den race-freien Übergabeweg
+  // (Pending-Flag statt Timing-Annahme über den asynchronen paint()-Ablauf
+  // von routines.js).
+  currentContainer.querySelector('.routines-sheet-edit-btn')?.addEventListener('click', (e) => {
+    const routineId = e.currentTarget.dataset.routine;
+    routinesView.requestEditRoutine(routineId);
     document.querySelector('[data-view="routines"]')?.click();
+  });
+
+  currentContainer.querySelector('.routines-sheet-delete-btn')?.addEventListener('click', async (e) => {
+    const routineId = e.currentTarget.dataset.routine;
+    if (!confirm('Routine wirklich löschen?')) return;
+    await deleteRoutine(routineId);
+    state.routinesSheetMenuRoutineId = null;
+    state.routinesSheetMenuClosing = false;
+    await paint();
   });
 
   currentContainer.querySelectorAll('.pick-routine-option-btn').forEach((btn) => {
