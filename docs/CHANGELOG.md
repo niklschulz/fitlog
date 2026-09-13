@@ -2,6 +2,64 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-13 (`text-body`-Zeilenabstand final auf 1.2 gesetzt)
+
+### Changed
+- `text-body`-Zeilenabstand app-weit von 1 auf 1.2 korrigiert (nach Entwurfs-Vergleich von 1.1/1.2)
+
+## 2026-09-13 (`text-body`-Zeilenabstand verringert)
+
+### Changed
+- `text-body`-Zeilenabstand app-weit von 1.3 auf 1 verringert
+
+## 2026-09-13 (Abstand Eingabefeld zu Erklärungstext in den Einstellungen-Karten vergrößert)
+
+### Changed
+- Abstand zwischen Eingabefeld und Erklärungstext in den beiden Einstellungen-Karten (Profil-Tab) von 4px auf 8px vergrößert — passend zum neuen Label→Feld-Abstand
+
+## 2026-09-13 (Abstand Formularfeld-Label zu Eingabefeld vereinheitlicht)
+
+### Changed
+- Abstand zwischen `text-label-large`-Feld-Label und Eingabefeld app-weit auf einheitlich 8px (`gap-2`) gebracht (vorher uneinheitlich 4px/8px je nach Stelle) — betrifft Einstellungen-Karten und Profil-Sheet (Profil-Tab) sowie den Routine-Editor
+
+## 2026-09-13 (Neuer Standard `text-label-large` für Formularfeld-Labels)
+
+### Added
+- Neues Typografie-Token `text-label-large` (14px, fett) für Formularfeld-Labels, abgesetzt vom kleineren `text-label` (weiterhin für Zähler-/Achsenbeschriftungen, Bottom-Nav u. Ä.)
+
+### Changed
+- Acht Formularfeld-Labels app-weit auf `text-label-large` umgestellt: Einstellungen (Standardanzahl Sätze/Wochenziel), "Angemeldet als" sowie Username/Token im Profil-Sheet, "Name"/"Primärer Muskel"/"Sekundäre Muskeln" im Neue-Übung-Sheet, "Name" im Routine-Editor
+
+## 2026-09-13 ("Einstellungen"-Überschrift im Profil-Tab entfernt)
+
+### Removed
+- "Einstellungen"-Überschrift oberhalb der beiden Einstellungen-Karten im Profil-Tab
+
+## 2026-09-13 ("Profil entfernen"-Button blitzte grün, Felder im Bearbeiten-Modus als Text)
+
+### Fixed
+- "Profil entfernen"-Button im Profil-Sheet färbte sich beim Klick kurz grün, bevor das Sheet schloss (Zwischen-Repaint während der Schließen-Animation berechnete den Sheet-Modus live neu aus dem bereits geleerten Profil) — Modus wird jetzt beim Öffnen des Sheets einmalig festgehalten
+
+### Changed
+- Username/Token werden im "Profil bearbeiten"-Modus als reiner Text angezeigt statt in editierbaren Feldern
+
+## 2026-09-13 (Profil-Karte kompakt, Bearbeiten-Modus im Sheet)
+
+### Changed
+- "Angemeldet als"-Karte im Profil-Tab zeigt Token nicht mehr an, stattdessen rechts ein Stift-Button
+- Stift-Button öffnet das bestehende Profil-Sheet vorausgefüllt im "Profil bearbeiten"-Modus (Titel und Aktions-Button ändern sich entsprechend)
+
+### Removed
+- Eigenständiger "Profil entfernen"-Button unterhalb der Karte — Funktion jetzt im Sheet (erreichbar über den Stift-Button)
+
+## 2026-09-13 (Sync-Hinweistext entfernt, "Profil entfernen" grau)
+
+### Removed
+- Sync-Hinweistext ("Wird für den späteren Sync...") im Profil-vorhanden-Zustand entfernt
+
+### Changed
+- "Profil entfernen" nutzt jetzt `BTN_SECONDARY` (grau) statt `BTN_PRIMARY` (Akzentgrün)
+
 ## 2026-09-13 (text-label-Vergrößerung zurückgenommen)
 
 ### Reverted

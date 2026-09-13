@@ -101,16 +101,18 @@ function renderNameForm() {
     <div class="py-4 flex flex-col gap-4">
       <h1 class="text-screen-title">Neue Routine</h1>
       <form id="routine-name-form" class="flex flex-col gap-3 ${CARD}">
-        <label class="text-label text-muted" for="routine-name">Name</label>
-        <input
-          id="routine-name"
-          name="name"
-          type="text"
-          autocomplete="off"
-          placeholder="z. B. Push Day"
-          class="bg-base ${INPUT}"
-          required
-        />
+        <div class="flex flex-col gap-2">
+          <label class="text-label-large text-muted" for="routine-name">Name</label>
+          <input
+            id="routine-name"
+            name="name"
+            type="text"
+            autocomplete="off"
+            placeholder="z. B. Push Day"
+            class="bg-base ${INPUT}"
+            required
+          />
+        </div>
         <div class="flex gap-3">
           <button type="submit" class="tap-feedback flex-1 ${BTN_PRIMARY} py-3 min-h-[44px]">
             Weiter

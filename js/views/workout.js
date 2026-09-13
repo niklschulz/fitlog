@@ -1675,7 +1675,7 @@ function renderExerciseCreateSheetContent() {
   return `
     <form id="exercise-create-sheet-form" class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
-        <label class="text-label text-muted" for="exercise-create-sheet-name-input">Name</label>
+        <label class="text-label-large text-muted" for="exercise-create-sheet-name-input">Name</label>
         <input
           id="exercise-create-sheet-name-input"
           type="text"
@@ -1686,13 +1686,13 @@ function renderExerciseCreateSheetContent() {
         />
       </div>
       <div class="flex flex-col gap-2">
-        <span class="text-label text-muted">Primärer Muskel</span>
+        <span class="text-label-large text-muted">Primärer Muskel</span>
         <div class="flex flex-wrap gap-2">
           ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'primary')).join('')}
         </div>
       </div>
       <div class="flex flex-col gap-2">
-        <span class="text-label text-muted">Sekundäre Muskeln</span>
+        <span class="text-label-large text-muted">Sekundäre Muskeln</span>
         <div class="flex flex-wrap gap-2">
           ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'secondary')).join('')}
         </div>
