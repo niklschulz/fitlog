@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-13 (Service-Worker-Reload stört keine offenen Sheets mehr)
+
+### Fixed
+- Behebt Bug: Sheets (z. B. "Profil verknüpfen") schlossen sich manchmal scheinbar von selbst mit Rücksprung zum Start-Tab — verursacht durch einen bedingungslosen `window.location.reload()` bei jeder Service-Worker-Übernahme, unabhängig von laufender Interaktion. Reload läuft jetzt nur noch sofort, wenn die App gerade unsichtbar ist; sonst wird er bis zum nächsten Wechsel in den Hintergrund zurückgestellt
+
 ## 2026-09-12 ("+"-Button im Routinen-Sheet für eine neue Routine)
 
 ### Added

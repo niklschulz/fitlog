@@ -157,21 +157,45 @@ if ('serviceWorker' in navigator) {
   });
 
   // Wird der Tab/die App wieder sichtbar (z. B. aus dem Hintergrund geholt),
-  // ebenfalls auf ein Update prüfen.
+  // ebenfalls auf ein Update prüfen. Ein zwischenzeitlich per
+  // controllerchange zurückgestellter Reload (s. u.) wird hier bewusst NICHT
+  // nachgeholt - genau in dem Moment, in dem die App gerade wieder in den
+  // Vordergrund kommt, ist sie für den Nutzer wieder aktiv sichtbar, ein
+  // Reload wäre also ebenso störend wie im Vordergrund selbst. Er wird erst
+  // beim nächsten Wechsel in den Hintergrund nachgeholt (s. unten).
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       navigator.serviceWorker.getRegistration().then((registration) => registration?.update());
+    } else if (pendingReloadAfterUpdate) {
+      reloadNow();
     }
   });
 
   // Sobald ein neuer Service Worker aktiv wird (dank skipWaiting +
   // clients.claim in sw.js passiert das automatisch), einmalig neu laden,
   // damit die neue Version sofort sichtbar ist statt erst beim übernächsten
-  // App-Start.
+  // App-Start. Nicht bedingungslos: Ist die App gerade sichtbar/aktiv in
+  // Benutzung (z. B. ein offenes Sheet, ein halb ausgefülltes Formular),
+  // würde ein sofortiger Reload das kommentarlos verwerfen - das äußerte
+  // sich als Bug, bei dem sich z. B. das "Profil verknüpfen"-Sheet
+  // scheinbar zufällig von selbst schloss und zurück zum Start-Tab sprang.
+  // Ist die App gerade unsichtbar (im Hintergrund), stört ein Reload
+  // dagegen nicht - dann sofort ausführen, sonst zurückstellen, bis sie das
+  // nächste Mal in den Hintergrund wandert (s. visibilitychange oben).
   let refreshingAfterUpdate = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
+  let pendingReloadAfterUpdate = false;
+
+  function reloadNow() {
     if (refreshingAfterUpdate) return;
     refreshingAfterUpdate = true;
     window.location.reload();
+  }
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (document.visibilityState === 'hidden') {
+      reloadNow();
+    } else {
+      pendingReloadAfterUpdate = true;
+    }
   });
 }
