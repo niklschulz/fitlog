@@ -2,6 +2,27 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-13 (text-label app-weit auf 14px vergrößert)
+
+### Changed
+- `text-label`-Token (`index.html`) von 11,5px auf 14px vergrößert (Gewicht/Zeilenhöhe/Laufweite unverändert) — betrifft app-weit Bottom-Nav, Segmented Control, Feld-Labels und weitere kleine Beschriftungen
+
+## 2026-09-13 (Einstellungen: zwei Karten, Inputs im Sheet-Fläche-Stil)
+
+### Changed
+- Die eine Einstellungen-Karte im Profil-Tab ist jetzt in zwei separate Karten geteilt (eine je Einstellung)
+- Beide Einstellungen-Inputs nutzen jetzt `bg-white/[0.08]` (wie das Suchfeld im Übungs-Sheet) statt `bg-base`
+
+## 2026-09-13 ("Profil verknüpfen"-Sheet: Titel einzeilig)
+
+### Fixed
+- Titel "Profil verknüpfen" im gleichnamigen Sheet brach auf zwei Zeilen um (Kopfzeile nutzte `grid-cols-3` mit drei gleich breiten Spalten) und saß nach einem ersten Korrekturversuch nicht mehr mittig. Auf `grid-cols-[44px_1fr_44px]` umgestellt (äußere Spalten fest auf Icon-Button-Breite statt `auto`), nur für dieses Sheet
+
+## 2026-09-13 (Hinweistext im leeren Profil-Zustand entfernt)
+
+### Removed
+- "Noch kein Profil hinterlegt." über dem "Profil verknüpfen"-Button entfernt
+
 ## 2026-09-13 (Service-Worker-Reload stört keine offenen Sheets mehr)
 
 ### Fixed

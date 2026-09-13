@@ -58,8 +58,8 @@ function renderSettings(settings) {
   return `
     <div class="flex flex-col gap-2">
       <p class="text-body text-muted">Einstellungen</p>
-      <div class="${CARD} flex flex-col gap-4">
-        <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-3">
+        <div class="${CARD} flex flex-col gap-1">
           <label class="text-label text-muted" for="settings-default-set-count">Standardanzahl Sätze</label>
           <input
             id="settings-default-set-count"
@@ -68,11 +68,11 @@ function renderSettings(settings) {
             min="1"
             step="1"
             value="${settings.defaultSetCount}"
-            class="bg-base ${INPUT}"
+            class="bg-white/[0.08] ${INPUT}"
           />
           <p class="text-body text-muted">Lege fest, wie viele Sätze Fitlog für jede Übung standardmäßig vorsehen soll. Du kannst jederzeit mehr oder weniger Sätze absolvieren.</p>
         </div>
-        <div class="flex flex-col gap-1">
+        <div class="${CARD} flex flex-col gap-1">
           <label class="text-label text-muted" for="settings-weekly-goal">Wochenziel (Trainingstage pro Woche)</label>
           <input
             id="settings-weekly-goal"
@@ -81,7 +81,7 @@ function renderSettings(settings) {
             min="1"
             step="1"
             value="${settings.weeklyGoal}"
-            class="bg-base ${INPUT}"
+            class="bg-white/[0.08] ${INPUT}"
           />
           <p class="text-body text-muted">Fitlog kann dir anzeigen, wie häufig du in der aktuellen Woche schon trainiert hast. Lege hier dein Wochenziel fest.</p>
         </div>
@@ -128,7 +128,6 @@ function renderSignInIcon() {
 
 function renderEmpty() {
   return `
-    <p class="text-body text-muted text-center py-8">Noch kein Profil hinterlegt.</p>
     <button id="add-profile-btn" class="tap-feedback ${BTN_PRIMARY} py-3 min-h-[44px] flex items-center justify-center gap-2">
       Profil verknüpfen
       ${renderSignInIcon()}
@@ -147,7 +146,7 @@ function renderLinkSheet() {
   return `
     <div id="link-sheet-backdrop" class="bottom-sheet-backdrop ${state.linkSheetClosing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
     <div class="bottom-sheet ${state.linkSheetClosing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
-      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
+      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="link-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
             <path d="M6 6l12 12M18 6L6 18" />
