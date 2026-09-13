@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-13 (text-label-Vergrößerung zurückgenommen)
+
+### Reverted
+- `text-label`-Token (`index.html`) zurück auf 11,5px (vorheriger Wert vor der 14px-Vergrößerung)
+
 ## 2026-09-13 (text-label app-weit auf 14px vergrößert)
 
 ### Changed
