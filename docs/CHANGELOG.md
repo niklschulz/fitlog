@@ -2,6 +2,24 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-14 (Routinen-Sheet-Bearbeiten-Modus: zwei Korrekturen)
+
+### Fixed
+- Routinen-Sheet wurde nach dem Hinzufügen einer Übung unnötig komplett neu gerendert (samt erneuter Slide-Animation) — das gestapelte Übungs-Sheet läuft in diesem Kontext jetzt wie das Neue-Übung-Sheet ohne globales `paint()`
+- Eine neu zur Routine hinzugefügte Übung erschien nicht im Workout, wenn diese Routine für den aktuell gewählten Workout-Tag bereits ausgewählt war — wird beim Speichern jetzt nachsynchronisiert
+
+## 2026-09-14 (Routinen-Sheet: Neuanlage-/Bearbeiten-Modus)
+
+### Added
+- "+"-Button im Routinen-Sheet öffnet jetzt einen Neuanlage-Modus (Namensfeld + "Übungen hinzufügen", öffnet das bestehende Übungs-Sheet gestapelt darüber) statt keiner Funktion
+- "Bearbeiten" im Kontextmenü einer Routinen-Karte öffnet denselben Modus vorausgefüllt statt zum Routinen-Tab zu wechseln
+
+### Changed
+- Routine + Übungsliste werden als Entwurf im State gesammelt und erst beim Speichern-Haken zusammen in der DB angelegt/aktualisiert (kein sofortiges Live-Speichern wie im älteren Routinen-Tab-Editor)
+
+### Removed
+- `requestEditRoutine()`-Pending-Flag in `routines.js` (durch die neue, sheet-interne Bearbeiten-Navigation obsolet)
+
 ## 2026-09-13 (`text-body`-Zeilenabstand final auf 1.2 gesetzt)
 
 ### Changed

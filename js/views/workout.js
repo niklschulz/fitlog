@@ -9,7 +9,12 @@ import {
   removeExerciseFromWorkout,
   createExercise,
   deleteExercise,
+  createRoutine,
+  updateRoutine,
   deleteRoutine,
+  getRoutineExercises,
+  appendExerciseToRoutine,
+  removeExerciseFromRoutine,
   MUSCLE_GROUPS,
   todayISODate,
   addDays,
@@ -26,7 +31,6 @@ import {
   SHEET_CLOSE_ANIMATION_MS,
 } from '../sheet.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
-import * as routinesView from './routines.js';
 
 let currentContainer = null;
 let state = {
@@ -46,6 +50,13 @@ let state = {
   // Karte kann gleichzeitig ihr Menü offen haben.
   routinesSheetMenuRoutineId: null,
   routinesSheetMenuClosing: false,
+  // Inhalts-Modus DESSELBEN Routinen-Sheets ('list' Standard, 'edit' für
+  // Neuanlage/Bearbeiten) - kein eigenes Sheet-Objekt mit eigenem
+  // lockBodyScroll()/z-index, s. Kommentar bei renderRoutinesSheetHeader().
+  routinesSheetMode: 'list',
+  routinesSheetEditRoutineId: null, // null = Neuanlage, sonst Bearbeiten
+  routinesSheetEditName: '',
+  routinesSheetEditExerciseIds: [], // Reihenfolge = Hinzufüge-Reihenfolge
   // Kleines Kontextmenü ("Übung entfernen") am "⋮"-Button jeder Roster-Karte
   // - nur eine Karte kann gleichzeitig ihr Menü offen haben.
   exerciseRosterMenuEntryId: null,
@@ -56,6 +67,11 @@ let state = {
   // zum Tages-Workout hinzuzufügen, s. ADR 0011.
   exerciseSheetOpen: false,
   exerciseSheetClosing: false,
+  // 'workout' (Standard, aus dem Tages-Roster geöffnet) oder 'routine' (aus
+  // dem Neue-Routine/Bearbeiten-Modus des Routinen-Sheets geöffnet) -
+  // bestimmt Commit-Ziel, "bereits vorhanden"-Badge und z-Ebene des
+  // Übungs-Sheets samt seiner beiden Stapel-Sheets (s. exerciseSheetZ()).
+  exerciseSheetContext: 'workout',
   exerciseSheetSelectedIds: new Set(),
   exerciseSheetSearch: '',
   // Muskelgruppen-Filter (Dropdown-Pill, analog zur Routine-Auswahl oben) -
@@ -105,12 +121,17 @@ export async function render(container) {
   state.routinesSheetClosing = false;
   state.routinesSheetMenuRoutineId = null;
   state.routinesSheetMenuClosing = false;
+  state.routinesSheetMode = 'list';
+  state.routinesSheetEditRoutineId = null;
+  state.routinesSheetEditName = '';
+  state.routinesSheetEditExerciseIds = [];
   state.exerciseRosterMenuEntryId = null;
   state.exerciseRosterMenuClosing = false;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
   state.exerciseSheetOpen = false;
   state.exerciseSheetClosing = false;
+  state.exerciseSheetContext = 'workout';
   state.exerciseSheetSelectedIds = new Set();
   state.exerciseSheetSearch = '';
   state.exerciseSheetMuscleFilterId = null;
@@ -646,26 +667,71 @@ async function renderRoutinePicker(workout) {
 
 // "Routinen"-Sheet (Top-Level-Sheet wie das Kalender-Sheet, kein
 // Stapel-Sheet) - erreichbar über "Alle Routinen anzeigen" im
-// Routine-Picker-Dropdown oben. Jede Routine als eigene Karte im selben
+// Routine-Picker-Dropdown oben. EIN Sheet mit zwei Inhalts-Modi
+// (routinesSheetMode 'list'/'edit', analog zum isEditing-Umschalten im
+// Profil-Sheet) statt eines eigenen zweiten Sheet-Objekts: Kopfzeile UND
+// Inhalt wechseln zusammen über renderRoutinesSheetPanelBody()/
+// repaintRoutinesSheetPanelInPlace() (ersetzt Kopfzeile+Inhalt, aber nicht
+// Backdrop/`.bottom-sheet` selbst - keine erneute Slide-Animation), ohne
+// eigenes lockBodyScroll()/raiseNavAboveSheet() oder eigene z-Ebene für den
+// Wechsel - beide Modi teilen sich den einen Open-Aufruf von
+// openRoutinesSheet(). 'list': jede Routine als eigene Karte im selben
 // Aufbau wie eine Roster-Karte (Titel-Zeile + "⋮"-Kontextmenü-Button, s.
 // renderExerciseRow), aber mit `bg-white/[0.08]` statt `bg-surface` - die
 // Karten sitzen direkt auf der ebenfalls `bg-surface`-farbenen Sheet-Fläche
 // (anders als die Roster-Karten, die auf `bg-base` liegen) und brauchen
 // deshalb die hellere "Sheet-Fläche"-Variante, um sich abzuheben (dieselbe
-// Variante wie das Suchfeld im Übungs-Sheet, s. design-system.md). Bearbeiten
-// öffnet den bestehenden Routinen-Editor auf dem Routinen-Tab (s. requestEditRoutine()
-// in routines.js), Löschen ruft deleteRoutine() mit Bestätigungsdialog.
-// "+"-Button oben rechts (`#routines-sheet-new-btn`, gleiches Icon/Muster wie
-// `#exercise-sheet-new-btn` im Übungs-Sheet) ist bewusst noch ohne
-// Funktion/Klick-Handler - das eigentliche Erstellen-Sheet folgt als eigener,
-// späterer Schritt (Nutzer-Vorgabe), analog zu "Übung hinzufügen" im
-// Workout-Tab (ebenfalls erst als Platzhalter ohne Funktion eingeführt).
+// Variante wie das Suchfeld im Übungs-Sheet, s. design-system.md). 'edit':
+// Name-Feld + "Übungen hinzufügen" (öffnet das bestehende Übungs-Sheet
+// gestapelt darüber, s. exerciseSheetContext) + Liste der bereits
+// hinzugefügten Übungen - reiner Entwurf im State, nichts landet vor einem
+// Klick auf den Speichern-Haken in der DB (Nutzer-Vorgabe, konsistent zum
+// Neue-Übung-Sheet). "+"-Button öffnet 'edit' zur Neuanlage (routineId
+// null), "Bearbeiten" im Kontextmenü einer Karte öffnet denselben Modus
+// vorausgefüllt für eine bestehende Routine (routineId gesetzt) - ersetzt
+// den früheren Wechsel zum Routinen-Tab-Editor. Löschen bleibt eine reine
+// Listen-Aktion (deleteRoutine() mit Bestätigungsdialog).
 async function renderRoutinesSheet() {
   const closing = state.routinesSheetClosing;
 
   return `
     <div id="routines-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
     <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
+      <div id="routines-sheet-panel-body" class="flex-1 min-h-0 flex flex-col">
+        ${await renderRoutinesSheetPanelBody()}
+      </div>
+    </div>
+  `;
+}
+
+// Kopfzeile + Inhalt zusammen - so kann repaintRoutinesSheetPanelInPlace()
+// (s. dort) bei einem Moduswechsel beide auf einmal ersetzen, ohne Backdrop/
+// `.bottom-sheet` (und damit deren Slide-Animation) anzufassen.
+async function renderRoutinesSheetPanelBody() {
+  return `
+    ${renderRoutinesSheetHeader()}
+    <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
+      ${await renderRoutinesSheetContent()}
+    </div>
+  `;
+}
+
+// Ersetzt `#routines-sheet-panel-body` (Kopfzeile + Inhalt) - für jeden
+// Wechsel des routinesSheetMode (Liste ↔ Neuanlage/Bearbeiten), da sich
+// dabei Titel und rechter Kopfzeilen-Button (+ vs. Speichern-Haken) mit
+// ändern, nicht nur der Inhalt darunter. Reine Inhalts-Änderungen INNERHALB
+// eines Modus (Karten-Menü, Entwurfs-Übung entfernen) laufen weiterhin über
+// das engere repaintRoutinesSheetContentInPlace() unten.
+async function repaintRoutinesSheetPanelInPlace() {
+  const panel = currentContainer?.querySelector('#routines-sheet-panel-body');
+  if (!panel) return;
+  panel.innerHTML = await renderRoutinesSheetPanelBody();
+  wireRoutinesSheetPanelEvents();
+}
+
+function renderRoutinesSheetHeader() {
+  if (state.routinesSheetMode !== 'edit') {
+    return `
       <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="routines-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -681,24 +747,64 @@ async function renderRoutinesSheet() {
           </svg>
         </button>
       </div>
-      <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
-        ${await renderRoutinesSheetContent()}
+    `;
+  }
+
+  // Analog zur Kopfzeile des Neue-Übung-Sheets: Speichern-Button als
+  // Glass-Haken oben rechts statt eines Buttons unten, verbunden über das
+  // `form`-Attribut mit dem Formular im Inhalt (sitzt außerhalb von dessen
+  // DOM-Teilbaum) - `disabled`, solange kein Name eingegeben ist, wird beim
+  // Tippen direkt per DOM-API umgeschaltet (s. wireRoutinesSheetEditContentEvents),
+  // nicht über einen Repaint, damit Fokus/Cursor im Namensfeld erhalten
+  // bleiben.
+  const canSave = state.routinesSheetEditName.trim().length > 0;
+  const title = state.routinesSheetEditRoutineId ? 'Routine bearbeiten' : 'Neue Routine';
+  return `
+    <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-5 flex-shrink-0">
+      <button id="routines-sheet-edit-cancel-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Abbrechen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+      <div id="routines-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+        <span class="text-card-title">${title}</span>
       </div>
+      <button
+        id="routines-sheet-edit-save-btn"
+        type="submit"
+        form="routines-sheet-edit-form"
+        class="icon-btn-glass icon-btn-glass-accent tap-feedback justify-self-end"
+        aria-label="Routine speichern"
+        ${canSave ? '' : 'disabled'}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+          <path d="M5 13l4 4L19 7" />
+        </svg>
+      </button>
     </div>
   `;
 }
 
+function renderRoutinesSheetContent() {
+  return state.routinesSheetMode === 'edit' ? renderRoutinesSheetEditContent() : renderRoutinesSheetListContent();
+}
+
 // Ersetzt nur `#routines-sheet-content` (analog zu
-// repaintExerciseSheetContentInPlace() beim Übungs-Sheet) - Öffnen/Schließen
-// des "⋮"-Kontextmenüs an einer Karte sowie das Löschen einer Routine sind
-// reine Sheet-interne Interaktionen und lösen deshalb bewusst NICHT das
-// normale `paint()` aus: Das würde die komplette Workout-Seite (Kalenderzeile,
-// Routine-Picker, Tages-Roster, jeweils mit eigenen DB-Abfragen) samt der
-// gesamten Sheet-Kopfzeile neu aufbauen, statt nur die betroffene Karte -
-// sichtbar als kurzes Neu-Rendern des ganzen Sheets bei jedem Menü-Klick.
-// Anders als beim Übungs-Sheet braucht dieser Teilbaum weiterhin eigene
-// DB-Abfragen (kein Cache wie exerciseSheetCache vorhanden), deshalb async.
-async function renderRoutinesSheetContent() {
+// repaintExerciseSheetContentInPlace() beim Übungs-Sheet) - für
+// Inhalts-Änderungen, die die Kopfzeile nicht betreffen: Öffnen/Schließen
+// des "⋮"-Kontextmenüs an einer Karte, Löschen einer Routine (beide
+// Listen-Modus) sowie das Entfernen einer Übung aus dem Entwurf
+// (Bearbeiten-Modus). Ein voller paint() würde hier die komplette
+// Workout-Seite (Kalenderzeile, Routine-Picker, Tages-Roster, jeweils mit
+// eigenen DB-Abfragen) unnötig neu aufbauen.
+async function repaintRoutinesSheetContentInPlace() {
+  const content = currentContainer?.querySelector('#routines-sheet-content');
+  if (!content) return;
+  content.innerHTML = await renderRoutinesSheetContent();
+  wireRoutinesSheetContentEvents();
+}
+
+async function renderRoutinesSheetListContent() {
   const routines = await db.routines.orderBy('name').toArray();
   const exerciseCounts = await Promise.all(
     routines.map((r) => db.routineExercises.where('routineId').equals(r.id).count())
@@ -711,20 +817,94 @@ async function renderRoutinesSheetContent() {
       </ul>`;
 }
 
-async function repaintRoutinesSheetContentInPlace() {
-  const content = currentContainer?.querySelector('#routines-sheet-content');
-  if (!content) return;
-  content.innerHTML = await renderRoutinesSheetContent();
+// Name-Feld im selben Stil wie andere Formularfeld-Labels (text-label-large,
+// gap-2, s. design-system.md "Formular-Feld-Label"), Input in der
+// Sheet-Fläche-Variante (`bg-white/[0.08]`), da es direkt auf `bg-surface`
+// sitzt, nicht in einer eigenen Karte. Die Entwurfs-Übungsliste zeigt
+// dieselbe Karten-Optik wie die Routinen-Karten selbst (`bg-white/[0.08]
+// rounded-card`) - konsistent statt eines dritten Zeilen-Stils in diesem
+// Sheet. Bewusst kein Umsortieren (anders als der ältere Routinen-Tab-Editor)
+// - Reihenfolge ist die Hinzufüge-Reihenfolge, kleinerer Schritt.
+async function renderRoutinesSheetEditContent() {
+  const exercises = await db.exercises.bulkGet(state.routinesSheetEditExerciseIds);
+  const rows = state.routinesSheetEditExerciseIds
+    .map((id, i) => {
+      const exercise = exercises[i];
+      const label = exercise ? escapeHtml(exercise.name) : 'Gelöschte Übung';
+      return `
+        <li class="bg-white/[0.08] rounded-card flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
+          <span class="flex-1 min-w-0 text-card-title truncate ${exercise ? '' : 'text-muted italic'}">${label}</span>
+          <button
+            type="button"
+            data-id="${id}"
+            class="routines-sheet-edit-remove-exercise-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
+            aria-label="${label} entfernen"
+          >
+            ✕
+          </button>
+        </li>
+      `;
+    })
+    .join('');
+
+  return `
+    <form id="routines-sheet-edit-form" class="flex flex-col gap-4 py-1">
+      <div class="flex flex-col gap-2">
+        <label class="text-label-large text-muted" for="routines-sheet-edit-name-input">Name</label>
+        <input
+          id="routines-sheet-edit-name-input"
+          type="text"
+          autocomplete="off"
+          placeholder="z. B. Push Day"
+          value="${escapeHtml(state.routinesSheetEditName)}"
+          class="w-full bg-white/[0.08] rounded-btn py-3 px-3 text-ink min-h-[44px]"
+          required
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <button type="button" id="routines-sheet-edit-add-exercise-btn" class="tap-feedback ${TEXTLINK_ACTION} min-h-[44px] self-start">
+          Übungen hinzufügen
+        </button>
+        ${state.routinesSheetEditExerciseIds.length > 0 ? `<ul class="flex flex-col gap-2">${rows}</ul>` : ''}
+      </div>
+    </form>
+  `;
+}
+
+// Kopfzeile+Inhalt zusammen wiring - aufgerufen sowohl aus wireEvents()
+// (nach dem initialen vollen paint() beim Öffnen des Sheets) als auch aus
+// repaintRoutinesSheetPanelInPlace() (nach jedem Moduswechsel). Ersetzt die
+// frühere getrennte Wiring von Kopfzeile (einmalig, da sie früher nie
+// wechselte) und Inhalt - beide werden jetzt zusammen neu erzeugt, sobald
+// sich der Modus ändert, und müssen deshalb auch zusammen neu verdrahtet
+// werden.
+function wireRoutinesSheetPanelEvents() {
+  if (state.routinesSheetMode === 'edit') {
+    currentContainer.querySelector('#routines-sheet-edit-cancel-btn')?.addEventListener('click', () => {
+      cancelRoutinesSheetEdit();
+    });
+  } else {
+    currentContainer.querySelector('#routines-sheet-close-btn')?.addEventListener('click', () => {
+      closeRoutinesSheet();
+    });
+    currentContainer.querySelector('#routines-sheet-new-btn')?.addEventListener('click', () => {
+      openRoutinesSheetEdit(null);
+    });
+  }
+
+  wireRoutinesSheetDrag();
   wireRoutinesSheetContentEvents();
 }
 
-// Deckt alle Sheet-internen Interaktionen im Routinen-Sheet ab ("⋮"-Menü
-// öffnen/schließen, Bearbeiten, Löschen) - aufgerufen sowohl aus
-// wireEvents() (nach dem initialen vollen paint() beim Öffnen des Sheets)
-// als auch aus repaintRoutinesSheetContentInPlace() (nach jedem gezielten
-// Teil-Repaint), analog zu wireExerciseSheetContentEvents() beim
-// Übungs-Sheet.
+// Deckt alle Inhalts-internen Interaktionen im Routinen-Sheet ab, getrennt
+// nach Modus - aufgerufen sowohl aus wireRoutinesSheetPanelEvents() als auch
+// aus repaintRoutinesSheetContentInPlace() (s. dort).
 function wireRoutinesSheetContentEvents() {
+  if (state.routinesSheetMode === 'edit') {
+    wireRoutinesSheetEditContentEvents();
+    return;
+  }
+
   currentContainer.querySelectorAll('.routines-sheet-menu-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (state.routinesSheetMenuRoutineId === btn.dataset.routine) {
@@ -739,15 +919,14 @@ function wireRoutinesSheetContentEvents() {
     closeRoutinesSheetMenu();
   });
 
-  // Bearbeiten verlässt das Sheet/den Workout-Tab und öffnet den
-  // bestehenden Routinen-Editor direkt für diese Routine - s.
-  // requestEditRoutine() in routines.js für den race-freien Übergabeweg
-  // (Pending-Flag statt Timing-Annahme über den asynchronen paint()-Ablauf
-  // von routines.js).
-  currentContainer.querySelector('.routines-sheet-edit-btn')?.addEventListener('click', (e) => {
+  // Bearbeiten öffnet denselben Neuanlage-Modus, vorausgefüllt für diese
+  // Routine, statt wie zuvor zum Routinen-Tab zu wechseln (s.
+  // openRoutinesSheetEdit()).
+  currentContainer.querySelector('.routines-sheet-edit-btn')?.addEventListener('click', async (e) => {
     const routineId = e.currentTarget.dataset.routine;
-    routinesView.requestEditRoutine(routineId);
-    document.querySelector('[data-view="routines"]')?.click();
+    state.routinesSheetMenuRoutineId = null;
+    state.routinesSheetMenuClosing = false;
+    await openRoutinesSheetEdit(routineId);
   });
 
   currentContainer.querySelector('.routines-sheet-delete-btn')?.addEventListener('click', async (e) => {
@@ -758,6 +937,109 @@ function wireRoutinesSheetContentEvents() {
     state.routinesSheetMenuClosing = false;
     await repaintRoutinesSheetContentInPlace();
   });
+}
+
+function wireRoutinesSheetEditContentEvents() {
+  // Name-Feld spiegelt jeden Tastendruck in den State (überlebt so einen
+  // späteren Repaint, z. B. nach dem Hinzufügen von Übungen), löst selbst
+  // aber nie einen Repaint aus - nur der Speichern-Haken in der Kopfzeile
+  // wird direkt per DOM-API aktiviert/deaktiviert, analog zum Namensfeld im
+  // Neue-Übung-Sheet.
+  currentContainer.querySelector('#routines-sheet-edit-name-input')?.addEventListener('input', (e) => {
+    state.routinesSheetEditName = e.target.value;
+    const saveBtn = currentContainer.querySelector('#routines-sheet-edit-save-btn');
+    if (saveBtn) saveBtn.disabled = e.target.value.trim().length === 0;
+  });
+
+  currentContainer.querySelector('#routines-sheet-edit-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveRoutinesSheetEdit();
+  });
+
+  currentContainer.querySelector('#routines-sheet-edit-add-exercise-btn')?.addEventListener('click', () => {
+    openExerciseSheet('routine');
+  });
+
+  currentContainer.querySelectorAll('.routines-sheet-edit-remove-exercise-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.routinesSheetEditExerciseIds = state.routinesSheetEditExerciseIds.filter((id) => id !== btn.dataset.id);
+      repaintRoutinesSheetContentInPlace();
+    });
+  });
+}
+
+// Neuanlage (routineId null) oder Bearbeiten (routineId gesetzt) - lädt bei
+// Bearbeiten den bisherigen Namen/die bisherigen Übungen als Entwurf-
+// Ausgangsstand in den State (s. renderRoutinesSheetEditContent()); nichts
+// davon landet in der DB, bis saveRoutinesSheetEdit() läuft.
+async function openRoutinesSheetEdit(routineId) {
+  state.routinesSheetEditRoutineId = routineId;
+  if (routineId) {
+    const routine = await db.routines.get(routineId);
+    const entries = await getRoutineExercises(routineId);
+    state.routinesSheetEditName = routine?.name ?? '';
+    state.routinesSheetEditExerciseIds = entries.map((e) => e.exerciseId);
+  } else {
+    state.routinesSheetEditName = '';
+    state.routinesSheetEditExerciseIds = [];
+  }
+  state.routinesSheetMode = 'edit';
+  await repaintRoutinesSheetPanelInPlace();
+}
+
+function cancelRoutinesSheetEdit() {
+  state.routinesSheetMode = 'list';
+  state.routinesSheetEditRoutineId = null;
+  state.routinesSheetEditName = '';
+  state.routinesSheetEditExerciseIds = [];
+  repaintRoutinesSheetPanelInPlace();
+}
+
+// Legt bei Neuanlage die Routine an, bei Bearbeiten wird zuerst Name
+// aktualisiert und die komplette bisherige Übungsliste entfernt - der
+// Entwurf trägt keine eigenen routineExercises-IDs mehr (nur Übungs-IDs,
+// s. State), ein feingranularer Diff wäre unnötig komplex für den
+// erreichten Nutzen. Anschließend alle Entwurfs-Übungen in Reihenfolge neu
+// anfügen (appendExerciseToRoutine vergibt dabei fortlaufend `order`).
+async function saveRoutinesSheetEdit() {
+  const name = state.routinesSheetEditName.trim();
+  if (!name) return;
+
+  const isEditing = !!state.routinesSheetEditRoutineId;
+  let routineId = state.routinesSheetEditRoutineId;
+  if (routineId) {
+    await updateRoutine(routineId, name);
+    const existing = await getRoutineExercises(routineId);
+    await Promise.all(existing.map((entry) => removeExerciseFromRoutine(entry.id)));
+  } else {
+    const routine = await createRoutine(name);
+    routineId = routine.id;
+  }
+  for (const exerciseId of state.routinesSheetEditExerciseIds) {
+    await appendExerciseToRoutine(routineId, exerciseId);
+  }
+
+  // Wurde eine Routine bearbeitet, die für den aktuell im Workout-Tab
+  // gewählten Tag bereits ausgewählt ist, muss dessen Roster dieselbe
+  // Aktualisierung erfahren wie bei einer frischen Auswahl - sonst würde
+  // z. B. eine neu hinzugefügte Übung nicht im heutigen Workout auftauchen,
+  // obwohl die Routine dafür ausgewählt ist (Nutzer-Bugreport).
+  // applyRoutineToWorkout() ist dafür bereits die richtige, bestehende
+  // Funktion (entfernt nur noch nicht begonnene, routinen-stammende
+  // Einträge und gleicht den Rest an die aktuelle Übungsliste an, s. dort) -
+  // hier lediglich ein zusätzlicher Aufrufpunkt, keine geänderte Logik.
+  if (isEditing) {
+    const workout = await getWorkoutByDate(state.selectedDate);
+    if (workout?.routineId === routineId) {
+      await applyRoutineToWorkout(workout.id, routineId);
+    }
+  }
+
+  state.routinesSheetMode = 'list';
+  state.routinesSheetEditRoutineId = null;
+  state.routinesSheetEditName = '';
+  state.routinesSheetEditExerciseIds = [];
+  await repaintRoutinesSheetPanelInPlace();
 }
 
 function renderRoutineSheetCard(routine, exerciseCount) {
@@ -840,6 +1122,13 @@ async function openRoutinesSheet() {
   // ohnehin sofort überdeckt.
   state.routinePickerOpen = false;
   state.routinePickerClosing = false;
+  // Defensiv immer im Listen-Modus öffnen, falls ein vorheriger Besuch
+  // (Drag-to-Dismiss/Backdrop-Klick, s. finalizeRoutinesSheetClose) mitten
+  // im Bearbeiten-Modus geschlossen wurde.
+  state.routinesSheetMode = 'list';
+  state.routinesSheetEditRoutineId = null;
+  state.routinesSheetEditName = '';
+  state.routinesSheetEditExerciseIds = [];
   state.routinesSheetOpen = true;
   state.routinesSheetClosing = false;
   lockBodyScroll();
@@ -854,6 +1143,12 @@ function finalizeRoutinesSheetClose() {
   pendingRoutinesSheetCloseTimeout = null;
   state.routinesSheetOpen = false;
   state.routinesSheetClosing = false;
+  // Verworfener Entwurf, falls per Drag/Backdrop mitten im
+  // Bearbeiten-Modus geschlossen wurde (s. openRoutinesSheet()).
+  state.routinesSheetMode = 'list';
+  state.routinesSheetEditRoutineId = null;
+  state.routinesSheetEditName = '';
+  state.routinesSheetEditExerciseIds = [];
   unlockBodyScroll();
   resetNavZIndex();
   paint();
@@ -1164,9 +1459,19 @@ function wireCalendarSheetDrag() {
 // fertig werden können und einen älteren Suchstand zuletzt anzeigen.
 let exerciseSheetCache = { allExercises: [], inWorkoutIds: new Set() };
 
+// "Bereits vorhanden"-Menge hängt vom Kontext ab (s. exerciseSheetContext):
+// beim Tages-Workout die heute schon im Roster stehenden Übungen, bei einer
+// Routine (Neuanlage/Bearbeiten im Routinen-Sheet) der bisherige
+// Entwurfs-Stand statt einer DB-Abfrage - der Entwurf existiert ja bis zum
+// Speichern nur im State, s. renderRoutinesSheetEditContent().
 async function loadExerciseSheetCache() {
-  const workout = await getWorkoutByDate(state.selectedDate);
-  const inWorkoutIds = new Set(workout ? (await getWorkoutExercises(workout.id)).map((e) => e.exerciseId) : []);
+  let inWorkoutIds;
+  if (state.exerciseSheetContext === 'routine') {
+    inWorkoutIds = new Set(state.routinesSheetEditExerciseIds);
+  } else {
+    const workout = await getWorkoutByDate(state.selectedDate);
+    inWorkoutIds = new Set(workout ? (await getWorkoutExercises(workout.id)).map((e) => e.exerciseId) : []);
+  }
   const allExercises = await db.exercises.orderBy('name').toArray();
   exerciseSheetCache = { allExercises, inWorkoutIds };
 }
@@ -1232,13 +1537,32 @@ function renderExerciseSheetContent() {
 // Vierundsechzigsten Iteration nie mehr (kein Inline-Modus-Wechsel mehr,
 // "Neue Übung" ist ein eigenes Stapel-Sheet), sitzt deshalb wieder direkt
 // und unverändert im Grid statt in einem eigenen Teil-Repaint-Wrapper.
+// Das Übungs-Sheet ist normalerweise selbst ein Top-Level-Sheet (z-50/51,
+// wie Kalender-/Routinen-Sheet). Wird es aus dem Bearbeiten-Modus des
+// Routinen-Sheets heraus geöffnet (exerciseSheetContext 'routine'), schwebt
+// es aber ÜBER dem bereits offenen Routinen-Sheet (ebenfalls z-50/51) statt
+// es zu ersetzen - braucht dafür eine höhere Ebene. Seine eigenen
+// Stapel-Sheets (Übungs-Detail/Neue-Übung, sonst fest z-52/53) müssen dann
+// entsprechend eine Ebene höher als DAS Übungs-Sheet selbst liegen, nicht
+// höher als das Routinen-Sheet - deshalb relativ zu exerciseSheetZ()
+// berechnet statt ebenfalls hart kodiert.
+function exerciseSheetZ() {
+  return state.exerciseSheetContext === 'routine' ? { bg: 52, panel: 53 } : { bg: 50, panel: 51 };
+}
+
+function exerciseSubSheetZ() {
+  const base = exerciseSheetZ();
+  return { bg: base.bg + 2, panel: base.panel + 2 };
+}
+
 function renderExerciseSheet() {
   const closing = state.exerciseSheetClosing;
+  const z = exerciseSheetZ();
 
   return `
     <div id="exercise-sheet-root">
-      <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-50 bg-black/50"></div>
-      <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col">
+      <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 z-[${z.bg}] bg-black/50"></div>
+      <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
         <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
           <button id="exercise-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Übungen schließen">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -1471,7 +1795,20 @@ function renderExerciseSheetCommitBar() {
   `;
 }
 
-async function openExerciseSheet() {
+// Im 'workout'-Kontext ist das Übungs-Sheet selbst ein Top-Level-Sheet (wie
+// Kalender-/Routinen-Sheet) - Öffnen/Schließen läuft dort bewusst über das
+// normale paint(), da nichts anderes gleichzeitig sichtbar sein muss. Im
+// 'routine'-Kontext liegt aber bereits das offene Routinen-Sheet darunter:
+// Ein volles paint() (das den kompletten Seiteninhalt inkl. dessen
+// `${state.routinesSheetOpen ? renderRoutinesSheet() : ''}`-Block neu
+// aufbaut) würde das Routinen-Sheet dabei unnötig komplett neu erzeugen -
+// sichtbar als kurzes Neu-Rendern samt erneuter Slide-Animation, obwohl es
+// die ganze Zeit über unverändert offen war (Nutzer-Beobachtung). Deshalb
+// hier wie beim Neue-Übung-/Übungs-Detail-Sheet: ohne paint() direkt anfügen
+// bzw. die closing-Klasse direkt auf die bestehenden Elemente setzen, s.
+// openExerciseCreateSheet()/closeExerciseCreateSheet().
+async function openExerciseSheet(context = 'workout') {
+  state.exerciseSheetContext = context;
   state.exerciseSheetOpen = true;
   state.exerciseSheetClosing = false;
   state.exerciseSheetSelectedIds = new Set();
@@ -1482,7 +1819,12 @@ async function openExerciseSheet() {
   lockBodyScroll();
   raiseNavAboveSheet();
   await loadExerciseSheetCache();
-  await paint();
+  if (context === 'routine') {
+    currentContainer.insertAdjacentHTML('beforeend', renderExerciseSheet());
+    wireExerciseSheetEvents();
+  } else {
+    await paint();
+  }
 }
 
 function finalizeExerciseSheetClose() {
@@ -1491,7 +1833,11 @@ function finalizeExerciseSheetClose() {
   state.exerciseSheetClosing = false;
   unlockBodyScroll();
   resetNavZIndex();
-  paint();
+  if (state.exerciseSheetContext === 'routine') {
+    currentContainer?.querySelector('#exercise-sheet-root')?.remove();
+  } else {
+    paint();
+  }
 }
 
 let pendingExerciseSheetCloseTimeout = null;
@@ -1499,7 +1845,13 @@ let pendingExerciseSheetCloseTimeout = null;
 function closeExerciseSheet() {
   if (!state.exerciseSheetOpen || state.exerciseSheetClosing) return;
   state.exerciseSheetClosing = true;
-  paint();
+  if (state.exerciseSheetContext === 'routine') {
+    const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
+    backdrop?.classList.add('closing');
+    backdrop?.nextElementSibling?.classList.add('closing');
+  } else {
+    paint();
+  }
   pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
 }
 
@@ -1590,6 +1942,26 @@ function wireExerciseSheetContentEvents() {
   wireExerciseSheetBodyEvents();
 
   currentContainer.querySelector('#exercise-sheet-commit-btn')?.addEventListener('click', async () => {
+    if (state.exerciseSheetContext === 'routine') {
+      // Reiner Entwurf (s. renderRoutinesSheetEditContent()) - landet erst
+      // beim Speichern des Routinen-Sheets in der DB, hier nur den lokalen
+      // State ergänzen (Duplikate ausschließen, Reihenfolge bleibt
+      // Hinzufüge-Reihenfolge).
+      for (const id of state.exerciseSheetSelectedIds) {
+        if (!state.routinesSheetEditExerciseIds.includes(id)) {
+          state.routinesSheetEditExerciseIds.push(id);
+        }
+      }
+      closeExerciseSheet();
+      // Das Routinen-Sheet liegt während des gesamten Übungs-Sheet-Besuchs
+      // unverändert im DOM darunter (s. openExerciseSheet()) - nur den
+      // engeren Inhalts-Teilbaum mit dem aktualisierten Entwurf neu zeichnen
+      // (Titel/Speichern-Button in der Kopfzeile hängen nicht vom
+      // Übungs-Stand ab), sichtbar sobald die Schließen-Animation des
+      // Übungs-Sheets den Blick freigibt.
+      await repaintRoutinesSheetContentInPlace();
+      return;
+    }
     const workout = await getOrCreateWorkoutForDate(state.selectedDate);
     await addExercisesToWorkout(workout.id, [...state.exerciseSheetSelectedIds]);
     closeExerciseSheet();
@@ -1718,10 +2090,11 @@ function renderExerciseCreateSheetContent() {
 // neu gerendert, während Formularfelder/Chips sich ändern.
 function renderExerciseCreateSheet() {
   const canSubmit = state.exerciseCreateSheetName.trim().length > 0;
+  const z = exerciseSubSheetZ();
 
   return `
-    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[52] bg-black/50"></div>
-    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
+    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
+    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
       <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="exercise-create-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -1907,10 +2280,11 @@ function wireExerciseCreateSheetEvents() {
 async function renderExerciseDetailSheet() {
   const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
   const name = exercise?.name ?? 'Gelöschte Übung';
+  const z = exerciseSubSheetZ();
 
   return `
-    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[52] bg-black/50"></div>
-    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[53] bg-surface rounded-sheet flex flex-col">
+    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
+    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
       <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
         <button id="exercise-detail-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -2081,11 +2455,7 @@ function wireEvents() {
   currentContainer.querySelector('#routines-sheet-backdrop')?.addEventListener('click', () => {
     closeRoutinesSheet();
   });
-  currentContainer.querySelector('#routines-sheet-close-btn')?.addEventListener('click', () => {
-    closeRoutinesSheet();
-  });
-  wireRoutinesSheetDrag();
-  wireRoutinesSheetContentEvents();
+  wireRoutinesSheetPanelEvents();
 
   currentContainer.querySelectorAll('.pick-routine-option-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
