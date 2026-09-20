@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-20 (Routinen-Sheet: Übungen per Gedrückthalten umsortieren)
+
+### Added
+- Routinen-Sheet (Neuanlage-/Bearbeiten-Modus): Übungen lassen sich per Gedrückthalten und Verschieben umsortieren; neues Modul `js/reorder.js` (Pointer Events, Auto-Scroll am Rand), in `sw.js` App-Shell aufgenommen
+
 ## 2026-09-20 (Übungs-Sheet: Liste springt bei Auswahl nicht mehr nach oben)
 
 ### Fixed

@@ -22,6 +22,8 @@ fitlog/
 │   ├── db.js              Dexie-Schema + alle Datenbank-Operationen (CRUD, Kaskaden)
 │   ├── sheet.js           Geteilte Bottom-Sheet-Mechanik (Body-Scroll-Sperre, Nav-z-index,
 │                           Drag-to-Dismiss) - kein State/Inhalt, s. ADR 0011
+│   ├── reorder.js         Umsortieren per Gedrückthalten + Verschieben (Pointer Events,
+│                           Auto-Scroll) - kein State/Inhalt, meldet nur (von, nach)
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um

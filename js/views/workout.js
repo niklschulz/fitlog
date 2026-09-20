@@ -30,6 +30,7 @@ import {
   wireSheetDrag,
   SHEET_CLOSE_ANIMATION_MS,
 } from '../sheet.js';
+import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 
 let currentContainer = null;
@@ -823,8 +824,11 @@ async function renderRoutinesSheetListContent() {
 // sitzt, nicht in einer eigenen Karte. Die Entwurfs-Übungsliste zeigt
 // dieselbe Karten-Optik wie die Routinen-Karten selbst (`bg-white/[0.08]
 // rounded-card`) - konsistent statt eines dritten Zeilen-Stils in diesem
-// Sheet. Bewusst kein Umsortieren (anders als der ältere Routinen-Tab-Editor)
-// - Reihenfolge ist die Hinzufüge-Reihenfolge, kleinerer Schritt.
+// Sheet. Umsortieren per Gedrückthalten + Verschieben einer Zeile (s.
+// js/reorder.js, wireLongPressReorder) statt ▲/▼-Buttons wie im älteren
+// Routinen-Tab-Editor - `reorder-item` (css/styles.css) unterdrückt dafür
+// Textmarkierung/Callout beim langen Drücken. Die Entwurfs-Reihenfolge ist
+// zugleich die gespeicherte (appendExerciseToRoutine vergibt `order`).
 async function renderRoutinesSheetEditContent() {
   const exercises = await db.exercises.bulkGet(state.routinesSheetEditExerciseIds);
   const rows = state.routinesSheetEditExerciseIds
@@ -832,7 +836,7 @@ async function renderRoutinesSheetEditContent() {
       const exercise = exercises[i];
       const label = exercise ? escapeHtml(exercise.name) : 'Gelöschte Übung';
       return `
-        <li class="bg-white/[0.08] rounded-card flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
+        <li class="reorder-item bg-white/[0.08] rounded-card flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
           <span class="flex-1 min-w-0 text-card-title truncate ${exercise ? '' : 'text-muted italic'}">${label}</span>
           <button
             type="button"
@@ -865,7 +869,7 @@ async function renderRoutinesSheetEditContent() {
         <button type="button" id="routines-sheet-edit-add-exercise-btn" class="tap-feedback ${TEXTLINK_ACTION} min-h-[44px] self-start">
           Übungen hinzufügen
         </button>
-        ${state.routinesSheetEditExerciseIds.length > 0 ? `<ul class="flex flex-col gap-2">${rows}</ul>` : ''}
+        ${state.routinesSheetEditExerciseIds.length > 0 ? `<ul id="routines-sheet-edit-list" class="flex flex-col gap-2">${rows}</ul>` : ''}
       </div>
     </form>
   `;
@@ -965,6 +969,20 @@ function wireRoutinesSheetEditContentEvents() {
       state.routinesSheetEditExerciseIds = state.routinesSheetEditExerciseIds.filter((id) => id !== btn.dataset.id);
       repaintRoutinesSheetContentInPlace();
     });
+  });
+
+  wireLongPressReorder({
+    listEl: currentContainer.querySelector('#routines-sheet-edit-list'),
+    itemSelector: 'li',
+    ignoreSelector: '.routines-sheet-edit-remove-exercise-btn',
+    scrollEl: currentContainer.querySelector('#routines-sheet-content'),
+    onReorder: (from, to) => {
+      const ids = [...state.routinesSheetEditExerciseIds];
+      const [moved] = ids.splice(from, 1);
+      ids.splice(to, 0, moved);
+      state.routinesSheetEditExerciseIds = ids;
+      repaintRoutinesSheetContentInPlace();
+    },
   });
 }
 

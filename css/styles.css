@@ -446,3 +446,12 @@ html[data-transition-direction='back']::view-transition-old(root) {
     animation: none !important;
   }
 }
+
+/* Zeilen, die per Gedrückthalten umsortiert werden (js/reorder.js): Ohne
+   diese Regeln markiert iOS beim langen Drücken Text bzw. zeigt ein
+   Callout, und die Geste würde abgebrochen, bevor das Ziehen startet. */
+.reorder-item {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
