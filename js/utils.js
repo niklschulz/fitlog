@@ -28,8 +28,7 @@ export const LIST_ROW = 'bg-surface rounded-btn px-4 py-3';
 
 export const TEXTLINK_ACTION = 'text-accent text-body font-medium';
 
-// Liquid-Glass-Navigationsgefühl (Übungs-Detailseite, Formulare in
-// routines.js/profile.js): Ein "Reingehen" (neue, tiefere
+// Liquid-Glass-Navigationsgefühl (Übungs-Detailseite im Workout-Tab): Ein "Reingehen" (neue, tiefere
 // Ebene öffnen, z. B. Übung antippen) bekommt Skalierung+Fade, ein
 // "Zurückgehen" ein Slide-nach-unten+Fade - Richtung wird kurz vor dem
 // Übergang als Attribut auf <html> gesetzt, die eigentlichen Keyframes

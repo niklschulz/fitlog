@@ -248,20 +248,6 @@ export async function removeExerciseFromRoutine(id) {
   await db.routineExercises.delete(id);
 }
 
-export async function reorderRoutineExercise(routineId, entryId, direction) {
-  const entries = await getRoutineExercises(routineId);
-  const idx = entries.findIndex((e) => e.id === entryId);
-  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-  if (idx === -1 || swapIdx < 0 || swapIdx >= entries.length) return;
-
-  const a = entries[idx];
-  const b = entries[swapIdx];
-  await db.transaction('rw', db.routineExercises, async () => {
-    await db.routineExercises.update(a.id, { order: b.order });
-    await db.routineExercises.update(b.id, { order: a.order });
-  });
-}
-
 // --- Workouts (Tages-Workout, s. Abschnitt 10 / ADR 0007) ---
 
 export async function getWorkoutByDate(date) {

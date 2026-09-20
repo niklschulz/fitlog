@@ -40,10 +40,9 @@ let state = {
   routinePickerOpen: false,
   routinePickerClosing: false,
   // "Routinen"-Sheet: erreichbar über "Alle Routinen anzeigen" im
-  // Routine-Picker-Dropdown. Inhalt bewusst noch reine Anzeige (Liste wie im
-  // Routinen-Tab, ohne Tap-Aktion) - Verwaltung (Anlegen/Bearbeiten) folgt
-  // als eigener, späterer Schritt beim gemeinsamen Ausbau des
-  // Routinen-Bereichs.
+  // Routine-Picker-Dropdown - die einzige Stelle der App, an der Routinen
+  // verwaltet werden (Liste, Anlegen, Bearbeiten, Löschen); den früheren
+  // eigenständigen Routinen-Tab gibt es nicht mehr (s. ADR 0019).
   routinesSheetOpen: false,
   routinesSheetClosing: false,
   // "⋮"-Kontextmenü (Bearbeiten/Löschen) an einer Routinen-Karte im
@@ -699,9 +698,8 @@ async function renderRoutinePicker(workout) {
 // Klick auf den Speichern-Haken in der DB (Nutzer-Vorgabe, konsistent zum
 // Neue-Übung-Sheet). "+"-Button öffnet 'edit' zur Neuanlage (routineId
 // null), "Bearbeiten" im Kontextmenü einer Karte öffnet denselben Modus
-// vorausgefüllt für eine bestehende Routine (routineId gesetzt) - ersetzt
-// den früheren Wechsel zum Routinen-Tab-Editor. Löschen bleibt eine reine
-// Listen-Aktion (deleteRoutine() mit Bestätigungsdialog).
+// vorausgefüllt für eine bestehende Routine (routineId gesetzt). Löschen
+// bleibt eine reine Listen-Aktion (deleteRoutine() mit Bestätigungsdialog).
 async function renderRoutinesSheet() {
   const closing = state.routinesSheetClosing;
 
@@ -835,9 +833,8 @@ async function renderRoutinesSheetListContent() {
 // dieselbe Karten-Optik wie die Routinen-Karten selbst (`bg-white/[0.08]
 // rounded-card`) - konsistent statt eines dritten Zeilen-Stils in diesem
 // Sheet. Umsortieren per Gedrückthalten + Verschieben einer Zeile (s.
-// js/reorder.js, wireLongPressReorder) statt ▲/▼-Buttons wie im älteren
-// Routinen-Tab-Editor - `reorder-item` (css/styles.css) unterdrückt dafür
-// Textmarkierung/Callout beim langen Drücken. Die Entwurfs-Reihenfolge ist
+// js/reorder.js, wireLongPressReorder) - `reorder-item` (css/styles.css)
+// unterdrückt dafür Textmarkierung/Callout beim langen Drücken. Die Entwurfs-Reihenfolge ist
 // zugleich die gespeicherte (appendExerciseToRoutine vergibt `order`).
 async function renderRoutinesSheetEditContent() {
   const exercises = await db.exercises.bulkGet(state.routinesSheetEditExerciseIds);
@@ -941,9 +938,8 @@ function wireRoutinesSheetContentEvents() {
     closeRoutinesSheetMenu();
   });
 
-  // Bearbeiten öffnet denselben Neuanlage-Modus, vorausgefüllt für diese
-  // Routine, statt wie zuvor zum Routinen-Tab zu wechseln (s.
-  // openRoutinesSheetEdit()).
+  // Bearbeiten öffnet denselben Modus wie der "+"-Button, vorausgefüllt für
+  // diese Routine (s. openRoutinesSheetEdit()).
   currentContainer.querySelector('.routines-sheet-edit-btn')?.addEventListener('click', async (e) => {
     const routineId = e.currentTarget.dataset.routine;
     state.routinesSheetMenuRoutineId = null;

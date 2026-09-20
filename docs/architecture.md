@@ -27,7 +27,7 @@ fitlog/
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
-│   └── views/              Ein Modul pro Tab (workout.js, routines.js, statistics.js, profile.js),
+│   └── views/              Ein Modul pro Tab (workout.js, statistics.js, profile.js),
 │                           jedes exportiert render(container). Außerdem
 │                           workout-exercise-detail.js - kein eigener Tab,
 │                           sondern ein Sub-View, direkt von workout.js

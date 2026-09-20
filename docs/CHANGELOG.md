@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-20 (Routinen-Tab entfernt)
+
+### Removed
+- Eigenständiger Routinen-Tab (`js/views/routines.js`, Nav-Button, View-Registrierung, App-Shell-Eintrag) — Routinen werden nur noch über das Routinen-Sheet im Workout-Tab verwaltet, s. [ADR 0019](decisions/0019-routinen-tab-entfernt.md)
+- `reorderRoutineExercise()` in `js/db.js` (nur vom Tab-Editor genutzt)
+
+### Changed
+- Bottom-Nav hat drei Tabs (Workout, Statistik, Profil)
+
 ## 2026-09-20 (Umsortieren: Übung ließ sich nicht an die letzte Stelle legen)
 
 ### Fixed

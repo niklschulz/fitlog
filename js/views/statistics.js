@@ -3,7 +3,7 @@
 // (s. CLAUDE.md). Kein unmount() nötig: paint() liest zwar asynchron aus
 // IndexedDB, überschreibt bei einem schnellen Tab-Wechsel aber denselben
 // `viewContainer` wie jede andere View auch (s. app.js showView()) - dasselbe
-// Risiko besteht z. B. auch in routines.js und wird dort ebenfalls nicht
+// Risiko besteht z. B. auch in profile.js und wird dort ebenfalls nicht
 // per Epoch-Sperre abgesichert, da das Zeitfenster bei rein lokalen
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
 import { getTrainedDates, todayISODate, addDays, mondayOf } from '../db.js';

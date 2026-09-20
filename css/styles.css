@@ -378,7 +378,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* View Transitions (Rein-/Rausnavigieren, z. B. Übungs-Detailseite, Formulare
-   in exercises.js/routines.js/profile.js) - `withViewTransition()` in
+   in profile.js u. a.) - `withViewTransition()` in
    js/utils.js setzt vor jedem Aufruf kurz `data-transition-direction` auf
    <html>, damit hier zwischen "tiefer rein" (scale+fade) und "zurück raus"
    (slide-down+fade) unterschieden werden kann; ohne dieses Attribut (z. B.
