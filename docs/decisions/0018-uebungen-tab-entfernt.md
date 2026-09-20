@@ -24,3 +24,7 @@ Nutzer-Entscheidung: Der eigenständige Übungen-Tab ist dadurch redundant gewor
 - Übungen anlegen läuft jetzt ausschließlich über das Neue-Übung-Sheet (Workout-Tab), löschen ausschließlich über das Übungs-Detail-Sheet (ebenfalls Workout-Tab) - kein eigenständiges "Übung bearbeiten" (Umbenennen/Muskel-Zuordnung ändern) mehr erreichbar, bis die Routinen-Verwaltung das übernimmt (s. features.md, "Vorgemerkte Erweiterungen")
 - Statistik-Tab ist bewusst ein Wegwerf-Platzhalter, kein Grundgerüst für den späteren Inhalt - wird beim eigentlichen Statistik-Schritt vermutlich komplett neu aufgebaut
 - Kleinere Inkonsistenz bewusst in Kauf genommen: Es gibt jetzt zwei unabhängige, gleichnamige "Statistik"-Platzhalter (dieser Tab und der Reiter auf der Übungs-Detailseite) - beide dokumentiert, um Verwechslung in künftigen Sitzungen vorzubeugen
+
+## Nachtrag (2026-09-21)
+
+Die in den Konsequenzen genannte Lücke "kein Übung bearbeiten (Umbenennen/Muskel-Zuordnung ändern) mehr erreichbar" ist geschlossen: Das Übungs-Detail-Sheet hat ein "⋮"-Menü mit "Bearbeiten", das das Neue-Übung-Sheet im Bearbeiten-Modus öffnet und dafür `updateExercise()` nutzt (s. design-system.md, Hundertvierzehnte Iteration). Ein Umweg über die Routinen-Verwaltung war dafür nicht nötig.

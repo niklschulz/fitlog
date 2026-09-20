@@ -158,10 +158,8 @@ export async function createExercise(name, muscleAssignment = {}) {
 // `{ primaryMuscleId, secondaryMuscleIds }`-Objekt übergeben wird, wird die
 // Muskel-Zuordnung ersetzt - ein reines Umbenennen darf eine bereits
 // bestehende Zuordnung nicht versehentlich auf "kein Muskel" zurücksetzen.
-// Aktuell ohne Aufrufer (das frühere Übungen-Tab-Formular, das diese
-// Funktion nutzte, wurde entfernt, s. ADR 0018) - bewusst als Datenfunktion
-// erhalten, da die geplante Routinen-Verwaltung (s. docs/features.md)
-// dieselbe Umbenennen-Logik in Kürze wieder braucht.
+// Aufrufer: das Neue-Übung-Sheet im Bearbeiten-Modus (Workout-Tab, geöffnet
+// über das "⋮"-Menü des Übungs-Detail-Sheets).
 export async function updateExercise(id, name, muscleAssignment) {
   const changes = { name, updatedAt: nowISO() };
   if (muscleAssignment) {

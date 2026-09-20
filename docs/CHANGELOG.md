@@ -2,6 +2,19 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-21 (Übungs-Detail-Sheet: Muskeln, ⋮-Menü, Übung bearbeiten)
+
+### Added
+- Übungs-Detail-Sheet zeigt primären Muskel und sekundäre Muskeln ("Nicht zugeordnet" bei älteren Übungen ohne Zuordnung)
+- "⋮"-Glass-Button mit Kontextmenü **Bearbeiten**/**Löschen** in der Kopfzeile
+- Neue-Übung-Sheet hat einen Bearbeiten-Modus ("Übung bearbeiten", vorausgefüllt, speichert über `updateExercise()`), gestapelt über dem Detail-Sheet; aktualisiert Detail-Sheet, Übungs-Liste und einen offenen Routinen-Entwurf sofort
+
+### Changed
+- Löschen einer Übung läuft jetzt über das Menü statt über einen eigenen roten Button
+
+### Removed
+- Platzhalter-Text "Weitere Details folgen." und CSS-Klasse `.icon-btn-glass-danger`
+
 ## 2026-09-21 (Workout-Tab: unbegonnene Übungen umsortieren)
 
 ### Added

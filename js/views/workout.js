@@ -9,6 +9,7 @@ import {
   removeExerciseFromWorkout,
   reorderWorkoutExercises,
   createExercise,
+  updateExercise,
   deleteExercise,
   createRoutine,
   updateRoutine,
@@ -100,6 +101,14 @@ let state = {
   exerciseCreateSheetName: '',
   exerciseCreateSheetPrimaryMuscleId: null,
   exerciseCreateSheetSecondaryMuscleIds: new Set(),
+  // Bearbeiten-Modus DESSELBEN Sheets (Titel "Übung bearbeiten", Felder
+  // vorausgefüllt, Speichern ruft updateExercise()) - id der bearbeiteten
+  // Übung, null = Neuanlage. Öffnet sich aus dem Übungs-Detail-Sheet und
+  // liegt dann ÜBER diesem (s. exerciseEditSheetZ()).
+  exerciseCreateSheetEditingId: null,
+  // "⋮"-Kontextmenü (Bearbeiten/Löschen) in der Kopfzeile des Übungs-Detail-
+  // Sheets - öffnet/schließt ohne paint(), s. openExerciseDetailMenu().
+  exerciseDetailMenuOpen: false,
 };
 
 // Erhöht sich bei jedem render()/unmount() (= neue Mount-Instanz dieser
@@ -152,6 +161,8 @@ export async function render(container) {
   state.exerciseCreateSheetName = '';
   state.exerciseCreateSheetPrimaryMuscleId = null;
   state.exerciseCreateSheetSecondaryMuscleIds = new Set();
+  state.exerciseCreateSheetEditingId = null;
+  state.exerciseDetailMenuOpen = false;
   await paint();
 }
 
@@ -192,6 +203,10 @@ export function unmount() {
   if (pendingExerciseDetailSheetCloseTimeout) {
     clearTimeout(pendingExerciseDetailSheetCloseTimeout);
     pendingExerciseDetailSheetCloseTimeout = null;
+  }
+  if (pendingExerciseDetailMenuCloseTimeout) {
+    clearTimeout(pendingExerciseDetailMenuCloseTimeout);
+    pendingExerciseDetailMenuCloseTimeout = null;
   }
   if (pendingExerciseCreateSheetCloseTimeout) {
     clearTimeout(pendingExerciseCreateSheetCloseTimeout);
@@ -1662,6 +1677,15 @@ function exerciseSubSheetZ() {
   return { bg: base.bg + 2, panel: base.panel + 2 };
 }
 
+// Das Bearbeiten-Sheet (Neue-Übung-Sheet im Bearbeiten-Modus) wird aus dem
+// Übungs-Detail-Sheet heraus geöffnet und muss ÜBER diesem liegen - beide
+// sind sonst Stapel-Sheets auf derselben Ebene (exerciseSubSheetZ()), die
+// sich gegenseitig ausschließen. Deshalb eine Ebene höher.
+function exerciseEditSheetZ() {
+  const sub = exerciseSubSheetZ();
+  return { bg: sub.bg + 2, panel: sub.panel + 2 };
+}
+
 function renderExerciseSheet() {
   const closing = state.exerciseSheetClosing;
   const z = exerciseSheetZ();
@@ -2203,26 +2227,27 @@ function renderExerciseCreateSheetContent() {
 // neu gerendert, während Formularfelder/Chips sich ändern.
 function renderExerciseCreateSheet() {
   const canSubmit = state.exerciseCreateSheetName.trim().length > 0;
-  const z = exerciseSubSheetZ();
+  const isEditing = state.exerciseCreateSheetEditingId !== null;
+  const z = isEditing ? exerciseEditSheetZ() : exerciseSubSheetZ();
 
   return `
     <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
     <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
-      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
+      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="exercise-create-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
         <div id="exercise-create-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
-          <span class="text-card-title">Neue Übung</span>
+          <span class="text-card-title">${isEditing ? 'Übung bearbeiten' : 'Neue Übung'}</span>
         </div>
         <button
           id="exercise-create-sheet-submit-btn"
           type="submit"
           form="exercise-create-sheet-form"
           class="icon-btn-glass icon-btn-glass-accent tap-feedback justify-self-end"
-          aria-label="Übung erstellen"
+          aria-label="${isEditing ? 'Änderungen speichern' : 'Übung erstellen'}"
           ${canSubmit ? '' : 'disabled'}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
@@ -2244,12 +2269,17 @@ function renderExerciseCreateSheet() {
 // CHANGELOG). Stattdessen wird nur dieses Sheet direkt ans Ende des
 // Containers angehängt - alles andere (inkl. des Übungs-Sheets darunter)
 // bleibt exakt so bestehen, wie es war, und wird schlicht überlagert.
-async function openExerciseCreateSheet() {
+// Mit `editExerciseId` öffnet dasselbe Sheet im Bearbeiten-Modus (Felder aus
+// der bestehenden Übung vorausgefüllt, s. state.exerciseCreateSheetEditingId).
+async function openExerciseCreateSheet(editExerciseId = null) {
+  if (state.exerciseCreateSheetOpen) return;
+  const exercise = editExerciseId ? await db.exercises.get(editExerciseId) : null;
+  state.exerciseCreateSheetEditingId = exercise?.id ?? null;
   state.exerciseCreateSheetOpen = true;
   state.exerciseCreateSheetClosing = false;
-  state.exerciseCreateSheetName = '';
-  state.exerciseCreateSheetPrimaryMuscleId = null;
-  state.exerciseCreateSheetSecondaryMuscleIds = new Set();
+  state.exerciseCreateSheetName = exercise?.name ?? '';
+  state.exerciseCreateSheetPrimaryMuscleId = exercise?.primaryMuscleId ?? null;
+  state.exerciseCreateSheetSecondaryMuscleIds = new Set(exercise?.secondaryMuscleIds ?? []);
   lockBodyScroll();
   raiseNavAboveSheet();
   currentContainer.insertAdjacentHTML('beforeend', renderExerciseCreateSheet());
@@ -2264,6 +2294,7 @@ function finalizeExerciseCreateSheetClose() {
   pendingExerciseCreateSheetCloseTimeout = null;
   state.exerciseCreateSheetOpen = false;
   state.exerciseCreateSheetClosing = false;
+  state.exerciseCreateSheetEditingId = null;
   unlockBodyScroll();
   resetNavZIndex();
   const backdrop = currentContainer?.querySelector('#exercise-create-sheet-backdrop');
@@ -2349,6 +2380,24 @@ function wireExerciseCreateSheetContentEvents() {
     const name = state.exerciseCreateSheetName.trim();
     if (!name) return;
 
+    const editingId = state.exerciseCreateSheetEditingId;
+    if (editingId) {
+      await updateExercise(editingId, name, {
+        primaryMuscleId: state.exerciseCreateSheetPrimaryMuscleId,
+        secondaryMuscleIds: [...state.exerciseCreateSheetSecondaryMuscleIds],
+      });
+      await loadExerciseSheetCache();
+      closeExerciseCreateSheet();
+      // Alles dahinter sofort aktualisieren, sichtbar sobald die
+      // Schließen-Animation den Blick freigibt: Detail-Sheet (Titel/Muskeln),
+      // Übungs-Liste und - falls im Routinen-Entwurf sichtbar - dessen
+      // Übungsnamen.
+      repaintExerciseSheetContentInPlace();
+      await refreshExerciseDetailSheet();
+      if (state.routinesSheetOpen && state.routinesSheetMode === 'edit') repaintRoutinesSheetContentInPlace();
+      return;
+    }
+
     const exercise = await createExercise(name, {
       primaryMuscleId: state.exerciseCreateSheetPrimaryMuscleId,
       secondaryMuscleIds: [...state.exerciseCreateSheetSecondaryMuscleIds],
@@ -2381,10 +2430,10 @@ function wireExerciseCreateSheetEvents() {
 //
 // Überlagert das Übungs-Sheet (Stapel-Sheet, höhere z-Ebene) statt es zu
 // ersetzen - Tap auf eine Übungszeile öffnet dieses zweite Sheet obendrauf,
-// das darunterliegende bleibt offen/sichtbar. Inhalt ist bewusst noch ein
-// Platzhalter (Konzept für die eigentlichen Details/Löschen-Aktion folgt
-// separat, s. CHANGELOG) - Kopfzeile und Sheet-Mechanik sind aber bereits
-// vollständig, damit später nur noch der Body-Inhalt ergänzt werden muss.
+// das darunterliegende bleibt offen/sichtbar. Inhalt: primärer und sekundäre
+// Muskeln der Übung; die Kopfzeile trägt statt eines Löschen-Buttons einen
+// "⋮"-Glass-Button mit Kontextmenü (Bearbeiten öffnet das Neue-Übung-Sheet
+// im Bearbeiten-Modus darüber, Löschen mit Bestätigungsdialog).
 // Kopfzeile ohne `closing`-Fallunterscheidung, aus demselben Grund wie beim
 // Neue-Übung-Sheet (s. renderExerciseCreateSheet): diese Funktion wird nur
 // noch genau einmal beim Öffnen aufgerufen, die closing-Animation läuft über
@@ -2398,29 +2447,158 @@ async function renderExerciseDetailSheet() {
   return `
     <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
     <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
-      <div class="grid grid-cols-3 items-center px-4 pt-3 pb-6 flex-shrink-0">
+      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-6 flex-shrink-0">
         <button id="exercise-detail-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
         <div id="exercise-detail-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px] px-2" style="touch-action: none;">
-          <span class="text-card-title truncate">${escapeHtml(name)}</span>
+          <span id="exercise-detail-sheet-title" class="text-card-title truncate">${escapeHtml(name)}</span>
         </div>
-        <button id="exercise-detail-sheet-delete-btn" type="button" class="icon-btn-glass icon-btn-glass-danger tap-feedback justify-self-end" aria-label="Übung löschen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
-            <path d="M4 7h16" />
-            <path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" />
-            <path d="M6 7l1 12.5A2 2 0 0 0 9 21h6a2 2 0 0 0 2-2L18 7" />
-            <path d="M10 11v6M14 11v6" />
-          </svg>
-        </button>
+        <div id="exercise-detail-menu-anchor" class="relative justify-self-end">
+          <button
+            id="exercise-detail-sheet-menu-btn"
+            type="button"
+            class="icon-btn-glass tap-feedback text-ink"
+            aria-label="Optionen"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
+            </svg>
+          </button>
+        </div>
       </div>
-      <div class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
-        <p class="text-body text-muted text-center py-12">Weitere Details folgen.</p>
+      <div id="exercise-detail-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
+        ${renderExerciseDetailSheetContent(exercise)}
       </div>
     </div>
   `;
+}
+
+// Muskelgruppen als reine Anzeige-Chips (nicht antippbar, `text-ink` auf
+// `bg-white/[0.08]` wie die unausgewählten Chips im Neue-Übung-Sheet).
+// Übungen ohne Zuordnung (ältere, vor ADR 0013 angelegte) zeigen "Nicht
+// zugeordnet" statt einer leeren Fläche. `secondaryMuscleIds` kann bei
+// solchen älteren Übungen fehlen (`undefined`), daher `?? []`.
+function renderExerciseDetailSheetContent(exercise) {
+  if (!exercise) return '';
+  const muscleName = (id) => MUSCLE_GROUPS.find((m) => m.id === id)?.name;
+  const chip = (id) =>
+    `<span class="rounded-full px-3 py-1 text-body bg-white/[0.08] text-ink">${escapeHtml(muscleName(id) ?? id)}</span>`;
+  const none = `<span class="text-body text-muted">Nicht zugeordnet</span>`;
+  const secondary = exercise.secondaryMuscleIds ?? [];
+
+  return `
+    <div class="flex flex-col gap-6 py-1">
+      <div class="flex flex-col gap-2">
+        <span class="text-label-large text-muted">Primärer Muskel</span>
+        <div class="flex flex-wrap gap-2">${exercise.primaryMuscleId ? chip(exercise.primaryMuscleId) : none}</div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-label-large text-muted">Sekundäre Muskeln</span>
+        <div class="flex flex-wrap gap-2">${secondary.length > 0 ? secondary.map(chip).join('') : none}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Aktualisiert Titel und Inhalt des offenen Detail-Sheets nach einer
+// Bearbeitung - direkt am bestehenden DOM (kein Neuaufbau, keine erneute
+// Slide-Animation, das Sheet ist ja die ganze Zeit sichtbar).
+async function refreshExerciseDetailSheet() {
+  if (!state.exerciseDetailSheetOpen) return;
+  const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
+  const title = currentContainer?.querySelector('#exercise-detail-sheet-title');
+  if (title) title.textContent = exercise?.name ?? 'Gelöschte Übung';
+  const content = currentContainer?.querySelector('#exercise-detail-sheet-content');
+  if (content) content.innerHTML = renderExerciseDetailSheetContent(exercise);
+}
+
+// Kontextmenü - dasselbe Muster wie renderRoutinesSheetMenu()/
+// renderExerciseRosterMenu() (Liquid Glass, `rounded-sheet`, überlagert die
+// auslösende Stelle direkt, Ein-/Ausblendanimation über
+// ROUTINE_PICKER_CLOSE_ANIMATION_MS), nur ohne Repaint: Das Detail-Sheet
+// hat keinen eigenen paint()-Zyklus (es wird per insertAdjacentHTML
+// eingefügt), Popup und Backdrop werden deshalb direkt in den Anker-Container
+// der Kopfzeile eingefügt bzw. wieder entfernt.
+function renderExerciseDetailMenu() {
+  return `
+    <div id="exercise-detail-menu-backdrop" class="fixed inset-0 z-30"></div>
+    <div id="exercise-detail-menu-popup" class="routine-picker-popup popup-glass absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
+      <button type="button" id="exercise-detail-menu-edit-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+        Bearbeiten
+      </button>
+      <button type="button" id="exercise-detail-menu-delete-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+        Löschen
+      </button>
+    </div>
+  `;
+}
+
+let pendingExerciseDetailMenuCloseTimeout = null;
+
+function setExerciseDetailMenuExpanded(expanded) {
+  currentContainer?.querySelector('#exercise-detail-sheet-menu-btn')?.setAttribute('aria-expanded', String(expanded));
+}
+
+function openExerciseDetailMenu() {
+  if (state.exerciseDetailMenuOpen) return;
+  state.exerciseDetailMenuOpen = true;
+  currentContainer.querySelector('#exercise-detail-menu-anchor')?.insertAdjacentHTML('beforeend', renderExerciseDetailMenu());
+  setExerciseDetailMenuExpanded(true);
+
+  currentContainer.querySelector('#exercise-detail-menu-backdrop')?.addEventListener('click', closeExerciseDetailMenu);
+  currentContainer.querySelector('#exercise-detail-menu-edit-btn')?.addEventListener('click', () => {
+    closeExerciseDetailMenu();
+    openExerciseCreateSheet(state.exerciseDetailSheetExerciseId);
+  });
+
+  // Löschen mit Bestätigungsdialog (CLAUDE.md-Konvention für jedes Löschen
+  // in der App) - deleteExercise() selbst entscheidet, was mit heute schon
+  // begonnenen Sätzen passiert (s. js/db.js). Übungs-Sheet dahinter direkt
+  // mit aktualisiertem Zwischenspeicher neu befüllt, statt erst beim
+  // nächsten ohnehin fälligen Repaint - dieselbe Reihenfolge wie beim
+  // Anlegen einer neuen Übung (s. openExerciseCreateSheet-Submit).
+  currentContainer.querySelector('#exercise-detail-menu-delete-btn')?.addEventListener('click', async () => {
+    closeExerciseDetailMenu();
+    if (!confirm('Übung wirklich löschen? Sie wird aus allen Routinen entfernt, bereits erfasste Sätze bleiben erhalten.')) {
+      return;
+    }
+    const exerciseId = state.exerciseDetailSheetExerciseId;
+    await deleteExercise(exerciseId);
+    await loadExerciseSheetCache();
+    state.exerciseSheetSelectedIds.delete(exerciseId);
+    closeExerciseDetailSheet();
+    repaintExerciseSheetContentInPlace();
+  });
+}
+
+// Entfernt Backdrop/Popup erst nach der Schließen-Animation; `immediate`
+// überspringt sie (Sheet wird gerade selbst entfernt).
+function closeExerciseDetailMenu({ immediate = false } = {}) {
+  if (!state.exerciseDetailMenuOpen) return;
+  state.exerciseDetailMenuOpen = false;
+  setExerciseDetailMenuExpanded(false);
+  const popup = currentContainer?.querySelector('#exercise-detail-menu-popup');
+  const backdrop = currentContainer?.querySelector('#exercise-detail-menu-backdrop');
+  // Backdrop sofort entfernen: Er soll ab jetzt keine Klicks mehr abfangen.
+  backdrop?.remove();
+  if (!popup) return;
+  const remove = () => {
+    pendingExerciseDetailMenuCloseTimeout = null;
+    popup.remove();
+  };
+  if (immediate) {
+    remove();
+    return;
+  }
+  popup.classList.add('closing');
+  pendingExerciseDetailMenuCloseTimeout = setTimeout(remove, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
 }
 
 // Öffnet OHNE das globale paint() - aus demselben Grund wie beim
@@ -2445,6 +2623,7 @@ function finalizeExerciseDetailSheetClose() {
   state.exerciseDetailSheetOpen = false;
   state.exerciseDetailSheetClosing = false;
   state.exerciseDetailSheetExerciseId = null;
+  state.exerciseDetailMenuOpen = false;
   unlockBodyScroll();
   resetNavZIndex();
   const backdrop = currentContainer?.querySelector('#exercise-detail-sheet-backdrop');
@@ -2485,22 +2664,9 @@ function wireExerciseDetailSheetEvents() {
     closeExerciseDetailSheet();
   });
 
-  // Löschen mit Bestätigungsdialog (CLAUDE.md-Konvention für jedes Löschen
-  // in der App) - deleteExercise() selbst entscheidet, was mit heute schon
-  // begonnenen Sätzen passiert (s. js/db.js). Übungs-Sheet dahinter direkt
-  // mit aktualisiertem Zwischenspeicher neu befüllt, statt erst beim
-  // nächsten ohnehin fälligen Repaint - dieselbe Reihenfolge wie beim
-  // Anlegen einer neuen Übung (s. openExerciseCreateSheet-Submit).
-  currentContainer.querySelector('#exercise-detail-sheet-delete-btn')?.addEventListener('click', async () => {
-    if (!confirm('Übung wirklich löschen? Sie wird aus allen Routinen entfernt, bereits erfasste Sätze bleiben erhalten.')) {
-      return;
-    }
-    const exerciseId = state.exerciseDetailSheetExerciseId;
-    await deleteExercise(exerciseId);
-    await loadExerciseSheetCache();
-    state.exerciseSheetSelectedIds.delete(exerciseId);
-    closeExerciseDetailSheet();
-    repaintExerciseSheetContentInPlace();
+  currentContainer.querySelector('#exercise-detail-sheet-menu-btn')?.addEventListener('click', () => {
+    if (state.exerciseDetailMenuOpen) closeExerciseDetailMenu();
+    else openExerciseDetailMenu();
   });
 
   wireExerciseDetailSheetDrag();
