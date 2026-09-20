@@ -1595,7 +1595,13 @@ function renderExerciseSheet() {
 function repaintExerciseSheetContentInPlace() {
   const content = currentContainer?.querySelector('#exercise-sheet-content');
   if (!content) return;
+  // `#exercise-sheet-body` ist der scrollende Container und wird hier als
+  // neuer DOM-Knoten erzeugt - ohne Zwischenspeichern springt die Liste bei
+  // jeder Auswahl/jedem Filter-Klick an den Anfang zurück.
+  const scrollTop = content.querySelector('#exercise-sheet-body')?.scrollTop ?? 0;
   content.innerHTML = renderExerciseSheetContent();
+  const newBody = content.querySelector('#exercise-sheet-body');
+  if (newBody) newBody.scrollTop = scrollTop;
   wireExerciseSheetContentEvents();
 }
 

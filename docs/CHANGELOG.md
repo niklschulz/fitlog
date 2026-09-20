@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-20 (Übungs-Sheet: Liste springt bei Auswahl nicht mehr nach oben)
+
+### Fixed
+- Übungs-Sheet: Bei jeder Auswahl/Abwahl einer Übung (und beim Öffnen/Schließen des Muskel-Filters) sprang die Liste an den Anfang zurück — `repaintExerciseSheetContentInPlace()` erzeugte den scrollenden Container `#exercise-sheet-body` jeweils als neuen DOM-Knoten; die Scrollposition wird jetzt davor gemerkt und danach wiederhergestellt
+
 ## 2026-09-14 (Routinen-Sheet-Bearbeiten-Modus: zwei Korrekturen)
 
 ### Fixed
