@@ -58,6 +58,10 @@ let state = {
   routinesSheetEditRoutineId: null, // null = Neuanlage, sonst Bearbeiten
   routinesSheetEditName: '',
   routinesSheetEditExerciseIds: [], // Reihenfolge = Hinzufüge-Reihenfolge
+  // "⋮"-Kontextmenü ("Entfernen") an einer Entwurfs-Übung im Bearbeiten-Modus -
+  // analog zu routinesSheetMenuRoutineId, nur eine Zeile gleichzeitig.
+  routinesSheetEditMenuExerciseId: null,
+  routinesSheetEditMenuClosing: false,
   // Kleines Kontextmenü ("Übung entfernen") am "⋮"-Button jeder Roster-Karte
   // - nur eine Karte kann gleichzeitig ihr Menü offen haben.
   exerciseRosterMenuEntryId: null,
@@ -126,6 +130,8 @@ export async function render(container) {
   state.routinesSheetEditRoutineId = null;
   state.routinesSheetEditName = '';
   state.routinesSheetEditExerciseIds = [];
+  state.routinesSheetEditMenuExerciseId = null;
+  state.routinesSheetEditMenuClosing = false;
   state.exerciseRosterMenuEntryId = null;
   state.exerciseRosterMenuClosing = false;
   state.calendarSheetOpen = false;
@@ -198,6 +204,10 @@ export function unmount() {
   if (pendingRoutinesSheetMenuCloseTimeout) {
     clearTimeout(pendingRoutinesSheetMenuCloseTimeout);
     pendingRoutinesSheetMenuCloseTimeout = null;
+  }
+  if (pendingRoutinesSheetEditMenuCloseTimeout) {
+    clearTimeout(pendingRoutinesSheetEditMenuCloseTimeout);
+    pendingRoutinesSheetEditMenuCloseTimeout = null;
   }
   if (state.calendarSheetOpen) {
     unlockBodyScroll();
@@ -831,21 +841,29 @@ async function renderRoutinesSheetListContent() {
 // zugleich die gespeicherte (appendExerciseToRoutine vergibt `order`).
 async function renderRoutinesSheetEditContent() {
   const exercises = await db.exercises.bulkGet(state.routinesSheetEditExerciseIds);
+  const menuOpenId = state.routinesSheetEditMenuExerciseId;
   const rows = state.routinesSheetEditExerciseIds
     .map((id, i) => {
       const exercise = exercises[i];
       const label = exercise ? escapeHtml(exercise.name) : 'Gelöschte Übung';
       return `
-        <li class="reorder-item bg-white/[0.08] rounded-card flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
+        <li class="reorder-item relative bg-white/[0.08] rounded-card flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
           <span class="flex-1 min-w-0 text-card-title truncate ${exercise ? '' : 'text-muted italic'}">${label}</span>
           <button
             type="button"
             data-id="${id}"
-            class="routines-sheet-edit-remove-exercise-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
-            aria-label="${label} entfernen"
+            class="routines-sheet-edit-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
+            aria-label="Optionen für ${label}"
+            aria-haspopup="true"
+            aria-expanded="${menuOpenId === id}"
           >
-            ✕
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
+            </svg>
           </button>
+          ${menuOpenId === id ? renderRoutinesSheetEditMenu(id) : ''}
         </li>
       `;
     })
@@ -964,17 +982,35 @@ function wireRoutinesSheetEditContentEvents() {
     openExerciseSheet('routine');
   });
 
-  currentContainer.querySelectorAll('.routines-sheet-edit-remove-exercise-btn').forEach((btn) => {
+  currentContainer.querySelectorAll('.routines-sheet-edit-menu-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.routinesSheetEditExerciseIds = state.routinesSheetEditExerciseIds.filter((id) => id !== btn.dataset.id);
-      repaintRoutinesSheetContentInPlace();
+      if (state.routinesSheetEditMenuExerciseId === btn.dataset.id) {
+        closeRoutinesSheetEditMenu();
+      } else {
+        openRoutinesSheetEditMenu(btn.dataset.id);
+      }
     });
+  });
+
+  currentContainer.querySelector('#routines-sheet-edit-menu-backdrop')?.addEventListener('click', () => {
+    closeRoutinesSheetEditMenu();
+  });
+
+  // Kein Bestätigungsdialog: Entfernt nur aus dem Entwurf, nichts davon ist
+  // vor dem Speichern in der DB (gleiche Begründung wie beim Entfernen einer
+  // unbegonnenen Übung aus dem Tages-Roster, s. CLAUDE.md).
+  currentContainer.querySelector('.routines-sheet-edit-remove-btn')?.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.id;
+    state.routinesSheetEditExerciseIds = state.routinesSheetEditExerciseIds.filter((x) => x !== id);
+    state.routinesSheetEditMenuExerciseId = null;
+    state.routinesSheetEditMenuClosing = false;
+    repaintRoutinesSheetContentInPlace();
   });
 
   wireLongPressReorder({
     listEl: currentContainer.querySelector('#routines-sheet-edit-list'),
     itemSelector: 'li',
-    ignoreSelector: '.routines-sheet-edit-remove-exercise-btn',
+    ignoreSelector: '.routines-sheet-edit-menu-btn, .routines-sheet-edit-menu-popup, #routines-sheet-edit-menu-backdrop',
     scrollEl: currentContainer.querySelector('#routines-sheet-content'),
     onReorder: (from, to) => {
       const ids = [...state.routinesSheetEditExerciseIds];
@@ -986,11 +1022,53 @@ function wireRoutinesSheetEditContentEvents() {
   });
 }
 
+// Kontextmenü mit dem einen Eintrag "Entfernen" - dasselbe Muster wie
+// renderExerciseRosterMenu()/renderRoutinesSheetMenu() (Liquid Glass,
+// `rounded-sheet`, überlagert die Zeile direkt, roter Eintrag), s. dortige
+// Kommentare. Sitzt hier direkt im `<li>` (die Zeile hat kein
+// `overflow-hidden`, das Popup wird also nicht abgeschnitten).
+function renderRoutinesSheetEditMenu(exerciseId) {
+  const closing = state.routinesSheetEditMenuClosing;
+  return `
+    <div id="routines-sheet-edit-menu-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="routines-sheet-edit-menu-popup routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
+      <button type="button" data-id="${exerciseId}" class="routines-sheet-edit-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+        Entfernen
+      </button>
+    </div>
+  `;
+}
+
+// Analog zu openRoutinesSheetMenu()/closeRoutinesSheetMenu() (gleiche
+// Animation/Timeout-Konstante), nur mit eigenem State, da beide Menüs
+// unabhängig von der jeweils anderen Ansicht (Liste/Bearbeiten) existieren.
+let pendingRoutinesSheetEditMenuCloseTimeout = null;
+
+function openRoutinesSheetEditMenu(exerciseId) {
+  state.routinesSheetEditMenuExerciseId = exerciseId;
+  state.routinesSheetEditMenuClosing = false;
+  repaintRoutinesSheetContentInPlace();
+}
+
+function closeRoutinesSheetEditMenu() {
+  if (!state.routinesSheetEditMenuExerciseId || state.routinesSheetEditMenuClosing) return;
+  state.routinesSheetEditMenuClosing = true;
+  repaintRoutinesSheetContentInPlace();
+  pendingRoutinesSheetEditMenuCloseTimeout = setTimeout(() => {
+    pendingRoutinesSheetEditMenuCloseTimeout = null;
+    state.routinesSheetEditMenuExerciseId = null;
+    state.routinesSheetEditMenuClosing = false;
+    repaintRoutinesSheetContentInPlace();
+  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+}
+
 // Neuanlage (routineId null) oder Bearbeiten (routineId gesetzt) - lädt bei
 // Bearbeiten den bisherigen Namen/die bisherigen Übungen als Entwurf-
 // Ausgangsstand in den State (s. renderRoutinesSheetEditContent()); nichts
 // davon landet in der DB, bis saveRoutinesSheetEdit() läuft.
 async function openRoutinesSheetEdit(routineId) {
+  state.routinesSheetEditMenuExerciseId = null;
+  state.routinesSheetEditMenuClosing = false;
   state.routinesSheetEditRoutineId = routineId;
   if (routineId) {
     const routine = await db.routines.get(routineId);

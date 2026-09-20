@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-20 (Routinen-Sheet: "Entfernen" per Kontextmenü statt ✕)
+
+### Changed
+- Entwurfs-Übungen im Routinen-Sheet (Bearbeiten-Modus) haben statt des ✕-Buttons einen "⋮"-Button mit dem bestehenden Kontextmenü-Muster und dem einen Eintrag "Entfernen"
+
 ## 2026-09-20 (Routinen-Sheet: Übungen per Gedrückthalten umsortieren)
 
 ### Added
