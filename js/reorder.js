@@ -22,6 +22,7 @@ const MOVE_CANCEL_PX = 8;
 const EDGE_PX = 56;
 const AUTOSCROLL_PX_PER_SECOND = 600;
 const SETTLE_MS = 160;
+const EDGE_TOLERANCE_PX = 0.5;
 
 // `liftedBackground`: Die Zeilen der Liste sind meist halbtransparent
 // (Sheet-Fläche-Variante) - die angehobene Zeile muss deckend sein, sonst
@@ -140,11 +141,26 @@ export function wireLongPressReorder({
     const dy = Math.max(minDy, Math.min(maxDy, offset()));
     drag.item.style.transform = `translateY(${dy}px) scale(1.02)`;
 
+    // Ziel-Index = Anzahl der Zeilen, die nach der Verschiebung ÜBER der
+    // gezogenen Zeile stehen. Der Vergleich ist bewusst richtungsabhängig:
+    // Eine Zeile darunter (j > index) ist "überholt", sobald der Mittelpunkt
+    // der gezogenen Zeile ihren erreicht hat (>=), eine darüber (j < index)
+    // bleibt erst dann oben, wenn er sie noch nicht erreicht hat (>).
+    // Ein einheitliches `<` scheitert an genau den Grenzfällen, die bei
+    // gleich hohen Zeilen ständig vorkommen: An der Klemmgrenze unten liegt
+    // der Mittelpunkt exakt auf dem der letzten Zeile - die Zeile ließ sich
+    // deshalb nie an die letzte Stelle legen. Zusätzlich Toleranz gegen
+    // Gleitkomma-Rauschen und explizit erste/letzte Position an den
+    // Klemmgrenzen (auch bei ungleich hohen Zeilen).
     const center = tops[index] + heights[index] / 2 + dy;
     let target = 0;
     items.forEach((_, j) => {
-      if (j !== index && tops[j] + heights[j] / 2 < center) target += 1;
+      if (j === index) return;
+      const centerJ = tops[j] + heights[j] / 2;
+      if (j < index ? centerJ < center - EDGE_TOLERANCE_PX : centerJ <= center + EDGE_TOLERANCE_PX) target += 1;
     });
+    if (dy >= maxDy - EDGE_TOLERANCE_PX) target = last;
+    else if (dy <= minDy + EDGE_TOLERANCE_PX) target = 0;
     drag.target = target;
 
     items.forEach((el, j) => {

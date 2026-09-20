@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-20 (Umsortieren: Übung ließ sich nicht an die letzte Stelle legen)
+
+### Fixed
+- Beim Umsortieren per Gedrückthalten (`js/reorder.js`) ließ sich eine Zeile nicht an die letzte Stelle legen (und bei genau n Slots Versatz landete sie einen Platz zu früh) — der Vergleich für den Ziel-Index scheiterte an der Gleichheit der Mittelpunkte an der Klemmgrenze
+
 ## 2026-09-20 (Routinen-Sheet: "Entfernen" per Kontextmenü statt ✕)
 
 ### Changed
