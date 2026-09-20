@@ -362,6 +362,31 @@ export async function removeExerciseFromWorkout(entryId) {
   await db.workoutExercises.delete(entryId);
 }
 
+// Legt die Reihenfolge der NOCH NICHT BEGONNENEN Übungen eines Workouts neu
+// fest (Roster im Workout-Tab, Umsortieren per Gedrückthalten). `orderedEntryIds`
+// = workoutExercises-IDs in der gewünschten Reihenfolge. Begonnene Übungen
+// (startedAt gesetzt) sind bewusst tabu: Ihre Position folgt allein aus dem
+// Zeitpunkt des ersten Satzes (s. Sortierregel bei getWorkoutExercises) und
+// wird nie manuell verändert - IDs begonnener oder fremder Einträge werden
+// ignoriert. Unbegonnene Einträge, die in der Liste fehlen, rücken in ihrer
+// bisherigen Reihenfolge ans Ende, statt mit einer doppelten `order` zu
+// kollidieren. Gilt nur für diesen Tag, die Routine bleibt unverändert
+// (Tages-Modell, s. ADR 0007).
+export async function reorderWorkoutExercises(workoutId, orderedEntryIds) {
+  await db.transaction('rw', db.workoutExercises, async () => {
+    const entries = await getWorkoutExercises(workoutId);
+    const unstarted = entries.filter((e) => e.startedAt === null);
+    const byId = new Map(unstarted.map((e) => [e.id, e]));
+    const requested = orderedEntryIds.filter((id, i) => byId.has(id) && orderedEntryIds.indexOf(id) === i);
+    const rest = unstarted.filter((e) => !requested.includes(e.id)).map((e) => e.id);
+    const ts = nowISO();
+    let order = 0;
+    for (const id of [...requested, ...rest]) {
+      await db.workoutExercises.update(id, { order: order++, updatedAt: ts });
+    }
+  });
+}
+
 // Fügt mehrere Übungen gesammelt manuell zu einem Workout hinzu (Übungs-Sheet
 // im Workout-Tab, Mehrfachauswahl - s. Abschnitt 13). `sourceRoutineId: null`
 // ist entscheidend, damit applyRoutineToWorkout/removeRoutineFromWorkout

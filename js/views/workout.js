@@ -7,6 +7,7 @@ import {
   removeRoutineFromWorkout,
   addExercisesToWorkout,
   removeExerciseFromWorkout,
+  reorderWorkoutExercises,
   createExercise,
   deleteExercise,
   createRoutine,
@@ -1271,10 +1272,24 @@ function renderExerciseRoster(entries, nameById, setsByExercise) {
     return `<p class="text-body text-muted text-center py-6">Noch keine Übungen in diesem Workout.</p>`;
   }
 
+  // Zwei getrennte Listen statt einer: Begonnene Übungen (Sätze erfasst)
+  // stehen fest vorn, ihre Position ergibt sich allein aus dem Zeitpunkt des
+  // ersten Satzes (s. Sortierregel bei getWorkoutExercises in js/db.js) - nur
+  // die noch unbegonnenen darunter lassen sich per Gedrückthalten und
+  // Verschieben umsortieren (js/reorder.js, s. wireEvents()). Eine eigene
+  // `<ul>` je Block hält die Geste automatisch auf ihren Block beschränkt:
+  // Das Modul kennt nur die Zeilen "seiner" Liste, eine unbegonnene Übung
+  // kann dadurch nie vor eine begonnene gezogen werden. Optisch identisch zu
+  // einer einzigen Liste (gleicher `gap-2` dazwischen).
+  const row = (entry) => renderExerciseRow(entry, nameById[entry.exerciseId], setsByExercise[entry.exerciseId] ?? []);
+  const started = entries.filter((e) => e.startedAt !== null);
+  const unstarted = entries.filter((e) => e.startedAt === null);
+
   return `
-    <ul class="flex flex-col gap-2">
-      ${entries.map((entry) => renderExerciseRow(entry, nameById[entry.exerciseId], setsByExercise[entry.exerciseId] ?? [])).join('')}
-    </ul>
+    <div class="flex flex-col gap-2">
+      ${started.length > 0 ? `<ul class="flex flex-col gap-2">${started.map(row).join('')}</ul>` : ''}
+      ${unstarted.length > 0 ? `<ul id="roster-unstarted-list" class="flex flex-col gap-2">${unstarted.map(row).join('')}</ul>` : ''}
+    </div>
   `;
 }
 
@@ -1321,7 +1336,7 @@ function renderExerciseRow(entry, name, sets) {
   }
 
   return `
-    <li class="relative">
+    <li class="reorder-item relative rounded-card" data-entry="${entry.id}">
       <div class="bg-surface rounded-card overflow-hidden">
         <div class="flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
           <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
@@ -1379,7 +1394,7 @@ function renderExerciseRosterMenu(entry) {
   const closing = state.exerciseRosterMenuClosing;
   return `
     <div id="exercise-roster-menu-backdrop" class="fixed inset-0 z-30"></div>
-    <div class="routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
+    <div class="exercise-roster-menu-popup routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
       <button type="button" data-entry="${entry.id}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Übung entfernen
       </button>
@@ -2605,6 +2620,34 @@ function wireEvents() {
     state.exerciseRosterMenuEntryId = null;
     state.exerciseRosterMenuClosing = false;
     await paint();
+  });
+
+  // Umsortieren der noch unbegonnenen Übungen per Gedrückthalten und
+  // Verschieben (s. renderExerciseRoster). Seite scrollt als Ganzes
+  // (document.scrollingElement), unten schwebt die Bottom-Nav - der
+  // Auto-Scroll-Randbereich rückt deshalb entsprechend nach innen. Die Zeile
+  // ist bereits deckend (`bg-surface`), daher kein eigener Hintergrund beim
+  // Anheben. Der DOM-Umbau passiert synchron VOR dem asynchronen Speichern,
+  // sonst würde die Liste zwischen Loslassen und Neu-Rendern kurz in die alte
+  // Reihenfolge zurückspringen.
+  wireLongPressReorder({
+    listEl: currentContainer.querySelector('#roster-unstarted-list'),
+    itemSelector: 'li',
+    ignoreSelector: '.exercise-roster-menu-btn, .exercise-roster-menu-popup, #exercise-roster-menu-backdrop',
+    scrollEl: document.scrollingElement,
+    edgeInsets: { bottom: 96 },
+    liftedBackground: null,
+    onReorder: async (from, to) => {
+      const list = currentContainer.querySelector('#roster-unstarted-list');
+      const rows = [...list.children];
+      const [moved] = rows.splice(from, 1);
+      rows.splice(to, 0, moved);
+      rows.forEach((li) => list.appendChild(li));
+      const workout = await getWorkoutByDate(state.selectedDate);
+      if (!workout) return;
+      await reorderWorkoutExercises(workout.id, rows.map((li) => li.dataset.entry));
+      await paint();
+    },
   });
 
   // --- Übungs-Sheet (Abschnitt 13) ---

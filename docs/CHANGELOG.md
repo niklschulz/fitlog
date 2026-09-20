@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-21 (Workout-Tab: unbegonnene Übungen umsortieren)
+
+### Added
+- Im Workout-Tab lassen sich noch unbegonnene Übungen (keine Sätze erfasst) per Gedrückthalten und Verschieben umsortieren (`js/reorder.js`); begonnene Übungen bleiben fest, die Regel "erste erfasste Übung rückt hinter die letzte begonnene" bleibt unverändert
+- `reorderWorkoutExercises()` in `js/db.js` (mit zwei Tests in `tests/db.test.js`)
+- `wireLongPressReorder()`: `edgeInsets` (Auto-Scroll-Randbereich nach innen rücken, z. B. für die Bottom-Nav), `scrollEl` auch für die ganze Seite (`document.scrollingElement`), `liftedBackground: null`
+
+### Fixed
+- `wireLongPressReorder()`: Nach einer Geste feuert der Browser beim Loslassen ein `click` — bei Zeilen mit Tap-Aktion (Roster → Detailseite) wird es jetzt einmalig abgefangen
+
 ## 2026-09-20 (Routinen-Tab entfernt)
 
 ### Removed

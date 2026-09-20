@@ -20,6 +20,7 @@ import {
   removeRoutineFromWorkout,
   removeExerciseFromWorkout,
   addExercisesToWorkout,
+  reorderWorkoutExercises,
   markWorkoutExerciseStarted,
   addSet,
 } from '../js/db.js';
@@ -147,4 +148,42 @@ test('getWorkoutExercises sortiert begonnene Übungen vor unbegonnenen', async (
   const entries = await getWorkoutExercises(workout.id);
   assert.equal(entries[0].exerciseId, exB.id, 'begonnene Übung muss zuerst stehen');
   assert.equal(entries[1].exerciseId, exA.id);
+});
+
+test('reorderWorkoutExercises ordnet unbegonnene Übungen um, begonnene bleiben unangetastet vorn', async () => {
+  const [a, b, c, d] = await Promise.all(['A', 'B', 'C', 'D'].map((n) => createExercise(n)));
+  const workout = await getOrCreateWorkoutForDate('2026-09-21');
+  await addExercisesToWorkout(workout.id, [a.id, b.id, c.id, d.id]);
+  await addSet(workout.id, b.id, 50, 10);
+  await markWorkoutExerciseStarted(workout.id, b.id);
+
+  const before = await getWorkoutExercises(workout.id);
+  assert.deepEqual(before.map((e) => e.exerciseId), [b.id, a.id, c.id, d.id]);
+  const id = (exerciseId) => before.find((e) => e.exerciseId === exerciseId).id;
+
+  // D nach vorn, C nach hinten - nur unbegonnene Einträge (B ist begonnen)
+  await reorderWorkoutExercises(workout.id, [id(d.id), id(a.id), id(c.id)]);
+  const after = await getWorkoutExercises(workout.id);
+  assert.deepEqual(after.map((e) => e.exerciseId), [b.id, d.id, a.id, c.id]);
+});
+
+test('reorderWorkoutExercises ignoriert begonnene und fremde IDs und hängt fehlende Einträge hinten an', async () => {
+  const [a, b, c] = await Promise.all(['A', 'B', 'C'].map((n) => createExercise(n)));
+  const workout = await getOrCreateWorkoutForDate('2026-09-21');
+  const other = await getOrCreateWorkoutForDate('2026-09-22');
+  await addExercisesToWorkout(workout.id, [a.id, b.id, c.id]);
+  await addExercisesToWorkout(other.id, [a.id]);
+  await markWorkoutExerciseStarted(workout.id, a.id);
+
+  const entries = await getWorkoutExercises(workout.id);
+  const id = (exerciseId) => entries.find((e) => e.exerciseId === exerciseId).id;
+  const foreign = (await getWorkoutExercises(other.id))[0].id;
+
+  // Begonnenes A und fremder Eintrag werden ignoriert; B fehlt -> bleibt hinter C
+  await reorderWorkoutExercises(workout.id, [id(a.id), foreign, id(c.id)]);
+  const after = await getWorkoutExercises(workout.id);
+  assert.deepEqual(after.map((e) => e.exerciseId), [a.id, c.id, b.id]);
+  const startedA = after.find((e) => e.exerciseId === a.id);
+  assert.equal(startedA.order, entries.find((e) => e.exerciseId === a.id).order, 'begonnene Übung: order unverändert');
+  assert.deepEqual((await getWorkoutExercises(other.id)).map((e) => e.order), [0], 'anderer Tag unverändert');
 });

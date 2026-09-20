@@ -24,15 +24,22 @@ const AUTOSCROLL_PX_PER_SECOND = 600;
 const SETTLE_MS = 160;
 const EDGE_TOLERANCE_PX = 0.5;
 
-// `liftedBackground`: Die Zeilen der Liste sind meist halbtransparent
-// (Sheet-Fläche-Variante) - die angehobene Zeile muss deckend sein, sonst
-// scheint die darunter liegende Zeile durch. Default = bg-highlight.
+// - `liftedBackground`: Die Zeilen der Liste sind meist halbtransparent
+//   (Sheet-Fläche-Variante) - die angehobene Zeile muss deckend sein, sonst
+//   scheint die darunter liegende Zeile durch. Default = bg-highlight, `null`
+//   lässt den Hintergrund unangetastet (Zeilen, die ohnehin deckend sind).
+// - `scrollEl`: scrollender Container für Auto-Scroll am Rand. Für eine
+//   Liste, die mit der ganzen Seite scrollt, `document.scrollingElement`
+//   übergeben - dann gilt der Viewport als Rand.
+// - `edgeInsets`: Abstand, den der Auto-Scroll-Randbereich nach innen rückt,
+//   z. B. `{ bottom: 96 }` für eine über dem Inhalt schwebende Bottom-Nav.
 export function wireLongPressReorder({
   listEl,
   itemSelector,
   ignoreSelector = null,
   scrollEl = null,
   liftedBackground = '#404040',
+  edgeInsets = {},
   onReorder,
 }) {
   if (!listEl) return;
@@ -123,7 +130,7 @@ export function wireLongPressReorder({
     p.item.style.zIndex = '10';
     p.item.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.45)';
     p.item.style.willChange = 'transform';
-    p.item.style.backgroundColor = liftedBackground;
+    if (liftedBackground) p.item.style.backgroundColor = liftedBackground;
 
     update();
     drag.raf = requestAnimationFrame(tick);
@@ -179,10 +186,13 @@ export function wireLongPressReorder({
     const dt = drag.lastTick ? Math.min(now - drag.lastTick, 50) : 16;
     drag.lastTick = now;
     if (scrollEl) {
-      const rect = scrollEl.getBoundingClientRect();
+      const isPage = scrollEl === document.scrollingElement || scrollEl === document.documentElement;
+      const rect = isPage ? { top: 0, bottom: window.innerHeight } : scrollEl.getBoundingClientRect();
+      const top = rect.top + (edgeInsets.top ?? 0);
+      const bottom = rect.bottom - (edgeInsets.bottom ?? 0);
       const px = (AUTOSCROLL_PX_PER_SECOND * dt) / 1000;
-      if (drag.lastY < rect.top + EDGE_PX) scrollEl.scrollTop -= px;
-      else if (drag.lastY > rect.bottom - EDGE_PX) scrollEl.scrollTop += px;
+      if (drag.lastY < top + EDGE_PX) scrollEl.scrollTop -= px;
+      else if (drag.lastY > bottom - EDGE_PX) scrollEl.scrollTop += px;
     }
     update();
     drag.raf = requestAnimationFrame(tick);
@@ -219,6 +229,18 @@ export function wireLongPressReorder({
 
     const { items, index, tops, heights } = d;
     const target = commit ? d.target : index;
+
+    // Nach einer aktivierten Geste feuert der Browser beim Loslassen noch ein
+    // `click` - bei Zeilen mit eigener Tap-Aktion (z. B. Detailseite öffnen)
+    // würde das nach jedem Umsortieren (auch nach einem Halten ohne
+    // Verschieben) unbeabsichtigt ausgelöst. Einmalig im Capture-Modus
+    // abfangen; der Timeout räumt auf, falls gar kein click mehr kommt.
+    const swallowClick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('click', swallowClick, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener('click', swallowClick, { capture: true }), 400);
 
     // Gezogene Zeile in ihren Ziel-Slot gleiten lassen, erst danach neu
     // rendern - die neue Reihenfolge entspricht dann exakt dem angezeigten
