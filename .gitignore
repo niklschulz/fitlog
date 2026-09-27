@@ -1,2 +1,6 @@
 .DS_Store
 node_modules/
+
+# Platzhalter-Medien für UI-Entwürfe, kein Bestandteil der App (s. drafts/README.md).
+# Aus einem lizenzierten Stock-Footage-Paket - nie ins öffentliche Repo committen.
+drafts/media/

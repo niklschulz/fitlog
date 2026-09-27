@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entwurf: Übungs-Medien</title>
+
+<!-- Reiner Entwurf, kein Teil der ausgelieferten App - s. drafts/README.md.
+     Tailwind-Config 1:1 aus index.html kopiert, damit die Utility-Klassen
+     identisch zur echten App aussehen; css/styles.css per relativem Pfad
+     eingebunden (../css/styles.css, drafts/ liegt neben css/ im Repo-Root). -->
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          base: '#121212',
+          surface: '#252525',
+          raised: '#2A2A2A',
+          highlight: '#404040',
+          accent: '#A3E635',
+          ink: '#F5F5F5',
+          muted: '#9B9BA1',
+        },
+        borderRadius: {
+          card: '4px',
+          btn: '4px',
+          sheet: '26px',
+          badge: '11px',
+        },
+        fontFamily: {
+          sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', 'system-ui', 'sans-serif'],
+        },
+        fontSize: {
+          kpi: ['21px', { lineHeight: '1.2', fontWeight: '700' }],
+          'screen-title': ['21px', { lineHeight: '1.2', fontWeight: '700' }],
+          'card-title': ['16px', { lineHeight: '1.3', fontWeight: '600' }],
+          body: ['14px', { lineHeight: '1.2', fontWeight: '400' }],
+          label: ['11.5px', { lineHeight: '1.2', fontWeight: '600', letterSpacing: '0.6px' }],
+          'label-large': ['14px', { lineHeight: '1.3', fontWeight: '700' }],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  /* Nur für diese Entwurfsseite: zwei Handy-breite Vorschauen nebeneinander
+     auf einer neutralen Werkstatt-Fläche statt der echten Bottom-Nav/Tabs -
+     der Rest der Klassen ist exakt wie in der echten App. */
+  body { background: #0a0a0a; }
+  .device-frame {
+    width: 390px;
+    max-width: 100%;
+    background: #121212;
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+</style>
+</head>
+<body class="text-ink font-sans p-6">
+
+<div class="max-w-[420px] mx-auto flex flex-col gap-3">
+  <h1 class="text-screen-title text-white">Entwurf: Übungen mit Bild/Video</h1>
+  <p class="text-body text-muted">
+    Nicht in der App verdrahtet - reine Layout-Vorlage mit Platzhalter-Medien
+    (<code>media/exercise-placeholder.jpg</code>/<code>.mp4</code>, s.
+    <code>drafts/README.md</code>). Wird erst angebunden, sobald echte
+    Übungs-Medien vorhanden sind.
+  </p>
+</div>
+
+<div class="max-w-[420px] mx-auto mt-8 flex flex-col gap-4">
+  <h2 class="text-card-title text-white">1. Übungs-Sheet: Zeile mit Vorschaubild</h2>
+  <div class="device-frame">
+    <div class="p-4 flex flex-col gap-2">
+      <!-- Suchfeld nur als Referenz für die linke Kante, unverändert aus workout.js -->
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M20 20l-4.7-4.7" />
+          </svg>
+        </span>
+        <input type="text" placeholder="Suche" disabled class="w-full bg-white/[0.08] rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]" />
+      </div>
+
+      <ul class="flex flex-col gap-1 mt-2">
+        <li class="bg-surface rounded-btn py-3 pr-4 flex items-center gap-3">
+          <button type="button" class="tap-feedback flex-1 min-w-0 flex items-center gap-3 text-left">
+            <img src="media/exercise-placeholder.jpg" alt="" class="w-14 h-14 rounded-btn object-cover flex-shrink-0" />
+            <span class="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span class="text-card-title truncate">Butterfly</span>
+              <span class="text-label text-muted uppercase">Brust</span>
+            </span>
+          </button>
+          <button type="button" class="tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0">
+            <span class="w-6 h-6 rounded-btn flex items-center justify-center text-label border-2 border-white/25"></span>
+          </button>
+        </li>
+        <li class="bg-surface rounded-btn py-3 pr-4 flex items-center gap-3">
+          <button type="button" class="tap-feedback flex-1 min-w-0 flex items-center gap-3 text-left">
+            <img src="media/exercise-placeholder.jpg" alt="" class="w-14 h-14 rounded-btn object-cover flex-shrink-0" />
+            <span class="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span class="text-card-title truncate">Bizeps-Curls</span>
+              <span class="text-label text-muted uppercase">Bizeps</span>
+            </span>
+          </button>
+          <button type="button" class="tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0">
+            <span class="w-6 h-6 rounded-btn flex items-center justify-center text-label border-2 border-white/25"></span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="text-card-title text-white mt-4">2. Übungs-Detail-Sheet: Video unter dem Titel</h2>
+  <div class="device-frame">
+    <div class="bg-surface rounded-sheet flex flex-col">
+      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-6 flex-shrink-0">
+        <button type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px] px-2">
+          <span class="text-card-title truncate">Butterfly</span>
+        </div>
+        <button type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Optionen">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <circle cx="12" cy="5" r="1.75" />
+            <circle cx="12" cy="12" r="1.75" />
+            <circle cx="12" cy="19" r="1.75" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-4 pb-8 flex flex-col gap-6">
+        <!-- Video direkt unter der Kopfzeile/dem Titel, derselbe Abstand
+             (gap-6) wie zwischen den beiden Muskel-Blöcken darunter - kein
+             Sonderfall, ordnet sich als erster Block der bestehenden
+             Content-Struktur unter. `poster` zeigt das Standbild, bis
+             "Play" gedrückt wird, damit kein erster Frame nachgeladen
+             werden muss und kein schwarzes Rechteck aufblitzt. `loop` lässt
+             das Video endlos laufen. Nie native `controls` (Nutzer-Vorgabe)
+             - der eigene Glass-Button unten rechts im Video übernimmt
+             komplett: ein Klick spielt/pausiert direkt über die
+             `play()`/`pause()`-API, das Icon wechselt passend zum
+             aktuellen Zustand über die play/pause-Listener unten. -->
+        <div class="relative rounded-card overflow-hidden bg-black">
+          <video
+            id="exercise-video"
+            class="w-full h-auto block"
+            poster="media/exercise-placeholder.jpg"
+            preload="metadata"
+            playsinline
+            loop
+          >
+            <source src="media/exercise-placeholder.mp4" type="video/mp4" />
+          </video>
+          <button
+            type="button"
+            id="exercise-video-play-btn"
+            class="icon-btn-glass tap-feedback absolute bottom-3 right-3 text-ink"
+            style="width: 44px; height: 44px;"
+            aria-label="Video abspielen"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 translate-x-[1px]">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <span class="text-label-large text-muted">Primärer Muskel</span>
+          <div class="flex flex-wrap gap-2">
+            <span class="rounded-full px-3 py-1 text-body bg-white/[0.08] text-ink">Brust</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <span class="text-label-large text-muted">Sekundäre Muskeln</span>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-body text-muted">Nicht zugeordnet</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PLAY_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 translate-x-[1px]"><path d="M8 5v14l11-7z" /></svg>`;
+  const PAUSE_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>`;
+
+  const video = document.getElementById('exercise-video');
+  const playBtn = document.getElementById('exercise-video-play-btn');
+
+  function setBtnState(playing) {
+    playBtn.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+    playBtn.setAttribute('aria-label', playing ? 'Video pausieren' : 'Video abspielen');
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (video.paused) video.play();
+    else video.pause();
+  });
+  video.addEventListener('play', () => setBtnState(true));
+  video.addEventListener('pause', () => setBtnState(false));
+</script>
+</body>
+</html>
