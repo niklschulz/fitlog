@@ -288,7 +288,33 @@ export async function deleteExercise(id) {
 // diese Liste ab und schreibt Änderungen zurück, damit ein späteres
 // App-Update auch bereits installierte Standard-Übungen aktualisiert.
 export const BUILTIN_EXERCISES = [
-  // { id: 'bankdruecken', name: 'Bankdrücken', primaryMuscleIds: ['brust'], secondaryMuscleIds: ['trizeps', 'vordere-schulter'] },
+  // Pull Day (vom Nutzer geliefert, 2026-09-27) - weitere Tage/Übungen folgen.
+  {
+    id: 'romanian-dead-lift',
+    name: 'Romanian Dead Lift',
+    primaryMuscleIds: ['po', 'beinbeuger'],
+    secondaryMuscleIds: ['unterer-ruecken'],
+  },
+  { id: 'sitzendes-wadenheben', name: 'Sitzendes Wadenheben', primaryMuscleIds: ['waden'], secondaryMuscleIds: [] },
+  {
+    id: 'brustgestuetztes-rudern',
+    name: 'Brustgestütztes Rudern',
+    primaryMuscleIds: ['lat', 'oberer-ruecken'],
+    secondaryMuscleIds: ['bizeps', 'unterarme'],
+  },
+  {
+    id: 'reverse-butterfly',
+    name: 'Reverse Butterfly',
+    primaryMuscleIds: ['hintere-schulter'],
+    secondaryMuscleIds: ['seitliche-schulter', 'oberer-ruecken'],
+  },
+  {
+    id: 'latzug',
+    name: 'Latzug',
+    primaryMuscleIds: ['lat', 'bizeps'],
+    secondaryMuscleIds: ['unterarme', 'unterer-ruecken'],
+  },
+  { id: 'bizeps-curls', name: 'Bizeps Curls', primaryMuscleIds: ['bizeps'], secondaryMuscleIds: ['unterarme'] },
 ];
 
 // Legt fehlende BUILTIN_EXERCISES-Einträge an und gleicht bereits

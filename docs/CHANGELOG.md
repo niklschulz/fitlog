@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-27 (Erste Standard-Übungen: Pull Day)
+
+### Added
+- `BUILTIN_EXERCISES` (`js/db.js`, s. [ADR 0021](decisions/0021-standard-uebungen.md)) mit den ersten 6 vom Nutzer gelieferten Standard-Übungen (Pull Day): Romanian Dead Lift, Sitzendes Wadenheben, Brustgestütztes Rudern, Reverse Butterfly, Latzug, Bizeps Curls — weitere folgen
+
+### Hinweis
+- Reine Datenergänzung, keine Code-/Schema-Änderung — Mechanismus (Seed, Sperre) unverändert seit ADR 0021
+
 ## 2026-09-27 (Mehrere primäre Muskeln pro Übung)
 
 ### Added
