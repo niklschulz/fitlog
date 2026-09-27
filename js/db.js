@@ -25,13 +25,15 @@ db.version(2).stores({
   workoutExercises: 'id, workoutId, exerciseId, order, sourceRoutineId, startedAt, createdAt, updatedAt',
 });
 
-// v3: Muskelgruppen-Zuordnung an Übungen (Abschnitt 13, s. ADR 0013) - eine
+// v3: Muskel-Zuordnung an Übungen (Abschnitt 13, s. ADR 0013/0020) - eine
 // primäre (`primaryMuscleId`, einzelner Wert) und beliebig viele sekundäre
-// Muskelgruppen (`secondaryMuscleIds`, Array). Kein eigenes Verknüpfungs-
-// Table wie bei routineExercises/workoutExercises, da keine Zusatzdaten pro
-// Zuordnung anfallen - `*secondaryMuscleIds` ist ein multiEntry-Index
-// (führendes `*`), erlaubt effizientes Filtern nach einer einzelnen
-// sekundären Muskelgruppe trotz Array-Feld. Bestehende Übungen bekommen
+// Muskeln (`secondaryMuscleIds`, Array; ursprünglich Muskelgruppen, seit
+// ADR 0020 einzelne Muskeln aus MUSCLES - Feldnamen/Indizes unverändert,
+// nur die Bedeutung der gespeicherten IDs hat sich geändert). Kein eigenes
+// Verknüpfungs-Table wie bei routineExercises/workoutExercises, da keine
+// Zusatzdaten pro Zuordnung anfallen - `*secondaryMuscleIds` ist ein
+// multiEntry-Index (führendes `*`), erlaubt effizientes Filtern nach einem
+// einzelnen sekundären Muskel trotz Array-Feld. Bestehende Übungen bekommen
 // keine automatische Migration - beide Felder bleiben bei ihnen `undefined`
 // ("kein Muskel zugeordnet"), bis sie im Formular bearbeitet werden.
 db.version(3).stores({
@@ -94,50 +96,82 @@ export function mondayOf(dateStr) {
   return toISODate(date);
 }
 
-// --- Muskelgruppen ---
+// --- Muskeln & Muskelgruppen ---
 //
-// Feste, vom Nutzer nicht bearbeitbare Taxonomie für den künftigen
-// Muskelgruppen-Filter im Übungs-Sheet (s. Diskussion in der Session) -
-// bewusst kein eigenes Dexie-Table wie exercises/routines, s. ADR 0012.
-// `id` ist ein stabiler Slug statt einer UUID, da diese Liste nie zur
-// Laufzeit verändert wird - Übungen werden künftig per `muscleId` (einer
-// dieser acht Werte) darauf verweisen.
+// Zwei feste, vom Nutzer nicht bearbeitbare Taxonomien, kein eigenes
+// Dexie-Table wie exercises/routines (s. ADR 0012, erweitert um ADR 0020):
+// MUSCLE_GROUPS bündelt nur zur Anzeige/zum Filtern (Übungs-Sheet), Übungen
+// verweisen NICHT mehr direkt auf eine Gruppe, sondern per `muscleId` auf
+// einen einzelnen Eintrag aus MUSCLES - dessen `groupId` bestimmt die
+// (primäre/sekundäre) Gruppenzugehörigkeit der Übung, s. muscleGroupIdOf().
+// `id` ist bei beiden ein stabiler Slug statt einer UUID, da keine der
+// beiden Listen zur Laufzeit verändert wird.
 export const MUSCLE_GROUPS = [
   { id: 'brust', name: 'Brust' },
   { id: 'schultern', name: 'Schultern' },
   { id: 'ruecken', name: 'Rücken' },
-  { id: 'bizeps', name: 'Bizeps' },
-  { id: 'trizeps', name: 'Trizeps' },
+  { id: 'arme', name: 'Arme' },
   { id: 'bauch', name: 'Bauch' },
   { id: 'po', name: 'Po' },
   { id: 'beine', name: 'Beine' },
 ];
 
+export const MUSCLES = [
+  { id: 'brust', name: 'Brust', groupId: 'brust' },
+  { id: 'vordere-schulter', name: 'Vordere Schulter', groupId: 'schultern' },
+  { id: 'seitliche-schulter', name: 'Seitliche Schulter', groupId: 'schultern' },
+  { id: 'hintere-schulter', name: 'Hintere Schulter', groupId: 'schultern' },
+  { id: 'lat', name: 'Lat', groupId: 'ruecken' },
+  { id: 'oberer-ruecken', name: 'Oberer Rücken', groupId: 'ruecken' },
+  { id: 'unterer-ruecken', name: 'Unterer Rücken', groupId: 'ruecken' },
+  { id: 'bizeps', name: 'Bizeps', groupId: 'arme' },
+  { id: 'trizeps', name: 'Trizeps', groupId: 'arme' },
+  { id: 'unterarme', name: 'Unterarme', groupId: 'arme' },
+  { id: 'gerade-bauchmuskeln', name: 'Gerade Bauchmuskeln', groupId: 'bauch' },
+  { id: 'schraege-bauchmuskeln', name: 'Schräge Bauchmuskeln', groupId: 'bauch' },
+  { id: 'po', name: 'Po', groupId: 'po' },
+  { id: 'quadrizeps', name: 'Quadrizeps', groupId: 'beine' },
+  { id: 'beinbeuger', name: 'Beinbeuger', groupId: 'beine' },
+  { id: 'waden', name: 'Waden', groupId: 'beine' },
+  { id: 'adduktoren', name: 'Adduktoren', groupId: 'beine' },
+  { id: 'abduktoren', name: 'Abduktoren', groupId: 'beine' },
+];
+
+// Gruppe eines Muskels (für den primär-Gruppe-Filter im Übungs-Sheet) -
+// `null` bei unbekannter/fehlender muscleId, statt zu werfen: wird auch für
+// Anzeige-Zwecke an möglicherweise fehlenden Werten (ältere Übungen ohne
+// Zuordnung) aufgerufen.
+export function muscleGroupIdOf(muscleId) {
+  return MUSCLES.find((m) => m.id === muscleId)?.groupId ?? null;
+}
+
 // --- Exercises ---
 
-// Prüft eine Muskel-Zuordnung gegen die feste MUSCLE_GROUPS-Taxonomie (s.
-// ADR 0012): IDs müssen bekannt sein, die primäre Muskelgruppe darf nicht
-// zusätzlich unter den sekundären auftauchen (eine Übung zeigt nicht
-// gleichzeitig primär und sekundär auf denselben Muskel), keine Duplikate
-// unter den sekundären. Wirft bei Verstoß statt still zu korrigieren -
-// diese Funktion wird nur von vertrauenswürdigem Aufrufer-Code (künftiges
-// Zuordnungs-Formular) mit bereits von einer festen Werteliste stammenden
-// IDs aufgerufen, kein Nutzer-Freitext.
+// Prüft eine Muskel-Zuordnung gegen die feste MUSCLES-Taxonomie (s. ADR
+// 0020): IDs müssen bekannte MUSKELN sein (nicht Gruppen), der primäre
+// Muskel darf nicht zusätzlich unter den sekundären auftauchen (eine Übung
+// zeigt nicht gleichzeitig primär und sekundär auf denselben Muskel - wohl
+// aber auf zwei verschiedene Muskeln derselben Gruppe, z. B. primär Bizeps
+// und sekundär Trizeps, beide "Arme"), keine Duplikate unter den
+// sekundären. Wirft bei Verstoß statt still zu korrigieren - diese Funktion
+// wird nur von vertrauenswürdigem Aufrufer-Code (Neue-Übung-/Bearbeiten-
+// Sheet) mit bereits von einer festen Werteliste stammenden IDs aufgerufen,
+// kein Nutzer-Freitext.
 function validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds) {
-  const validIds = new Set(MUSCLE_GROUPS.map((m) => m.id));
+  const validIds = new Set(MUSCLES.map((m) => m.id));
   if (primaryMuscleId !== null && !validIds.has(primaryMuscleId)) {
-    throw new Error(`Unbekannte primäre Muskelgruppe: ${primaryMuscleId}`);
+    throw new Error(`Unbekannter primärer Muskel: ${primaryMuscleId}`);
   }
   for (const id of secondaryMuscleIds) {
     if (!validIds.has(id)) {
-      throw new Error(`Unbekannte sekundäre Muskelgruppe: ${id}`);
+      throw new Error(`Unbekannter sekundärer Muskel: ${id}`);
     }
   }
   if (primaryMuscleId !== null && secondaryMuscleIds.includes(primaryMuscleId)) {
-    throw new Error('Die primäre Muskelgruppe darf nicht zusätzlich als sekundär angegeben werden.');
+    throw new Error('Der primäre Muskel darf nicht zusätzlich als sekundär angegeben werden.');
   }
   if (new Set(secondaryMuscleIds).size !== secondaryMuscleIds.length) {
-    throw new Error('Sekundäre Muskelgruppen enthalten Duplikate.');
+    throw new Error('Sekundäre Muskeln enthalten Duplikate.');
   }
 }
 

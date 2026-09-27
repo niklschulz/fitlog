@@ -2,6 +2,19 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-27 (Einzelne Muskeln statt Muskelgruppen an der Übung)
+
+### Added
+- Neue Konstante `MUSCLES` (18 einzelne Muskeln in 7 Gruppen) in `js/db.js`, neue Hilfsfunktion `muscleGroupIdOf()`
+
+### Changed
+- Übungen wird jetzt ein einzelner Muskel zugeordnet (primär/sekundär) statt einer groben Muskelgruppe — Chip-Auswahl beim Anlegen/Bearbeiten, Untertitel im Übungs-Sheet und Anzeige im Übungs-Detail-Sheet zeigen jeweils den Muskel
+- `MUSCLE_GROUPS` hat jetzt 7 statt 8 Einträge ("Bizeps"/"Trizeps" werden zu Muskeln unter der neuen Gruppe "Arme"), dient nur noch der Anzeige/dem Filtern
+- Muskelgruppen-Filter im Übungs-Sheet matcht nur noch den primären Muskel einer Übung (vorher primär oder sekundär)
+
+### Removed
+- Keine Migration bestehender Test-Übungen — Testserver- und iPhone-Testdaten wurden vom Nutzer vorab selbst gelöscht
+
 ## 2026-09-21 (Übungs-Detail-Sheet: Muskeln, ⋮-Menü, Übung bearbeiten)
 
 ### Added

@@ -18,6 +18,8 @@ import {
   appendExerciseToRoutine,
   removeExerciseFromRoutine,
   MUSCLE_GROUPS,
+  MUSCLES,
+  muscleGroupIdOf,
   todayISODate,
   addDays,
   daysBetween,
@@ -1614,17 +1616,16 @@ function renderExerciseSheetBody() {
   const query = state.exerciseSheetSearch.trim().toLowerCase();
   let filteredExercises = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
 
-  // Muskelgruppen-Filter: trifft, wenn die gewählte Muskelgruppe entweder
-  // primär oder sekundär an der Übung beteiligt ist (nicht nur primär) -
-  // z. B. soll ein "Trizeps"-Filter auch enge Bankdrücken-Varianten zeigen,
-  // bei denen Trizeps nur sekundär mitarbeitet. Übungen ohne Zuordnung
-  // (primaryMuscleId/secondaryMuscleIds `undefined`, s. ADR 0013) fallen bei
-  // aktivem Filter automatisch raus.
+  // Muskelgruppen-Filter: trifft anhand der Gruppe des PRIMÄREN Muskels
+  // (nicht mehr primär oder sekundär, s. ADR 0020 - seit der Aufteilung in
+  // einzelne Muskeln pro Gruppe wäre "sekundär trifft auch" zu weit gefasst,
+  // z. B. würde ein "Arme"-Filter sonst auch reine Rücken-Übungen mit
+  // Bizeps als sekundärem Muskel zeigen). Übungen ohne Zuordnung
+  // (primaryMuscleId `undefined`/`null`, s. ADR 0013) fallen bei aktivem
+  // Filter automatisch raus (muscleGroupIdOf liefert dafür `null`).
   const muscleFilterId = state.exerciseSheetMuscleFilterId;
   if (muscleFilterId) {
-    filteredExercises = filteredExercises.filter(
-      (ex) => ex.primaryMuscleId === muscleFilterId || (ex.secondaryMuscleIds ?? []).includes(muscleFilterId)
-    );
+    filteredExercises = filteredExercises.filter((ex) => muscleGroupIdOf(ex.primaryMuscleId) === muscleFilterId);
   }
 
   return renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, allExercises.length);
@@ -1833,7 +1834,7 @@ function renderExerciseSheetMuscleFilter() {
 // Zeilenabstand (`gap-0`, mehrfach auf Nutzer-Wunsch verringert von `gap-1`
 // über `gap-0.5`) - hier nur einzeilige Einträge ohne Untertitel, anders als
 // die Routine-Optionen mit Name+Übungsanzahl. Kein `max-h`/Scroll: Die Liste
-// ist mit neun festen Einträgen (8 Muskelgruppen + "Alle") kurz genug, um
+// ist mit acht festen Einträgen (7 Muskelgruppen + "Alle") kurz genug, um
 // immer vollständig zu passen.
 function renderExerciseSheetMuscleFilterPicker() {
   const closing = state.exerciseSheetMuscleFilterClosing;
@@ -1892,7 +1893,7 @@ function renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, t
 // Ansehen). Der Name-Block selbst ist immer ein eigenes Tap-Ziel zum
 // Übungs-Detail-Sheet, unabhängig vom Auswahl-/Bereits-Vorhanden-Status.
 function renderExerciseSheetRow(exercise, alreadyInWorkout, isSelected) {
-  const muscleName = MUSCLE_GROUPS.find((m) => m.id === exercise.primaryMuscleId)?.name;
+  const muscleName = MUSCLES.find((m) => m.id === exercise.primaryMuscleId)?.name;
 
   const trailingColumn = alreadyInWorkout
     ? `<span class="min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-hidden="true">
@@ -2197,13 +2198,13 @@ function renderExerciseCreateSheetContent() {
       <div class="flex flex-col gap-2">
         <span class="text-label-large text-muted">Primärer Muskel</span>
         <div class="flex flex-wrap gap-2">
-          ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'primary')).join('')}
+          ${MUSCLES.map((m) => renderExerciseCreateSheetMuscleChip(m, 'primary')).join('')}
         </div>
       </div>
       <div class="flex flex-col gap-2">
         <span class="text-label-large text-muted">Sekundäre Muskeln</span>
         <div class="flex flex-wrap gap-2">
-          ${MUSCLE_GROUPS.map((m) => renderExerciseCreateSheetMuscleChip(m, 'secondary')).join('')}
+          ${MUSCLES.map((m) => renderExerciseCreateSheetMuscleChip(m, 'secondary')).join('')}
         </div>
       </div>
     </form>
@@ -2487,7 +2488,7 @@ async function renderExerciseDetailSheet() {
 // solchen älteren Übungen fehlen (`undefined`), daher `?? []`.
 function renderExerciseDetailSheetContent(exercise) {
   if (!exercise) return '';
-  const muscleName = (id) => MUSCLE_GROUPS.find((m) => m.id === id)?.name;
+  const muscleName = (id) => MUSCLES.find((m) => m.id === id)?.name;
   const chip = (id) =>
     `<span class="rounded-full px-3 py-1 text-body bg-white/[0.08] text-ink">${escapeHtml(muscleName(id) ?? id)}</span>`;
   const none = `<span class="text-body text-muted">Nicht zugeordnet</span>`;

@@ -64,7 +64,9 @@ Sechs Dexie-Tabellen (Schema-Version 3), alle mit UUID-`id`:
 
 Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um `workoutExercises`).
 
-**Feste Referenzdaten (keine Dexie-Tabelle):** `MUSCLE_GROUPS` (`js/db.js`) — die acht Muskelgruppen (Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine) für den Muskelgruppen-Filter im Übungs-Sheet. Bewusst eine exportierte Code-Konstante (`{ id, name }`, `id` ein stabiler Slug) statt einer Dexie-Tabelle, da die Liste vom Nutzer nicht bearbeitbar ist und sich zur Laufzeit nie ändert — Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md). Seit [ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md) referenziert von `exercises.primaryMuscleId`/`secondaryMuscleIds` (s. o.). Zuordnung per Chip-Auswahl im Neue-Übung-Sheet möglich ([ADR 0014](decisions/0014-neue-uebung-sheet-gestapelt.md)) und per Dropdown-Pill-Filter im Übungs-Sheet auswertbar.
+**Feste Referenzdaten (keine Dexie-Tabelle):** Zwei Code-Konstanten in `js/db.js`, beide vom Nutzer nicht bearbeitbar und zur Laufzeit unveränderlich (Begründung: [ADR 0012](decisions/0012-muskelgruppen-feste-taxonomie.md), erweitert um [ADR 0020](decisions/0020-einzelne-muskeln-statt-muskelgruppen.md)):
+- `MUSCLES` (`{ id, name, groupId }`, 18 Einträge) — die einzelnen Muskeln. Seit ADR 0020 referenzieren `exercises.primaryMuscleId`/`secondaryMuscleIds` (s. o., Feldnamen/Indizes unverändert seit [ADR 0013](decisions/0013-uebung-muskel-verknuepfung.md)) hierauf statt auf eine Muskelgruppe. Zuordnung per Chip-Auswahl im Neue-Übung-Sheet ([ADR 0014](decisions/0014-neue-uebung-sheet-gestapelt.md)).
+- `MUSCLE_GROUPS` (`{ id, name }`, 7 Einträge: Brust, Schultern, Rücken, Arme, Bauch, Po, Beine) — dient nur noch der Anzeige/dem Filtern (Dropdown-Pill-Filter im Übungs-Sheet, filtert über `muscleGroupIdOf()` nach der Gruppe des primären Muskels einer Übung), keine Übung verweist mehr direkt darauf.
 
 ## PWA-Mechanik
 

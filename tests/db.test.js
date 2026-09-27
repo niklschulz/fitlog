@@ -7,7 +7,10 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   db,
+  MUSCLES,
+  muscleGroupIdOf,
   createExercise,
+  updateExercise,
   deleteExercise,
   createRoutine,
   deleteRoutine,
@@ -186,4 +189,34 @@ test('reorderWorkoutExercises ignoriert begonnene und fremde IDs und hängt fehl
   const startedA = after.find((e) => e.exerciseId === a.id);
   assert.equal(startedA.order, entries.find((e) => e.exerciseId === a.id).order, 'begonnene Übung: order unverändert');
   assert.deepEqual((await getWorkoutExercises(other.id)).map((e) => e.order), [0], 'anderer Tag unverändert');
+});
+
+test('muscleGroupIdOf leitet die Gruppe eines Muskels ab, unbekannte/fehlende IDs ergeben null (ADR 0020)', () => {
+  assert.equal(muscleGroupIdOf('bizeps'), 'arme');
+  assert.equal(muscleGroupIdOf('trizeps'), 'arme');
+  assert.equal(muscleGroupIdOf('seitliche-schulter'), 'schultern');
+  assert.equal(muscleGroupIdOf('unbekannt'), null);
+  assert.equal(muscleGroupIdOf(null), null);
+  assert.equal(muscleGroupIdOf(undefined), null);
+});
+
+test('createExercise erlaubt primären und sekundären Muskel aus derselben Gruppe', async () => {
+  const exercise = await createExercise('Bizeps-Curls', {
+    primaryMuscleId: 'bizeps',
+    secondaryMuscleIds: ['trizeps', 'unterarme'],
+  });
+  assert.equal(exercise.primaryMuscleId, 'bizeps');
+  assert.deepEqual(exercise.secondaryMuscleIds, ['trizeps', 'unterarme']);
+  assert.equal(muscleGroupIdOf(exercise.primaryMuscleId), 'arme');
+  assert.deepEqual(exercise.secondaryMuscleIds.map(muscleGroupIdOf), ['arme', 'arme']);
+});
+
+test('createExercise/updateExercise lehnen eine ehemalige Gruppen-ID ab, die kein einzelner Muskel (mehr) ist', async () => {
+  // 'schultern' war vor ADR 0020 eine gültige MUSCLE_GROUPS-id, ist jetzt nur
+  // noch eine Gruppen-id, kein Eintrag in MUSCLES - muss abgelehnt werden.
+  assert.ok(!MUSCLES.some((m) => m.id === 'schultern'), 'Testannahme: "schultern" ist kein Muskel');
+  await assert.rejects(() => createExercise('Ungültig', { primaryMuscleId: 'schultern', secondaryMuscleIds: [] }));
+
+  const exercise = await createExercise('Schulterdrücken', { primaryMuscleId: 'vordere-schulter', secondaryMuscleIds: [] });
+  await assert.rejects(() => updateExercise(exercise.id, exercise.name, { primaryMuscleId: 'schultern', secondaryMuscleIds: [] }));
 });

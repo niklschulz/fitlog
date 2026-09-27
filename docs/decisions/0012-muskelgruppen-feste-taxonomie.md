@@ -41,3 +41,7 @@ Begründung:
 - `MUSCLE_GROUPS` ist ab sofort importierbar, hat aber noch keine Verwendungsstelle (kein Feld an `exercises`, keine UI) — folgt in einem Folge-Schritt.
 - Reihenfolge der Konstante entspricht der vom Nutzer vorgegebenen Reihenfolge, nicht alphabetisch — falls das Sheet die Muskelgruppen später alphabetisch anzeigen soll, wäre das eine bewusste Sortierung an der jeweiligen Render-Stelle, nicht an der Konstante selbst.
 - Sollte sich die Anforderung später doch zu einer nutzerseitig erweiterbaren Liste ändern (aktuell explizit nicht gewünscht), wäre das ein bewusster Bruch mit dieser Entscheidung und würde eine Migration auf eine echte Dexie-Tabelle erfordern.
+
+## Nachtrag (2026-09-27)
+
+[ADR 0020](0020-einzelne-muskeln-statt-muskelgruppen.md) spaltet die Taxonomie in zwei Konstanten auf: `MUSCLE_GROUPS` bleibt (mit geänderter Werteliste — sieben statt acht Gruppen, "Bizeps"/"Trizeps" werden zu Muskeln unter einer neuen Gruppe "Arme"), dient aber nur noch der Anzeige/dem Filtern; Übungen verweisen seitdem auf die neue, feinere `MUSCLES`-Liste. Die hier begründeten Prinzipien (Code-Konstante statt Dexie-Tabelle, stabile Slugs, feste vom Nutzer nicht bearbeitbare Reihenfolge) gelten unverändert für beide Konstanten.
