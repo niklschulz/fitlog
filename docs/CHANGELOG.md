@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-27 (Segmented Control: bis zum Rand + gleitender Indikator)
+
+### Changed
+- `renderSegmentedControl()` (`js/utils.js`): das äußere Padding entfällt, das aktive Segment füllt die Karte jetzt bis zum Rand (oben/unten immer, seitlich am ersten/letzten Segment)
+- Aktives Segment wird nicht mehr per `bg-highlight`-Klasse am Button markiert, sondern über ein eigenes, absolut positioniertes `.segmented-control-indicator`-Element, das beim Reiter-Wechsel gleitend zur neuen Position animiert (Slide + kurzes "Morphen", analog zum Bottom-Nav-Indikator `#nav-indicator`, s. `app.js`)
+- Neue Helfer `positionSegmentedIndicator()`/`measureSegmentedIndicatorRect()` (`js/utils.js`); `js/views/statistics.js` und `js/views/workout-exercise-detail.js` messen vor jedem Tab-Wechsel die aktuelle Indikator-Position und übergeben sie an `paint()`
+
+### Hinweis
+- Reine UI-Änderung, keine Datenlogik betroffen (alle 18 automatisierten Tests weiterhin grün)
+
 ## 2026-09-27 (Erste Standard-Übungen: Pull Day)
 
 ### Added

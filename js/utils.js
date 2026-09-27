@@ -138,26 +138,92 @@ export function renderSetTimelineRow(number, contentHtml, { isLast = false, circ
 // Übungs-Detailseite (Tages-/Verlauf-Reiter), s. design-system.md
 // Vierundzwanzigste bis Sechsundzwanzigste Iteration.
 // Segmented Control (s. design-system.md, "Segmented Control") - Reiter-Zeile
-// mit gleich breiten Pillen-Segmenten, aktives Segment bg-highlight/text-ink,
-// inaktive text-muted, kein Border. Ursprünglich nur auf der
-// Übungs-Detailseite (Tag/Verlauf/Statistik), jetzt auch im Statistik-Tab
-// (Übersicht/Übungen) - deshalb hier extrahiert statt an beiden Stellen
-// dupliziert. `tabs` ist eine Liste aus {key, label}, `activeKey` der Key des
-// aktuell aktiven Segments. Erzeugt nur das Markup; das Wiring (Klick auf
-// `.segmented-tab`, `data-tab`-Attribut auslesen) bleibt Sache der
-// aufrufenden View, da jede View eigenen State und eigene paint()-Logik hat.
+// mit gleich breiten Pillen-Segmenten, inaktive text-muted, kein Border.
+// Ursprünglich nur auf der Übungs-Detailseite (Tag/Verlauf/Statistik), jetzt
+// auch im Statistik-Tab (Übersicht/Übungen) - deshalb hier extrahiert statt
+// an beiden Stellen dupliziert. `tabs` ist eine Liste aus {key, label},
+// `activeKey` der Key des aktuell aktiven Segments. Erzeugt nur das Markup;
+// das Wiring (Klick auf `.segmented-tab`, `data-tab`-Attribut auslesen)
+// bleibt Sache der aufrufenden View, da jede View eigenen State und eigene
+// paint()-Logik hat - ebenso der Aufruf von positionSegmentedIndicator()
+// nach jedem Rendern (s. dort).
+//
+// Das aktive Segment wird NICHT mehr per bg-highlight-Klasse am Button
+// selbst markiert, sondern über ein eigenes, absolut positioniertes
+// `.segmented-control-indicator`-Element darunter (`z-10` an den Buttons
+// hebt deren Text darüber) - analog zum gleitenden Glas-Indikator der
+// Bottom-Nav (`#nav-indicator`, s. app.js), damit derselbe Slide-Effekt
+// beim Reiter-Wechsel möglich ist. `top-0 bottom-0` lässt den Indikator bis
+// an den Rand der Karte reichen (kein Padding mehr am Container, s. weiter
+// oben in dieser Datei/CHANGELOG).
 export function renderSegmentedControl(tabs, activeKey) {
   return `
-    <div class="bg-surface rounded-card p-1 flex gap-1">
+    <div class="segmented-control relative bg-surface rounded-card flex gap-1">
+      <div class="segmented-control-indicator absolute top-0 bottom-0 rounded-card bg-highlight" aria-hidden="true"></div>
       ${tabs
         .map(
           (t) => `
-        <button data-tab="${t.key}" type="button" class="segmented-tab tap-feedback flex-1 rounded-card py-2 min-h-[36px] text-label ${activeKey === t.key ? 'bg-highlight text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
+        <button data-tab="${t.key}" ${activeKey === t.key ? 'data-active="true"' : ''} type="button" class="segmented-tab tap-feedback relative z-10 flex-1 py-2 min-h-[36px] text-label ${activeKey === t.key ? 'text-ink' : 'text-muted'}">${escapeHtml(t.label)}</button>
       `
         )
         .join('')}
     </div>
   `;
+}
+
+// Position/Slide-Animation des Segmented-Control-Indikators - dasselbe
+// Grundmuster wie moveNavIndicator() (s. app.js): Zielposition immer per
+// getBoundingClientRect() des aktiven Segments messen (robust gegenüber
+// unterschiedlich breiten Labels), "morphen" statt reinem Verschieben
+// (Indikator zieht sich kurz über beide Positionen, schnappt dann auf die
+// Zielbreite). Anders als bei der Bottom-Nav bleibt hier kein DOM-Element
+// über einen Tab-Wechsel hinweg erhalten (jede View macht ein volles
+// paint(), s. dort) - `fromRect` (per measureSegmentedIndicatorRect() VOR
+// dem paint() gemessen) liefert deshalb den Startzustand von außen, statt
+// ihn vom vorherigen Frame des Indikators selbst abzulesen. Ohne `fromRect`
+// (erstes Rendern) wird nur direkt positioniert, keine Animation.
+const SEGMENTED_INDICATOR_DURATION_MS = 170;
+
+export function measureSegmentedIndicatorRect(container) {
+  const wrapper = container.querySelector('.segmented-control');
+  const indicator = wrapper?.querySelector('.segmented-control-indicator');
+  if (!wrapper || !indicator) return null;
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const indicatorRect = indicator.getBoundingClientRect();
+  return { left: indicatorRect.left - wrapperRect.left, width: indicatorRect.width };
+}
+
+export function positionSegmentedIndicator(container, { fromRect = null } = {}) {
+  const wrapper = container.querySelector('.segmented-control');
+  const indicator = wrapper?.querySelector('.segmented-control-indicator');
+  const activeBtn = wrapper?.querySelector('.segmented-tab[data-active="true"]');
+  if (!wrapper || !indicator || !activeBtn) return;
+
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  const target = { left: btnRect.left - wrapperRect.left, width: btnRect.width };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!fromRect || reduceMotion) {
+    indicator.style.left = `${target.left}px`;
+    indicator.style.width = `${target.width}px`;
+    return;
+  }
+
+  indicator.style.left = `${target.left}px`;
+  indicator.style.width = `${target.width}px`;
+
+  const stretchLeft = Math.min(fromRect.left, target.left);
+  const stretchWidth = Math.abs(target.left - fromRect.left) + Math.max(fromRect.width, target.width);
+
+  indicator.animate(
+    [
+      { left: `${fromRect.left}px`, width: `${fromRect.width}px` },
+      { left: `${stretchLeft}px`, width: `${stretchWidth}px`, offset: 0.55 },
+      { left: `${target.left}px`, width: `${target.width}px` },
+    ],
+    { duration: SEGMENTED_INDICATOR_DURATION_MS, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+  );
 }
 
 export function renderSetValues(weight, reps) {

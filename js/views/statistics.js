@@ -7,7 +7,7 @@
 // per Epoch-Sperre abgesichert, da das Zeitfenster bei rein lokalen
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
 import { getTrainedDates, todayISODate, addDays, mondayOf } from '../db.js';
-import { renderSegmentedControl, CARD } from '../utils.js';
+import { renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD } from '../utils.js';
 import { getSettings } from '../settings.js';
 
 // Anzahl der im Balkendiagramm gezeigten Wochen (inkl. aktueller Woche),
@@ -23,7 +23,14 @@ export function render(container) {
   paint();
 }
 
-async function paint() {
+// `indicatorFromRect` (per measureSegmentedIndicatorRect() VOR einem
+// Reiter-Wechsel gemessen, s. wireEvents()) lässt den Segmented-Control-
+// Indikator gleitend zur neuen Position animieren statt beim vollen
+// paint() hart zu springen - fehlt er (erstes Rendern), wird nur direkt
+// positioniert. S. renderSegmentedControl()/positionSegmentedIndicator()
+// in utils.js für die Begründung, warum das hier von außen übergeben
+// werden muss statt vom Indikator-Element selbst abgelesen zu werden.
+async function paint(indicatorFromRect = null) {
   const overviewHtml = state.activeTab === 'overview' ? await renderOverviewTab() : '';
   const exercisesHtml = state.activeTab === 'exercises' ? renderExercisesTab() : '';
 
@@ -41,6 +48,7 @@ async function paint() {
       ${exercisesHtml}
     </div>
   `;
+  positionSegmentedIndicator(currentContainer, { fromRect: indicatorFromRect });
   wireEvents();
 }
 
@@ -193,8 +201,9 @@ function wireEvents() {
   currentContainer.querySelectorAll('.segmented-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (state.activeTab === btn.dataset.tab) return;
+      const fromRect = measureSegmentedIndicatorRect(currentContainer);
       state.activeTab = btn.dataset.tab;
-      paint();
+      paint(fromRect);
     });
   });
 }

@@ -5,7 +5,16 @@
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
 import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, renderSegmentedControl, BTN_SECONDARY, CARD } from '../utils.js';
+import {
+  escapeHtml,
+  renderSetTimelineRow,
+  renderSetValues,
+  renderSegmentedControl,
+  positionSegmentedIndicator,
+  measureSegmentedIndicatorRect,
+  BTN_SECONDARY,
+  CARD,
+} from '../utils.js';
 import { getSettings } from '../settings.js';
 
 let currentContainer = null;
@@ -46,7 +55,9 @@ export function unmount() {
   renderEpoch++;
 }
 
-async function paint() {
+// `indicatorFromRect` s. Kommentar bei statistics.js's paint() - dieselbe
+// Begründung gilt hier für den Reiter-Wechsel Heute/Verlauf/Statistik.
+async function paint(indicatorFromRect = null) {
   const myEpoch = renderEpoch;
   const entry = await db.workoutExercises.get(state.entryId);
   if (myEpoch !== renderEpoch) return;
@@ -108,6 +119,7 @@ async function paint() {
   if (myEpoch !== renderEpoch) return;
 
   currentContainer.innerHTML = html;
+  positionSegmentedIndicator(currentContainer, { fromRect: indicatorFromRect });
   wireEvents();
 }
 
@@ -241,12 +253,13 @@ function wireEvents() {
   currentContainer.querySelectorAll('.segmented-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (state.activeTab === btn.dataset.tab) return;
+      const fromRect = measureSegmentedIndicatorRect(currentContainer);
       state.activeTab = btn.dataset.tab;
       // Auswahl wird beim Reiter-Wechsel verworfen (Testkonzept Fall 26) -
       // sonst könnte man z. B. über "Verlauf" navigieren und mit einer
       // stillen, nicht mehr sichtbaren Auswahl zum Tages-Reiter zurückkehren.
       state.selectedSetId = null;
-      paint();
+      paint(fromRect);
     });
   });
 
