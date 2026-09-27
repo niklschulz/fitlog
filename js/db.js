@@ -45,6 +45,37 @@ db.version(3).stores({
   workoutExercises: 'id, workoutId, exerciseId, order, sourceRoutineId, startedAt, createdAt, updatedAt',
 });
 
+// v4: Standard-Übungen (s. ADR 0021) - `isBuiltin` markiert vom Nutzer nicht
+// veränderbare, mit der App ausgelieferte Übungen (s. BUILTIN_EXERCISES/
+// seedBuiltinExercises() weiter unten). Indexiert, falls künftig gezielt
+// nach Standard- vs. Nutzer-Übungen gefiltert werden soll. Bestehende
+// Übungen bekommen keine Migration - `isBuiltin` bleibt bei ihnen
+// `undefined` (= keine Standard-Übung), genau die gewünschte Bedeutung.
+db.version(4).stores({
+  exercises: 'id, name, primaryMuscleId, *secondaryMuscleIds, isBuiltin, createdAt, updatedAt',
+  routines: 'id, name, createdAt, updatedAt',
+  routineExercises: 'id, routineId, exerciseId, order',
+  workouts: 'id, routineId, date, createdAt, updatedAt',
+  sets: 'id, workoutId, exerciseId, createdAt, updatedAt',
+  workoutExercises: 'id, workoutId, exerciseId, order, sourceRoutineId, startedAt, createdAt, updatedAt',
+});
+
+// v5: Eine Übung kann jetzt mehreren primären Muskeln zugeordnet werden (s.
+// ADR 0022) - `primaryMuscleId` (einzelner Wert, seit Version 3) wird zu
+// `primaryMuscleIds` (Array, multiEntry-Index wie schon `secondaryMuscleIds`
+// seit Version 3). Bestehende, vor Version 5 angelegte Übungen behalten ihr
+// altes `primaryMuscleId`-Feld unangetastet in der DB (wird von keinem Code
+// mehr gelesen) und bekommen kein automatisches `primaryMuscleIds` - keine
+// Migration, da die App noch nicht produktiv ist (kein Datenverlust-Risiko).
+db.version(5).stores({
+  exercises: 'id, name, *primaryMuscleIds, *secondaryMuscleIds, isBuiltin, createdAt, updatedAt',
+  routines: 'id, name, createdAt, updatedAt',
+  routineExercises: 'id, routineId, exerciseId, order',
+  workouts: 'id, routineId, date, createdAt, updatedAt',
+  sets: 'id, workoutId, exerciseId, createdAt, updatedAt',
+  workoutExercises: 'id, workoutId, exerciseId, order, sourceRoutineId, startedAt, createdAt, updatedAt',
+});
+
 export function generateId() {
   return crypto.randomUUID();
 }
@@ -148,58 +179,72 @@ export function muscleGroupIdOf(muscleId) {
 // --- Exercises ---
 
 // Prüft eine Muskel-Zuordnung gegen die feste MUSCLES-Taxonomie (s. ADR
-// 0020): IDs müssen bekannte MUSKELN sein (nicht Gruppen), der primäre
-// Muskel darf nicht zusätzlich unter den sekundären auftauchen (eine Übung
-// zeigt nicht gleichzeitig primär und sekundär auf denselben Muskel - wohl
-// aber auf zwei verschiedene Muskeln derselben Gruppe, z. B. primär Bizeps
-// und sekundär Trizeps, beide "Arme"), keine Duplikate unter den
-// sekundären. Wirft bei Verstoß statt still zu korrigieren - diese Funktion
-// wird nur von vertrauenswürdigem Aufrufer-Code (Neue-Übung-/Bearbeiten-
-// Sheet) mit bereits von einer festen Werteliste stammenden IDs aufgerufen,
-// kein Nutzer-Freitext.
-function validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds) {
+// 0020/0022): IDs müssen bekannte MUSKELN sein (nicht Gruppen), kein Muskel
+// darf gleichzeitig primär UND sekundär auftauchen (eine Übung zeigt nicht
+// gleichzeitig primär und sekundär auf denselben Muskel - wohl aber auf
+// zwei verschiedene Muskeln derselben Gruppe, z. B. primär Bizeps und
+// sekundär Trizeps, beide "Arme"), keine Duplikate innerhalb der primären
+// bzw. innerhalb der sekundären Liste. Seit ADR 0022 kann eine Übung
+// mehrere primäre Muskeln haben (`primaryMuscleIds`, vorher ein einzelner
+// `primaryMuscleId`) - dieselben Regeln wie bisher, nur auf beiden Seiten
+// jetzt ein Array. Wirft bei Verstoß statt still zu korrigieren - diese
+// Funktion wird nur von vertrauenswürdigem Aufrufer-Code (Neue-Übung-/
+// Bearbeiten-Sheet) mit bereits von einer festen Werteliste stammenden IDs
+// aufgerufen, kein Nutzer-Freitext.
+function validateMuscleAssignment(primaryMuscleIds, secondaryMuscleIds) {
   const validIds = new Set(MUSCLES.map((m) => m.id));
-  if (primaryMuscleId !== null && !validIds.has(primaryMuscleId)) {
-    throw new Error(`Unbekannter primärer Muskel: ${primaryMuscleId}`);
+  for (const id of primaryMuscleIds) {
+    if (!validIds.has(id)) {
+      throw new Error(`Unbekannter primärer Muskel: ${id}`);
+    }
   }
   for (const id of secondaryMuscleIds) {
     if (!validIds.has(id)) {
       throw new Error(`Unbekannter sekundärer Muskel: ${id}`);
     }
   }
-  if (primaryMuscleId !== null && secondaryMuscleIds.includes(primaryMuscleId)) {
-    throw new Error('Der primäre Muskel darf nicht zusätzlich als sekundär angegeben werden.');
+  if (new Set(primaryMuscleIds).size !== primaryMuscleIds.length) {
+    throw new Error('Primäre Muskeln enthalten Duplikate.');
   }
   if (new Set(secondaryMuscleIds).size !== secondaryMuscleIds.length) {
     throw new Error('Sekundäre Muskeln enthalten Duplikate.');
   }
+  if (primaryMuscleIds.some((id) => secondaryMuscleIds.includes(id))) {
+    throw new Error('Ein Muskel darf nicht gleichzeitig primär und sekundär angegeben werden.');
+  }
 }
 
-// `muscleAssignment` optional ({ primaryMuscleId, secondaryMuscleIds }) -
+// `muscleAssignment` optional ({ primaryMuscleIds, secondaryMuscleIds }) -
 // ohne Angabe legt eine neue Übung ohne Muskel-Zuordnung an (Standardfall,
 // solange das Zuordnungs-Formular noch nicht existiert).
 export async function createExercise(name, muscleAssignment = {}) {
-  const { primaryMuscleId = null, secondaryMuscleIds = [] } = muscleAssignment;
-  validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds);
+  const { primaryMuscleIds = [], secondaryMuscleIds = [] } = muscleAssignment;
+  validateMuscleAssignment(primaryMuscleIds, secondaryMuscleIds);
   const ts = nowISO();
-  const exercise = { id: generateId(), name, primaryMuscleId, secondaryMuscleIds, createdAt: ts, updatedAt: ts };
+  const exercise = { id: generateId(), name, primaryMuscleIds, secondaryMuscleIds, createdAt: ts, updatedAt: ts };
   await db.exercises.add(exercise);
   return exercise;
 }
 
 // `muscleAssignment` bewusst optional und standardmäßig nicht gesetzt
 // (statt mit leeren Default-Werten): Nur wenn explizit ein
-// `{ primaryMuscleId, secondaryMuscleIds }`-Objekt übergeben wird, wird die
+// `{ primaryMuscleIds, secondaryMuscleIds }`-Objekt übergeben wird, wird die
 // Muskel-Zuordnung ersetzt - ein reines Umbenennen darf eine bereits
 // bestehende Zuordnung nicht versehentlich auf "kein Muskel" zurücksetzen.
 // Aufrufer: das Neue-Übung-Sheet im Bearbeiten-Modus (Workout-Tab, geöffnet
-// über das "⋮"-Menü des Übungs-Detail-Sheets).
+// über das "⋮"-Menü des Übungs-Detail-Sheets). Lehnt Standard-Übungen ab
+// (s. ADR 0021) - das UI blendet das Menü für sie zwar bereits komplett aus,
+// diese Prüfung ist die eigentliche Absicherung (defense in depth).
 export async function updateExercise(id, name, muscleAssignment) {
+  const existing = await db.exercises.get(id);
+  if (existing?.isBuiltin) {
+    throw new Error('Standard-Übungen können nicht bearbeitet werden.');
+  }
   const changes = { name, updatedAt: nowISO() };
   if (muscleAssignment) {
-    const { primaryMuscleId = null, secondaryMuscleIds = [] } = muscleAssignment;
-    validateMuscleAssignment(primaryMuscleId, secondaryMuscleIds);
-    changes.primaryMuscleId = primaryMuscleId;
+    const { primaryMuscleIds = [], secondaryMuscleIds = [] } = muscleAssignment;
+    validateMuscleAssignment(primaryMuscleIds, secondaryMuscleIds);
+    changes.primaryMuscleIds = primaryMuscleIds;
     changes.secondaryMuscleIds = secondaryMuscleIds;
   }
   await db.exercises.update(id, changes);
@@ -209,13 +254,92 @@ export async function updateExercise(id, name, muscleAssignment) {
 // Workout-Rostern, in denen noch keine Sätze für sie erfasst wurden.
 // Bereits erfasste Sätze (und die zugehörigen workoutExercises-Einträge
 // mit gesetztem startedAt) bleiben zur Wahrung des Verlaufs erhalten.
+// Lehnt Standard-Übungen ab (s. ADR 0021) - gleicher Grund/dieselbe
+// defense-in-depth-Überlegung wie bei updateExercise().
 export async function deleteExercise(id) {
+  const existing = await db.exercises.get(id);
+  if (existing?.isBuiltin) {
+    throw new Error('Standard-Übungen können nicht gelöscht werden.');
+  }
   await db.transaction('rw', db.exercises, db.routineExercises, db.workoutExercises, async () => {
     await db.routineExercises.where('exerciseId').equals(id).delete();
     const entries = await db.workoutExercises.where('exerciseId').equals(id).toArray();
     const removable = entries.filter((e) => e.startedAt === null);
     await db.workoutExercises.bulkDelete(removable.map((e) => e.id));
     await db.exercises.delete(id);
+  });
+}
+
+// --- Standard-Übungen (Seed) ---
+//
+// Feste Liste von Übungen, die mit jeder Installation der App automatisch
+// angelegt werden (s. ADR 0021) - eigene Slug-IDs statt generateId(), damit
+// seedBuiltinExercises() beim nächsten App-Start erkennen kann, welche
+// Einträge schon existieren (analog zu MUSCLES/MUSCLE_GROUPS oben).
+// `isBuiltin: true` sperrt sie in updateExercise()/deleteExercise() gegen
+// jede Änderung durch den Nutzer, zusätzlich zur UI-Sperre im
+// Übungs-Detail-Sheet (workout.js blendet dessen "⋮"-Menü für sie komplett
+// aus statt es nur zu deaktivieren).
+//
+// Einmal hier aufgenommene Einträge werden nie mehr entfernt (kein
+// Lösch-Fall vorgesehen) - nur Name/Muskel-Zuordnung eines bestehenden
+// Eintrags ändern oder neue Einträge ergänzen. seedBuiltinExercises()
+// gleicht bei jedem App-Start ALLE Felder eines vorhandenen Eintrags gegen
+// diese Liste ab und schreibt Änderungen zurück, damit ein späteres
+// App-Update auch bereits installierte Standard-Übungen aktualisiert.
+export const BUILTIN_EXERCISES = [
+  // { id: 'bankdruecken', name: 'Bankdrücken', primaryMuscleIds: ['brust'], secondaryMuscleIds: ['trizeps', 'vordere-schulter'] },
+];
+
+// Legt fehlende BUILTIN_EXERCISES-Einträge an und gleicht bereits
+// vorhandene auf den aktuellen Stand der Liste ab (Name/Muskel-Zuordnung/
+// isBuiltin) - idempotent, wird bei jedem App-Start aufgerufen (s. app.js).
+// Schreibt ein bestehendes Dokument nur, wenn sich tatsächlich etwas
+// geändert hat, um bei jedem Start unnötige updatedAt-Änderungen zu
+// vermeiden. `defs` ist per Default BUILTIN_EXERCISES, aber austauschbar
+// für Tests (s. tests/db.test.js), ohne die echte Liste anfassen zu müssen.
+export async function seedBuiltinExercises(defs = BUILTIN_EXERCISES) {
+  if (defs.length === 0) return;
+
+  const ids = defs.map((def) => def.id);
+  const existing = await db.exercises.where('id').anyOf(ids).toArray();
+  const existingById = new Map(existing.map((e) => [e.id, e]));
+
+  await db.transaction('rw', db.exercises, async () => {
+    for (const def of defs) {
+      const primaryMuscleIds = def.primaryMuscleIds ?? [];
+      const secondaryMuscleIds = def.secondaryMuscleIds ?? [];
+      validateMuscleAssignment(primaryMuscleIds, secondaryMuscleIds);
+      const current = existingById.get(def.id);
+
+      if (!current) {
+        const ts = nowISO();
+        await db.exercises.add({
+          id: def.id,
+          name: def.name,
+          primaryMuscleIds,
+          secondaryMuscleIds,
+          isBuiltin: true,
+          createdAt: ts,
+          updatedAt: ts,
+        });
+        continue;
+      }
+
+      const primaryChanged = JSON.stringify(current.primaryMuscleIds ?? []) !== JSON.stringify(primaryMuscleIds);
+      const secondaryChanged = JSON.stringify(current.secondaryMuscleIds ?? []) !== JSON.stringify(secondaryMuscleIds);
+      const changed = current.name !== def.name || primaryChanged || secondaryChanged || !current.isBuiltin;
+
+      if (changed) {
+        await db.exercises.update(def.id, {
+          name: def.name,
+          primaryMuscleIds,
+          secondaryMuscleIds,
+          isBuiltin: true,
+          updatedAt: nowISO(),
+        });
+      }
+    }
   });
 }
 

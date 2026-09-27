@@ -1,4 +1,4 @@
-import { db } from './db.js';
+import { db, seedBuiltinExercises } from './db.js';
 import * as workout from './views/workout.js';
 import * as statistics from './views/statistics.js';
 import * as profile from './views/profile.js';
@@ -130,6 +130,9 @@ window.addEventListener('resize', () => {
 });
 
 db.open()
+  // Standard-Übungen (s. ADR 0021) müssen vor dem ersten Rendern vorhanden
+  // sein, damit die Übungs-Liste nicht erst kurz unvollständig aufblitzt.
+  .then(() => seedBuiltinExercises())
   .then(() => showView('workout'))
   .catch((err) => {
     console.error('Fitlog: IndexedDB konnte nicht geöffnet werden', err);

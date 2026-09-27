@@ -101,7 +101,10 @@ let state = {
   exerciseCreateSheetOpen: false,
   exerciseCreateSheetClosing: false,
   exerciseCreateSheetName: '',
-  exerciseCreateSheetPrimaryMuscleId: null,
+  // Seit ADR 0022 wie exerciseCreateSheetSecondaryMuscleIds ein Set (vorher
+  // ein einzelner, nullable Wert) - eine Übung kann jetzt mehrere primäre
+  // Muskeln haben.
+  exerciseCreateSheetPrimaryMuscleIds: new Set(),
   exerciseCreateSheetSecondaryMuscleIds: new Set(),
   // Bearbeiten-Modus DESSELBEN Sheets (Titel "Übung bearbeiten", Felder
   // vorausgefüllt, Speichern ruft updateExercise()) - id der bearbeiteten
@@ -161,7 +164,7 @@ export async function render(container) {
   state.exerciseCreateSheetOpen = false;
   state.exerciseCreateSheetClosing = false;
   state.exerciseCreateSheetName = '';
-  state.exerciseCreateSheetPrimaryMuscleId = null;
+  state.exerciseCreateSheetPrimaryMuscleIds = new Set();
   state.exerciseCreateSheetSecondaryMuscleIds = new Set();
   state.exerciseCreateSheetEditingId = null;
   state.exerciseDetailMenuOpen = false;
@@ -1616,16 +1619,19 @@ function renderExerciseSheetBody() {
   const query = state.exerciseSheetSearch.trim().toLowerCase();
   let filteredExercises = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
 
-  // Muskelgruppen-Filter: trifft anhand der Gruppe des PRIMÄREN Muskels
-  // (nicht mehr primär oder sekundär, s. ADR 0020 - seit der Aufteilung in
-  // einzelne Muskeln pro Gruppe wäre "sekundär trifft auch" zu weit gefasst,
-  // z. B. würde ein "Arme"-Filter sonst auch reine Rücken-Übungen mit
-  // Bizeps als sekundärem Muskel zeigen). Übungen ohne Zuordnung
-  // (primaryMuscleId `undefined`/`null`, s. ADR 0013) fallen bei aktivem
-  // Filter automatisch raus (muscleGroupIdOf liefert dafür `null`).
+  // Muskelgruppen-Filter: trifft, wenn EIN BELIEBIGER primärer Muskel der
+  // Übung zur gewählten Gruppe gehört (nicht mehr genau einer, s. ADR 0022 -
+  // eine Übung kann jetzt mehrere primäre Muskeln haben). Weiterhin nicht
+  // zusätzlich sekundär (s. ADR 0020 - seit der Aufteilung in einzelne
+  // Muskeln pro Gruppe wäre "sekundär trifft auch" zu weit gefasst, z. B.
+  // würde ein "Arme"-Filter sonst auch reine Rücken-Übungen mit Bizeps als
+  // sekundärem Muskel zeigen). Übungen ohne Zuordnung (`primaryMuscleIds`
+  // leer/`undefined`) fallen bei aktivem Filter automatisch raus.
   const muscleFilterId = state.exerciseSheetMuscleFilterId;
   if (muscleFilterId) {
-    filteredExercises = filteredExercises.filter((ex) => muscleGroupIdOf(ex.primaryMuscleId) === muscleFilterId);
+    filteredExercises = filteredExercises.filter((ex) =>
+      (ex.primaryMuscleIds ?? []).some((id) => muscleGroupIdOf(id) === muscleFilterId)
+    );
   }
 
   return renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, allExercises.length);
@@ -1880,11 +1886,12 @@ function renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, t
   `;
 }
 
-// Titel + primärer Muskel als Untertitel (analog zum Übungsanzahl-Untertitel
+// Titel + primäre Muskeln als Untertitel (analog zum Übungsanzahl-Untertitel
 // im Routine-Picker, s. renderRoutinePickerPopup weiter oben: `text-label
 // text-muted uppercase` unter dem Titel) - Übungen ohne primäre
-// Muskelzuordnung (`primaryMuscleId` null/unbekannt) bekommen keinen
-// Untertitel, statt eine leere/erfundene Zeile anzuzeigen. Die Auswahl-
+// Muskelzuordnung (`primaryMuscleIds` leer/unbekannt) bekommen keinen
+// Untertitel, statt eine leere/erfundene Zeile anzuzeigen. Mehrere primäre
+// Muskeln (s. ADR 0022) werden mit ", " zusammengefügt. Die Auswahl-
 // Fläche sitzt rechts (Nutzer-Vorgabe, s. Referenz-Screenshot) und zeigt
 // entweder ein eckiges, antippbares Auswahl-Kästchen (togglet
 // exerciseSheetSelectedIds) oder - für Übungen, die heute schon im Roster
@@ -1893,7 +1900,9 @@ function renderExerciseSheetList(filteredExercises, inWorkoutIds, selectedIds, t
 // Ansehen). Der Name-Block selbst ist immer ein eigenes Tap-Ziel zum
 // Übungs-Detail-Sheet, unabhängig vom Auswahl-/Bereits-Vorhanden-Status.
 function renderExerciseSheetRow(exercise, alreadyInWorkout, isSelected) {
-  const muscleName = MUSCLES.find((m) => m.id === exercise.primaryMuscleId)?.name;
+  const muscleNames = (exercise.primaryMuscleIds ?? [])
+    .map((id) => MUSCLES.find((m) => m.id === id)?.name)
+    .filter(Boolean);
 
   const trailingColumn = alreadyInWorkout
     ? `<span class="min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-hidden="true">
@@ -1907,7 +1916,7 @@ function renderExerciseSheetRow(exercise, alreadyInWorkout, isSelected) {
     <li class="${LIST_ROW} flex items-center gap-3">
       <button type="button" data-id="${exercise.id}" class="exercise-open-detail-btn tap-feedback flex-1 min-w-0 flex flex-col gap-0.5 text-left">
         <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
-        ${muscleName ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleName)}</span>` : ''}
+        ${muscleNames.length > 0 ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleNames.join(', '))}</span>` : ''}
       </button>
       ${trailingColumn}
     </li>
@@ -2160,13 +2169,18 @@ function wireExerciseSheetBodyEvents() {
 function renderExerciseCreateSheetMuscleChip(muscle, role) {
   const isSelected =
     role === 'primary'
-      ? state.exerciseCreateSheetPrimaryMuscleId === muscle.id
+      ? state.exerciseCreateSheetPrimaryMuscleIds.has(muscle.id)
       : state.exerciseCreateSheetSecondaryMuscleIds.has(muscle.id);
-  // Bereits als primär gewählte Muskelgruppe ist unter den sekundären
+  // Ein Muskel, der schon in der jeweils anderen Liste gewählt ist, ist hier
   // deaktiviert - spiegelt die serverseitige Validierung in
-  // validateMuscleAssignment() (js/db.js), die genau diese Überschneidung
-  // ablehnt, s. ADR 0013.
-  const isDisabled = role === 'secondary' && state.exerciseCreateSheetPrimaryMuscleId === muscle.id;
+  // validateMuscleAssignment() (js/db.js), die eine Überschneidung von
+  // primären und sekundären Muskeln ablehnt (s. ADR 0013/0022). Seit ADR
+  // 0022 in beide Richtungen symmetrisch (vorher nur sekundär gegen den
+  // einen primären Muskel, da primär noch eine Einzelauswahl war).
+  const isDisabled =
+    role === 'primary'
+      ? state.exerciseCreateSheetSecondaryMuscleIds.has(muscle.id)
+      : state.exerciseCreateSheetPrimaryMuscleIds.has(muscle.id);
 
   return `
     <button
@@ -2196,7 +2210,7 @@ function renderExerciseCreateSheetContent() {
         />
       </div>
       <div class="flex flex-col gap-2">
-        <span class="text-label-large text-muted">Primärer Muskel</span>
+        <span class="text-label-large text-muted">Primäre Muskeln</span>
         <div class="flex flex-wrap gap-2">
           ${MUSCLES.map((m) => renderExerciseCreateSheetMuscleChip(m, 'primary')).join('')}
         </div>
@@ -2279,7 +2293,7 @@ async function openExerciseCreateSheet(editExerciseId = null) {
   state.exerciseCreateSheetOpen = true;
   state.exerciseCreateSheetClosing = false;
   state.exerciseCreateSheetName = exercise?.name ?? '';
-  state.exerciseCreateSheetPrimaryMuscleId = exercise?.primaryMuscleId ?? null;
+  state.exerciseCreateSheetPrimaryMuscleIds = new Set(exercise?.primaryMuscleIds ?? []);
   state.exerciseCreateSheetSecondaryMuscleIds = new Set(exercise?.secondaryMuscleIds ?? []);
   lockBodyScroll();
   raiseNavAboveSheet();
@@ -2357,19 +2371,26 @@ function wireExerciseCreateSheetContentEvents() {
     btn.addEventListener('click', () => {
       const { role, muscle } = btn.dataset;
       if (role === 'primary') {
-        // Erneuter Tap auf die bereits gewählte primäre Muskelgruppe hebt
-        // die Auswahl wieder auf (Toggle, analog zur Routine-Auswahl).
-        state.exerciseCreateSheetPrimaryMuscleId =
-          state.exerciseCreateSheetPrimaryMuscleId === muscle ? null : muscle;
-        // Falls dieselbe Muskelgruppe bereits sekundär gewählt war, dort
-        // entfernen - vermeidet die von validateMuscleAssignment()
-        // abgelehnte primär=sekundär-Überschneidung von vornherein.
-        state.exerciseCreateSheetSecondaryMuscleIds.delete(muscle);
+        // Seit ADR 0022 wie bei den sekundären Muskeln eine Mehrfachauswahl
+        // (Toggle) statt einer Einzelauswahl - eine Übung kann jetzt mehrere
+        // primäre Muskeln haben.
+        if (state.exerciseCreateSheetPrimaryMuscleIds.has(muscle)) {
+          state.exerciseCreateSheetPrimaryMuscleIds.delete(muscle);
+        } else {
+          state.exerciseCreateSheetPrimaryMuscleIds.add(muscle);
+          // Falls derselbe Muskel bereits sekundär gewählt war, dort
+          // entfernen - vermeidet die von validateMuscleAssignment()
+          // abgelehnte primär=sekundär-Überschneidung von vornherein (die
+          // Chips sind für diesen Fall ohnehin bereits gegenseitig
+          // deaktiviert, s. renderExerciseCreateSheetMuscleChip()).
+          state.exerciseCreateSheetSecondaryMuscleIds.delete(muscle);
+        }
       } else {
         if (state.exerciseCreateSheetSecondaryMuscleIds.has(muscle)) {
           state.exerciseCreateSheetSecondaryMuscleIds.delete(muscle);
         } else {
           state.exerciseCreateSheetSecondaryMuscleIds.add(muscle);
+          state.exerciseCreateSheetPrimaryMuscleIds.delete(muscle);
         }
       }
       repaintExerciseCreateSheetContentInPlace();
@@ -2384,7 +2405,7 @@ function wireExerciseCreateSheetContentEvents() {
     const editingId = state.exerciseCreateSheetEditingId;
     if (editingId) {
       await updateExercise(editingId, name, {
-        primaryMuscleId: state.exerciseCreateSheetPrimaryMuscleId,
+        primaryMuscleIds: [...state.exerciseCreateSheetPrimaryMuscleIds],
         secondaryMuscleIds: [...state.exerciseCreateSheetSecondaryMuscleIds],
       });
       await loadExerciseSheetCache();
@@ -2400,7 +2421,7 @@ function wireExerciseCreateSheetContentEvents() {
     }
 
     const exercise = await createExercise(name, {
-      primaryMuscleId: state.exerciseCreateSheetPrimaryMuscleId,
+      primaryMuscleIds: [...state.exerciseCreateSheetPrimaryMuscleIds],
       secondaryMuscleIds: [...state.exerciseCreateSheetSecondaryMuscleIds],
     });
     await loadExerciseSheetCache();
@@ -2434,7 +2455,9 @@ function wireExerciseCreateSheetEvents() {
 // das darunterliegende bleibt offen/sichtbar. Inhalt: primärer und sekundäre
 // Muskeln der Übung; die Kopfzeile trägt statt eines Löschen-Buttons einen
 // "⋮"-Glass-Button mit Kontextmenü (Bearbeiten öffnet das Neue-Übung-Sheet
-// im Bearbeiten-Modus darüber, Löschen mit Bestätigungsdialog).
+// im Bearbeiten-Modus darüber, Löschen mit Bestätigungsdialog) - bei einer
+// Standard-Übung (`isBuiltin`, s. ADR 0021) fehlt dieser Button komplett
+// (statt nur deaktiviert zu sein), die dritte Grid-Spalte bleibt dafür leer.
 // Kopfzeile ohne `closing`-Fallunterscheidung, aus demselben Grund wie beim
 // Neue-Übung-Sheet (s. renderExerciseCreateSheet): diese Funktion wird nur
 // noch genau einmal beim Öffnen aufgerufen, die closing-Animation läuft über
@@ -2445,18 +2468,9 @@ async function renderExerciseDetailSheet() {
   const name = exercise?.name ?? 'Gelöschte Übung';
   const z = exerciseSubSheetZ();
 
-  return `
-    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
-    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
-      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-6 flex-shrink-0">
-        <button id="exercise-detail-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
-        <div id="exercise-detail-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px] px-2" style="touch-action: none;">
-          <span id="exercise-detail-sheet-title" class="text-card-title truncate">${escapeHtml(name)}</span>
-        </div>
+  const menuBtnHtml = exercise?.isBuiltin
+    ? '<div></div>'
+    : `
         <div id="exercise-detail-menu-anchor" class="relative justify-self-end">
           <button
             id="exercise-detail-sheet-menu-btn"
@@ -2472,7 +2486,21 @@ async function renderExerciseDetailSheet() {
               <circle cx="12" cy="19" r="1.75" />
             </svg>
           </button>
+        </div>`;
+
+  return `
+    <div id="exercise-detail-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
+    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
+      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-6 flex-shrink-0">
+        <button id="exercise-detail-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div id="exercise-detail-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px] px-2" style="touch-action: none;">
+          <span id="exercise-detail-sheet-title" class="text-card-title truncate">${escapeHtml(name)}</span>
         </div>
+        ${menuBtnHtml}
       </div>
       <div id="exercise-detail-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
         ${renderExerciseDetailSheetContent(exercise)}
@@ -2484,21 +2512,25 @@ async function renderExerciseDetailSheet() {
 // Muskelgruppen als reine Anzeige-Chips (nicht antippbar, `text-ink` auf
 // `bg-white/[0.08]` wie die unausgewählten Chips im Neue-Übung-Sheet).
 // Übungen ohne Zuordnung (ältere, vor ADR 0013 angelegte) zeigen "Nicht
-// zugeordnet" statt einer leeren Fläche. `secondaryMuscleIds` kann bei
-// solchen älteren Übungen fehlen (`undefined`), daher `?? []`.
+// zugeordnet" statt einer leeren Fläche. `primaryMuscleIds`/
+// `secondaryMuscleIds` können bei solchen älteren Übungen fehlen
+// (`undefined`), daher `?? []`. Seit ADR 0022 kann `primaryMuscleIds` auch
+// mehrere Einträge haben - Anzeige analog zu den sekundären Muskeln (mehrere
+// Chips statt genau einem).
 function renderExerciseDetailSheetContent(exercise) {
   if (!exercise) return '';
   const muscleName = (id) => MUSCLES.find((m) => m.id === id)?.name;
   const chip = (id) =>
     `<span class="rounded-full px-3 py-1 text-body bg-white/[0.08] text-ink">${escapeHtml(muscleName(id) ?? id)}</span>`;
   const none = `<span class="text-body text-muted">Nicht zugeordnet</span>`;
+  const primary = exercise.primaryMuscleIds ?? [];
   const secondary = exercise.secondaryMuscleIds ?? [];
 
   return `
     <div class="flex flex-col gap-6 py-1">
       <div class="flex flex-col gap-2">
-        <span class="text-label-large text-muted">Primärer Muskel</span>
-        <div class="flex flex-wrap gap-2">${exercise.primaryMuscleId ? chip(exercise.primaryMuscleId) : none}</div>
+        <span class="text-label-large text-muted">Primäre Muskeln</span>
+        <div class="flex flex-wrap gap-2">${primary.length > 0 ? primary.map(chip).join('') : none}</div>
       </div>
       <div class="flex flex-col gap-2">
         <span class="text-label-large text-muted">Sekundäre Muskeln</span>

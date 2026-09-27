@@ -9,6 +9,7 @@ import {
   db,
   MUSCLES,
   muscleGroupIdOf,
+  seedBuiltinExercises,
   createExercise,
   updateExercise,
   deleteExercise,
@@ -202,21 +203,92 @@ test('muscleGroupIdOf leitet die Gruppe eines Muskels ab, unbekannte/fehlende ID
 
 test('createExercise erlaubt primären und sekundären Muskel aus derselben Gruppe', async () => {
   const exercise = await createExercise('Bizeps-Curls', {
-    primaryMuscleId: 'bizeps',
+    primaryMuscleIds: ['bizeps'],
     secondaryMuscleIds: ['trizeps', 'unterarme'],
   });
-  assert.equal(exercise.primaryMuscleId, 'bizeps');
+  assert.deepEqual(exercise.primaryMuscleIds, ['bizeps']);
   assert.deepEqual(exercise.secondaryMuscleIds, ['trizeps', 'unterarme']);
-  assert.equal(muscleGroupIdOf(exercise.primaryMuscleId), 'arme');
+  assert.deepEqual(exercise.primaryMuscleIds.map(muscleGroupIdOf), ['arme']);
   assert.deepEqual(exercise.secondaryMuscleIds.map(muscleGroupIdOf), ['arme', 'arme']);
+});
+
+test('createExercise erlaubt mehrere primäre Muskeln (ADR 0022)', async () => {
+  const exercise = await createExercise('Klimmzug', {
+    primaryMuscleIds: ['lat', 'bizeps'],
+    secondaryMuscleIds: ['oberer-ruecken'],
+  });
+  assert.deepEqual(exercise.primaryMuscleIds, ['lat', 'bizeps']);
+  assert.deepEqual(exercise.secondaryMuscleIds, ['oberer-ruecken']);
+});
+
+test('createExercise/updateExercise lehnen Duplikate und Überschneidungen zwischen primären Muskeln ab (ADR 0022)', async () => {
+  await assert.rejects(() => createExercise('Ungültig', { primaryMuscleIds: ['lat', 'lat'], secondaryMuscleIds: [] }));
+  await assert.rejects(() => createExercise('Ungültig', { primaryMuscleIds: ['lat', 'bizeps'], secondaryMuscleIds: ['bizeps'] }));
+
+  const exercise = await createExercise('Rudern', { primaryMuscleIds: ['lat'], secondaryMuscleIds: ['bizeps'] });
+  await assert.rejects(() =>
+    updateExercise(exercise.id, exercise.name, { primaryMuscleIds: ['lat', 'bizeps'], secondaryMuscleIds: ['bizeps'] })
+  );
 });
 
 test('createExercise/updateExercise lehnen eine ehemalige Gruppen-ID ab, die kein einzelner Muskel (mehr) ist', async () => {
   // 'schultern' war vor ADR 0020 eine gültige MUSCLE_GROUPS-id, ist jetzt nur
   // noch eine Gruppen-id, kein Eintrag in MUSCLES - muss abgelehnt werden.
   assert.ok(!MUSCLES.some((m) => m.id === 'schultern'), 'Testannahme: "schultern" ist kein Muskel');
-  await assert.rejects(() => createExercise('Ungültig', { primaryMuscleId: 'schultern', secondaryMuscleIds: [] }));
+  await assert.rejects(() => createExercise('Ungültig', { primaryMuscleIds: ['schultern'], secondaryMuscleIds: [] }));
 
-  const exercise = await createExercise('Schulterdrücken', { primaryMuscleId: 'vordere-schulter', secondaryMuscleIds: [] });
-  await assert.rejects(() => updateExercise(exercise.id, exercise.name, { primaryMuscleId: 'schultern', secondaryMuscleIds: [] }));
+  const exercise = await createExercise('Schulterdrücken', { primaryMuscleIds: ['vordere-schulter'], secondaryMuscleIds: [] });
+  await assert.rejects(() =>
+    updateExercise(exercise.id, exercise.name, { primaryMuscleIds: ['schultern'], secondaryMuscleIds: [] })
+  );
+});
+
+test('seedBuiltinExercises legt fehlende Standard-Übungen an und markiert sie isBuiltin (ADR 0021)', async () => {
+  const defs = [
+    { id: 'test-bankdruecken', name: 'Bankdrücken', primaryMuscleIds: ['brust'], secondaryMuscleIds: ['trizeps'] },
+    { id: 'test-kniebeuge', name: 'Kniebeuge', primaryMuscleIds: ['quadrizeps'], secondaryMuscleIds: [] },
+  ];
+  await seedBuiltinExercises(defs);
+
+  const a = await db.exercises.get('test-bankdruecken');
+  const b = await db.exercises.get('test-kniebeuge');
+  assert.deepEqual(a.primaryMuscleIds, ['brust']);
+  assert.equal(a.name, 'Bankdrücken');
+  assert.deepEqual(a.secondaryMuscleIds, ['trizeps']);
+  assert.equal(a.isBuiltin, true);
+  assert.equal(b.isBuiltin, true);
+});
+
+test('seedBuiltinExercises aktualisiert Name/Muskel-Zuordnung einer bereits vorhandenen Standard-Übung', async () => {
+  await seedBuiltinExercises([{ id: 'test-rudern', name: 'Rudern', primaryMuscleIds: ['oberer-ruecken'], secondaryMuscleIds: [] }]);
+
+  await seedBuiltinExercises([
+    { id: 'test-rudern', name: 'Rudern (Maschine)', primaryMuscleIds: ['lat', 'bizeps'], secondaryMuscleIds: [] },
+  ]);
+
+  const updated = await db.exercises.get('test-rudern');
+  assert.equal(updated.name, 'Rudern (Maschine)');
+  assert.deepEqual(updated.primaryMuscleIds, ['lat', 'bizeps']);
+  assert.deepEqual(updated.secondaryMuscleIds, []);
+});
+
+test('seedBuiltinExercises lässt eine unveränderte Standard-Übung unangetastet (kein unnötiges updatedAt)', async () => {
+  const def = { id: 'test-unveraendert', name: 'Unveraendert', primaryMuscleIds: ['waden'], secondaryMuscleIds: [] };
+  await seedBuiltinExercises([def]);
+  const first = await db.exercises.get('test-unveraendert');
+
+  await seedBuiltinExercises([def]);
+  const second = await db.exercises.get('test-unveraendert');
+
+  assert.equal(second.updatedAt, first.updatedAt, 'unveränderter Eintrag darf beim erneuten Seeden nicht neu geschrieben werden');
+});
+
+test('updateExercise/deleteExercise lehnen Standard-Übungen ab (ADR 0021)', async () => {
+  await seedBuiltinExercises([{ id: 'test-gesperrt', name: 'Gesperrt', primaryMuscleIds: ['po'], secondaryMuscleIds: [] }]);
+
+  await assert.rejects(() => updateExercise('test-gesperrt', 'Anderer Name'));
+  await assert.rejects(() => deleteExercise('test-gesperrt'));
+
+  const stillThere = await db.exercises.get('test-gesperrt');
+  assert.equal(stillThere.name, 'Gesperrt', 'Standard-Übung darf durch den fehlgeschlagenen Versuch nicht verändert sein');
 });

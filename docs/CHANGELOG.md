@@ -2,6 +2,33 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-27 (Mehrere primäre Muskeln pro Übung)
+
+### Added
+- Schema-Version 5: `exercises.primaryMuscleId` (einzelner Wert) wird zu `primaryMuscleIds` (Array, multiEntry-Index) — eine Übung kann jetzt mehrere primäre Muskeln haben ([ADR 0022](decisions/0022-mehrere-primaere-muskeln.md))
+- 2 neue Tests in `tests/db.test.js` (mehrere primäre Muskeln erlaubt, Duplikate/Überschneidungen abgelehnt)
+
+### Changed
+- `validateMuscleAssignment()` prüft jetzt symmetrisch auf beiden Seiten (keine Duplikate, keine Überschneidung primär/sekundär) statt nur für einen einzelnen primären Wert
+- Chip-Auswahl für primäre Muskeln im Neue-Übung-/Bearbeiten-Sheet ist jetzt wie die sekundäre eine Mehrfachauswahl, gegenseitige Deaktivierung jetzt symmetrisch
+- Untertitel der Übungs-Sheet-Zeile und Chips im Übungs-Detail-Sheet zeigen jetzt mehrere primäre Muskeln statt genau einem
+- Muskelgruppen-Filter matcht, wenn ein beliebiger primärer Muskel einer Übung zur gewählten Gruppe gehört (vorher genau einer)
+
+### Hinweis
+- Keine Migration bestehender Testdaten (App noch nicht produktiv) — ein altes `primaryMuscleId`-Feld wird von keinem Code mehr gelesen
+
+## 2026-09-27 (Standard-Übungen: technische Vorbereitung)
+
+### Added
+- Schema-Version 4: neues Feld `exercises.isBuiltin`, markiert eine vom Nutzer nicht veränderbare, mit der App ausgelieferte Standard-Übung ([ADR 0021](decisions/0021-standard-uebungen.md))
+- Neue Konstante `BUILTIN_EXERCISES` (aktuell leer) + neue Funktion `seedBuiltinExercises()` in `js/db.js`: legt fehlende Standard-Übungen beim App-Start an und gleicht vorhandene auf den aktuellen Stand der Liste ab, idempotent, kein Lösch-Fall
+- `updateExercise()`/`deleteExercise()` lehnen Standard-Übungen ab (defense in depth, zusätzlich zur UI-Sperre)
+- Übungs-Detail-Sheet blendet für Standard-Übungen das "⋮"-Kontextmenü komplett aus
+- 4 neue Tests in `tests/db.test.js` für den Seed-Mechanismus und die Bearbeiten-/Löschen-Sperre
+
+### Hinweis
+- `BUILTIN_EXERCISES` ist noch leer (Seed damit aktuell ein No-Op) — die eigentliche Liste der Standard-Übungen folgt als reine Datenergänzung
+
 ## 2026-09-27 (Einzelne Muskeln statt Muskelgruppen an der Übung)
 
 ### Added
