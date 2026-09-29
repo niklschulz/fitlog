@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-29 (Accent-Farbe geändert)
+
+### Changed
+- `accent`-Token (`index.html`, `tailwind.config`) von `#A3E635` auf `#D0E256` geändert — betrifft alle `bg-accent`/`text-accent`/`border-accent`-Stellen automatisch
+- Drei hartkodierte Nicht-Tailwind-Stellen in `css/styles.css` nachgezogen: `.icon-btn-glass-accent` (Hintergrund/Rand/Icon-Farbe) und `.nav-btn.active`
+
+### Hinweis
+- Reine Farbänderung, keine Datenlogik betroffen (alle 18 automatisierten Tests weiterhin grün)
+
 ## 2026-09-27 (Segmented Control: bis zum Rand + gleitender Indikator)
 
 ### Changed

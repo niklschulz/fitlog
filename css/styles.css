@@ -151,9 +151,9 @@ input[type="number"]::-webkit-outer-spin-button {
    kombinierbar. Hier übernimmt eine einzige Datei/Kaskade Normal- und
    :disabled-Zustand vollständig, ohne dieses Wettrennen zu riskieren. */
 .icon-btn-glass-accent {
-  background: rgba(163, 230, 53, 0.72);
-  border-color: rgba(163, 230, 53, 0.85);
-  color: #E4F5C9; /* leicht grün eingefärbtes Weiß - Mischung aus ink (#F5F5F5) und accent (#A3E635) */
+  background: rgba(208, 226, 86, 0.72);
+  border-color: rgba(208, 226, 86, 0.85);
+  color: #ECF0CD; /* leicht grün eingefärbtes Weiß - Mischung aus ink (#F5F5F5) und accent (#D0E256) */
   transition: opacity 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
@@ -165,7 +165,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .nav-btn.active {
-  color: #A3E635; /* accent - Hintergrund kommt jetzt von #nav-indicator, s. dort */
+  color: #D0E256; /* accent - Hintergrund kommt jetzt von #nav-indicator, s. dort */
 }
 
 /* Kurzes Tap-Feedback, da kein haptisches Feedback über Web-APIs verfügbar ist */
