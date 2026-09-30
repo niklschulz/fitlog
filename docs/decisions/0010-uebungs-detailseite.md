@@ -23,3 +23,9 @@ Das bestehende App-weite View-System (`app.js`, vier Tabs über die Bottom-Nav) 
 - `workout.js` verliert `expandedExerciseId` sowie die Importe `addSet`/`deleteSet`/`getLastSetForExercise`/`markWorkoutExerciseStarted` (jetzt ausschließlich in `workout-exercise-detail.js` verwendet) — reduziert die Verantwortlichkeit der Haupt-View spürbar.
 - Erstes Beispiel eines "Sub-View"-Musters (View, die nicht in `app.js` registriert ist, sondern von einer anderen View direkt aufgerufen wird) — falls künftig weitere Detailseiten/Drill-downs innerhalb eines Tabs gebraucht werden, ist das der zu wiederholende Ansatz statt eines neuen, generischeren Routers.
 - Statistik-Reiter bleibt bewusst ein reiner Platzhalter ohne jede Datenanbindung, wie im Briefing spezifiziert.
+
+## Nachtrag (2026-09-29): Verlauf schließt den aktuell betrachteten Tag nicht mehr aus
+
+Nutzer-Vorgabe nach gezielter Nachfrage, ob Daten aus einem aktuell laufenden Workout auch im Verlauf auftauchen: Ja, sollen sie — die bisherige Ausblendung des gerade betrachteten Tages (s. oben, "der aktuell betrachtete Tag ausgeschlossen") wurde als unerwünscht empfunden.
+
+`getExerciseSetHistory(exerciseId, excludeWorkoutId)` verliert den `excludeWorkoutId`-Parameter samt Filter — zeigt jetzt ausnahmslos alle Tage mit mindestens einem Satz dieser Übung, neueste zuerst, **einschließlich** des Tages, dessen Detailseite gerade offen ist. Einziger Aufrufer (`workout-exercise-detail.js`) entsprechend angepasst: `getExerciseSetHistory(entry.exerciseId)` ohne zweites Argument. Bewusste Konsequenz: Der heutige/gerade betrachtete Tag kann jetzt sowohl im ersten Reiter (Tages-Erfassung) als auch — mit denselben Sätzen — ganz oben im Verlauf-Reiter erscheinen; diese Dopplung wird in Kauf genommen, da der Nutzer den vollständigen, lückenlosen Verlauf einer Wiederholung ohne Sonderfall vorzieht.

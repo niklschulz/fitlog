@@ -97,7 +97,7 @@ async function paint(indicatorFromRect = null) {
     formReps = lastSet ? lastSet.reps : '';
   }
 
-  const history = state.activeTab === 'history' ? await getExerciseSetHistory(entry.exerciseId, entry.workoutId) : [];
+  const history = state.activeTab === 'history' ? await getExerciseSetHistory(entry.exerciseId) : [];
 
   const html = `
     <div class="py-4 flex flex-col gap-4">

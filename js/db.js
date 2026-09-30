@@ -641,20 +641,23 @@ export async function getLastSetForExercise(exerciseId) {
   return sets.length ? sets[sets.length - 1] : null;
 }
 
-// Verlauf einer Übung für die Übungs-Detailseite (Abschnitt 12): alle Tage
-// (außer dem übergebenen aktuellen Workout), an denen mindestens ein Satz
-// dieser Übung erfasst wurde, gruppiert nach Datum, neueste zuerst.
-export async function getExerciseSetHistory(exerciseId, excludeWorkoutId) {
+// Verlauf einer Übung für die Übungs-Detailseite (Abschnitt 12): ALLE Tage,
+// an denen mindestens ein Satz dieser Übung erfasst wurde, gruppiert nach
+// Datum, neueste zuerst - eingeschlossen der gerade betrachtete Tag/das
+// gerade laufende Workout (s. ADR 0010, Nachtrag 2026-09-29: bis dahin
+// wurde genau dieser Tag noch ausgeschlossen, auf ausdrücklichen
+// Nutzer-Wunsch jetzt nicht mehr - "Verlauf" zeigt seitdem konsequent den
+// vollständigen Satz-Verlauf, unabhängig vom Tages-Tab derselben Seite).
+export async function getExerciseSetHistory(exerciseId) {
   const sets = await db.sets.where('exerciseId').equals(exerciseId).toArray();
-  const relevant = sets.filter((s) => s.workoutId !== excludeWorkoutId);
-  if (relevant.length === 0) return [];
+  if (sets.length === 0) return [];
 
-  const workoutIds = [...new Set(relevant.map((s) => s.workoutId))];
+  const workoutIds = [...new Set(sets.map((s) => s.workoutId))];
   const workouts = await db.workouts.bulkGet(workoutIds);
   const dateByWorkoutId = Object.fromEntries(workoutIds.map((id, i) => [id, workouts[i]?.date ?? null]));
 
   const setsByDate = {};
-  for (const s of relevant) {
+  for (const s of sets) {
     const date = dateByWorkoutId[s.workoutId];
     if (!date) continue; // Workout wurde inzwischen gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen, defensiv trotzdem übersprungen)
     (setsByDate[date] ??= []).push(s);
@@ -691,4 +694,37 @@ export async function getTrainedDates() {
     if (date) dates.add(date); // Workout gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen) - defensiv übersprungen
   }
   return [...dates];
+}
+
+// Trainingsvolumen pro Kalenderwoche (Gewicht × Wiederholungen, aufsummiert
+// über alle Sätze und Übungen einer ISO-8601-Woche, Montag-Sonntag) für den
+// Statistik-Tab ("Volumen"-Chart, s. Hundertzweiundzwanzigste Iteration in
+// design-system.md - ersetzt die frühere Tages-Aggregation
+// getDailyTrainingVolumes()). Nur Wochen mit mindestens einem Satz,
+// aufsteigend nach Wochenbeginn sortiert - dieselbe zweistufige Abfrage
+// (erst alle Sätze, dann die zugehörigen Workouts per bulkGet) wie
+// getTrainedDates()/getExerciseSetHistory(), aus demselben Grund (eine
+// Abfrage statt einer pro Woche). Ob eine Woche VOLLSTÄNDIG ist (ihr
+// Sonntag bereits vorbei) entscheidet bewusst NICHT diese Funktion,
+// sondern der Aufrufer (js/views/statistics.js) - reiner Datenzugriff ohne
+// "heute"-Bezug, analog zu den übrigen `get*`-Funktionen hier.
+export async function getWeeklyTrainingVolumes() {
+  const sets = await db.sets.toArray();
+  if (sets.length === 0) return [];
+
+  const workoutIds = [...new Set(sets.map((s) => s.workoutId))];
+  const workouts = await db.workouts.bulkGet(workoutIds);
+  const dateByWorkoutId = Object.fromEntries(workoutIds.map((id, i) => [id, workouts[i]?.date ?? null]));
+
+  const volumeByWeekStart = {};
+  for (const s of sets) {
+    const date = dateByWorkoutId[s.workoutId];
+    if (!date) continue; // Workout gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen) - defensiv übersprungen
+    const weekStart = mondayOf(date);
+    volumeByWeekStart[weekStart] = (volumeByWeekStart[weekStart] ?? 0) + s.weight * s.reps;
+  }
+
+  return Object.entries(volumeByWeekStart)
+    .map(([weekStart, volume]) => ({ weekStart, volume }))
+    .sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1));
 }

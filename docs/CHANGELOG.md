@@ -2,6 +2,57 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-30 (Statistik: Volumen-Chart mit Zeitraum-Reitern)
+
+### Added
+- Drei Zeitraum-Reiter im Volumen-Chart (`js/views/statistics.js`): **3M** (13 vollständige Wochen, Default), **1J** (12 Monate), **Max** (alle Monate seit dem ersten Workout) — eigene Segmented Control, s. [ADR 0023](decisions/0023-volumen-chart-zeitraum-reiter.md)
+- Gleitender Durchschnitt (`computeMovingAverage()`) als Linie — 4 Wochen bzw. 3 Monate Fenster, überspringt leere Perioden statt sie als 0 zu zählen, bleibt bei einer leeren Periode flach statt abzusacken
+- Neue Funktion `getWeeklyTrainingVolumes()` (`js/db.js`), ersetzt `getDailyTrainingVolumes()`
+- KPI-Zeile: immer der wöchentliche gleitende Durchschnitt der letzten vollständigen Woche ("Ø Wochenvolumen", unverändert über alle drei Reiter) + prozentuale Veränderung über den jeweils sichtbaren Zeitraum (reiter-spezifisch)
+
+### Changed
+- Monatswert ist jetzt der Durchschnitt der trainierten vollständigen Wochen eines Monats, keine Summe
+- Die laufende, unvollständige Woche fließt nirgends mehr ein (weder Punkt noch Durchschnitt noch KPI)
+- X-Achse der Wochenansicht (3M) zeigt die Kalenderwoche ("KW 37") statt des Wochenbeginn-Datums — dasselbe Format wie im Balkendiagramm "Workouts pro Woche" darüber
+- Zeitraum-Reiter kompakt (schmaler Wrapper, rechtsbündig neben der KPI-Zahl) statt über die volle Kartenbreite
+- Horizontale Trennlinie unter der KPI-Zeile, dasselbe Muster wie bei "Workouts pro Woche"
+- X-Achse in der Monatsansicht: **1J** zeigt jetzt Monat + zweistelliges Jahr ("Sep 26") statt nur des Monats, **Max** zeigt nur noch die vierstellige Jahreszahl ("2026") statt eines Monatskürzels — behebt die zuvor bekannte Mehrjahres-Mehrdeutigkeit
+- Liniendarstellung: `stroke="currentColor"` + `class="text-accent"` statt eines festen Grautons (Linie folgt jetzt automatisch dem `accent`-Design-Token) und `vector-effect="non-scaling-stroke"` gegen unterschiedlich dicke Liniensegmente je nach Steigung
+- KPI-Zahl war zuvor reiter-abhängig (wöchentlich bei 3M, monatlich bei 1J/Max) — zeigt jetzt in allen drei Reitern denselben wochenbasierten Wert; nur die Prozentanzeige bleibt reiter-spezifisch
+- y-Achsen-Label-Spalte des Balkendiagramms "Workouts pro Woche" von `w-6` auf `w-8` verbreitert, damit ihr Plot-Bereich mit dem des Volumen-Charts darunter bündig ist (beide hatten zuvor unterschiedlich breite Label-Spalten und dadurch einen um 8px versetzten Plot-Start)
+- Volumen-Chart bekommt zusätzlich zu den berechneten Gitterlinien eine feste Grundlinie am unteren Rand, direkt über der x-Achsen-Beschriftung — vorher war dort nur zufällig eine Linie sichtbar, je nachdem ob ein "schöner" Tick-Wert genau an den unteren Rand der gezoomten Y-Domäne fiel
+- Y-Achsen-Beschriftung des Volumen-Charts zeigt ab 1000 kg jetzt ausschließlich ganze Tausender-Schritte ("4k", "5k") statt teils krummer Werte wie "4,5k" — `niceTickStep()` bekommt dafür einen optionalen `minStep`-Parameter, den `renderVolumeChart()` mit `1000` befüllt, sobald der sichtbare Wertebereich 1000 kg erreicht
+- Y-Achsen-Beschriftungen beider Diagramme jetzt linksbündig zueinander ausgerichtet (zwischenzeitlich rechtsbündig, auf Nutzer-Wunsch direkt wieder zurückgestellt) — vorher endeten zwar beide Label-Spalten am selben Rand, die Ziffern selbst saßen aber an entgegengesetzten Enden ihrer Spalte und wirkten dadurch weiterhin nicht bündig
+- X-Achse des Volumen-Charts zeigt bei höchstens 6 Perioden jetzt immer alle Beschriftungen statt der bisherigen festen Vier-Kappung — bei genau 5 Perioden ließ die gleichmäßige Positions-Rundung bislang eine mittendrin (z. B. "KW 37" zwischen KW 36 und KW 38), was wie eine fehlende Periode statt bewusster Verdichtung wirkte
+- X-Achse des Volumen-Charts zeigt im Max-Reiter keine aufeinanderfolgenden identischen Beschriftungen mehr (z. B. zweimal "2026", wenn die gesamte "Max"-Zeitspanne noch unter einem Jahr liegt) — nur noch die jeweils erste Beschriftung eines Werts bleibt stehen
+- X-Achsen-Beschriftungen des Volumen-Charts jetzt immer gleichmäßig verteilt (eigene, margin-basierte Positions-Skala nur für die Labels) — vorher waren erstes/letztes Label kantenbündig, die übrigen zentriert an ihrer echten Position, was bei vollständig gezeigten Perioden trotz gleichmäßiger Zeitabstände ungleiche Lücken ergab (eng an den Rändern, weit in der Mitte)
+- Bleibt nach dem Entfernen aufeinanderfolgender Duplikate (s. o.) nur noch eine einzige Beschriftung übrig (z. B. "2026" im Max-Reiter), steht sie jetzt mittig unter dem Chart statt an ihrer ursprünglichen, kantennahen Position
+
+### Removed
+- `getDailyTrainingVolumes()` (`js/db.js`) und das tagesbasierte Volumen-Diagramm der Hunderteinundzwanzigsten Iteration
+- Einzelne Rohwert-Punkte im Chart — nur noch die geglättete Durchschnittslinie sichtbar
+
+### Hinweis
+- `computeMovingAverage()` exakt gegen das Rechenbeispiel der Nutzer-Spezifikation verifiziert (Node-Skript, identische Werte). Live im Browser verifiziert (u. a. mit einem eigens erzeugten 3-Jahres-Testdatensatz: 323 Trainingstage, 1225 Sätze), alle 18 automatisierten Tests weiterhin grün. "Aufwärmsätze zählen nicht mit" aus der Spezifikation ist aktuell nicht umsetzbar (kein `isWarmup`-Feld an `sets`). Die zuvor bekannte Mehrjahres-Achsen-Mehrdeutigkeit bei "Max" ist mit der Jahreszahl-Umstellung behoben (s. ADR 0023)
+
+## 2026-09-29 (Statistik: Diagramm "Volumen pro Trainingstag")
+
+### Added
+- Neue Funktion `getDailyTrainingVolumes()` (`js/db.js`): Tagesvolumen (Gewicht × Wiederholungen, summiert über alle Sätze/Übungen eines Tages) für Tage mit mindestens einem Satz
+- Neuer Abschnitt im Statistik-Tab, Reiter "Übersicht" (`js/views/statistics.js`): Liniendiagramm der letzten `VOLUME_CHART_MAX_DAYS` (14) Trainingstage plus Durchschnittswert, an einem Referenz-Screenschot ("Weighted volume") orientiert — Kategorie-Achse (keine Nulltage), Y-Achse gezoomt auf den Wertebereich, Verbindungslinie per SVG-`<polyline>`, Punkte als separate HTML-Kreise (keine Bibliothek)
+
+### Hinweis
+- Live im Browser verifiziert (mehrere Trainingstage, einzelner Trainingstag als Sonderfall, leerer Zustand), alle 18 automatisierten Tests weiterhin grün — keine neuen Tests für diese reine Anzeige-/Aggregations-Funktion, gleiches Muster wie beim bereits ungetesteten `getTrainedDates()`
+
+## 2026-09-29 (Verlauf zeigt jetzt auch den aktuell betrachteten Tag)
+
+### Changed
+- `getExerciseSetHistory(exerciseId)` (`js/db.js`) verliert den `excludeWorkoutId`-Parameter — der Verlauf-Reiter der Übungs-Detailseite zeigt jetzt ausnahmslos alle Tage mit erfassten Sätzen dieser Übung, einschließlich des Tages, dessen Detailseite gerade offen ist (vorher ausgeschlossen, s. [ADR 0010](decisions/0010-uebungs-detailseite.md), Nachtrag)
+- `js/views/workout-exercise-detail.js` entsprechend angepasst (Aufruf ohne zweites Argument)
+
+### Hinweis
+- Reine Verhaltensänderung, keine Datenmodell-/Schema-Änderung; live im Browser verifiziert (heutiger Satz erscheint jetzt oben im Verlauf), alle 18 automatisierten Tests weiterhin grün
+
 ## 2026-09-29 (Accent-Farbe erneut geändert)
 
 ### Changed
