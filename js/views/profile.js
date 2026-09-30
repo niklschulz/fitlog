@@ -2,6 +2,10 @@ import { getProfile, saveProfile, clearProfile } from '../profile.js';
 import { getSettings, saveSettings } from '../settings.js';
 import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
+// TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für renderTestModeToggle()/
+// deren Klick-Handler weiter unten nötig - zum Entfernen diese Zeile sowie
+// beide markierten Stellen darunter löschen.
+import { isTestModeEnabled, setTestModeEnabled } from '../testmode.js';
 
 let currentContainer = null;
 let state = {
@@ -49,6 +53,7 @@ function paint() {
       <h1 class="text-screen-title">Profil</h1>
       ${body}
       ${renderSettings(getSettings())}
+      ${renderTestModeToggle()}
     </div>
 
     ${state.linkSheetOpen ? renderLinkSheet() : ''}
@@ -94,6 +99,42 @@ function renderSettings(settings) {
     </div>
   `;
 }
+
+// ============================================================================
+// TESTMODUS (temporär, s. ADR 0024/js/testmode.js) - kompletter Block klar
+// markiert, damit er sich später als Ganzes wieder entfernen lässt (Aufruf
+// oben in paint(), dieser Abschnitt, Wiring unten in wireEvents()). Schalter
+// ohne eigene CSS-Klassen (reine Tailwind-Utilities), damit beim Entfernen
+// nichts in css/styles.css übrig bleibt. Ein Wechsel bindet js/db.js beim
+// nächsten Start an eine andere Dexie-Datenbank ("fitlog" vs. "fitlog-test")
+// - dafür reicht kein bloßes Neu-Rendern, sondern ein vollständiger
+// Seiten-Reload (reduceMotion/Animation wären ohnehin irreführend, da sich
+// dabei buchstäblich die gesamte Datengrundlage austauscht).
+function renderTestModeToggle() {
+  const enabled = isTestModeEnabled();
+  return `
+    <div class="flex flex-col gap-2">
+      <p class="text-body text-muted">Entwicklung</p>
+      <div class="${CARD} flex items-center justify-between gap-3">
+        <div class="flex flex-col gap-1 min-w-0">
+          <span class="text-label-large text-muted">Testdaten verwenden</span>
+          <p class="text-body text-muted">Zeigt einen synthetischen, ca. 3 Jahre umfassenden Testdatensatz statt deiner echten Trainingsdaten. Ein Wechsel lädt die App neu.</p>
+        </div>
+        <button
+          id="test-mode-toggle"
+          type="button"
+          role="switch"
+          aria-checked="${enabled}"
+          aria-label="Testdaten verwenden"
+          class="tap-feedback relative flex-shrink-0 w-12 h-7 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-white/20'}"
+        >
+          <span class="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}"></span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+// --- Ende TESTMODUS-Render-Block ---
 
 function renderView(profile) {
   return `
@@ -328,5 +369,12 @@ function wireEvents() {
       return;
     }
     saveSettings({ ...settings, weeklyGoal: value });
+  });
+
+  // TESTMODUS (temporär, s. ADR 0024/js/testmode.js) - zum Entfernen diesen
+  // Block löschen (s. auch renderTestModeToggle() oben).
+  currentContainer.querySelector('#test-mode-toggle')?.addEventListener('click', () => {
+    setTestModeEnabled(!isTestModeEnabled());
+    window.location.reload();
   });
 }

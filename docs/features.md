@@ -63,6 +63,8 @@ Vierter Tab, ganz rechts. Zwei Zustände: **kein Profil** (nur der "Profil verkn
 
 Darunter, unabhängig vom Profil-Zustand, ein **Einstellungen**-Bereich (`js/settings.js`, ebenfalls `localStorage`, noch ohne Design-Feinschliff): "Standardanzahl Sätze" und "Wochenziel (Trainingstage pro Woche)" als einfache Zahlenfelder mit je einem kurzen Erklärungstext darunter ("Fitlog kann..."), speichern direkt bei `change` (kein separater Speichern-Button). Ersetzen die bisherigen, für genau diesen Zweck vorbereiteten Konstanten `DEFAULT_SET_COUNT` (Übungs-Detailseite) und `WEEKLY_GOAL` (Statistik-Tab, "Workouts pro Woche") — beide lesen ihren Wert jetzt zur Laufzeit aus `getSettings()` statt eines hart codierten Defaults.
 
+Darunter ein **"Entwicklung"**-Bereich mit dem Schieberegler **"Testdaten verwenden"** (`js/testmode.js`) — **ausdrücklich ein temporäres Entwickler-Feature**, das wieder entfernt wird, sobald die App produktiv genutzt wird, s. [ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md). Schaltet zwischen der echten Datenbank und einer zweiten, komplett separaten Datenbank mit einem synthetischen, ca. 3 Jahre umfassenden Testdatensatz um (deterministisch erzeugt, alle 6 Standard-Übungen, mit simulierten Trainingspausen und leichtem Fortschritts-Trend) — nützlich, um Diagramme und Auswertungen auch ohne eigene, umfangreiche Trainingshistorie auszuprobieren (z. B. auf einem frisch installierten Gerät). Ein Wechsel lädt die App neu; die echten Trainingsdaten bleiben davon in jedem Fall unberührt.
+
 ## Lösch-Verhalten (Kurzfassung)
 
 Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md) (Erweiterung um Workout-Roster) für die vollständige Begründung.

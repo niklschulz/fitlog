@@ -2,6 +2,19 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-30 (Testmodus: Schieberegler für synthetische Testdaten)
+
+### Added
+- Schieberegler "Testdaten verwenden" im Profil-Tab (neuer "Entwicklung"-Abschnitt), schaltet zwischen der echten Datenbank und einer zweiten, separaten Datenbank (`fitlog-test`) mit einem synthetischen, deterministisch erzeugten ca. 3-Jahres-Testdatensatz um — **ausdrücklich ein temporäres Entwickler-Feature**, s. [ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md) samt Rückbau-Anleitung
+- Neue Datei `js/testmode.js`: Flag-Verwaltung (`localStorage`, try/catch-abgesichert), Datenbankname-Auflösung für `js/db.js`, sowie `seedTestData()` — ca. 3 Jahre synthetisches Training mit zwei mehrwöchigen Pausen, ~12 % zusätzlich zufällig ausgelassenen Wochen, leichtem Progressive-Overload-Trend, alle 6 Standard-Übungen
+
+### Changed
+- `js/db.js` erzeugt seine Dexie-Instanz jetzt mit einem dynamisch ermittelten Datenbanknamen statt fest `'fitlog'` — bestehende Schema-Migrationen unverändert, legen dadurch bei Bedarf automatisch eine zweite, schema-identische Datenbank an
+- `js/app.js`: Testdaten werden beim Start einmalig erzeugt, falls Testmodus aktiv und die Test-Datenbank noch leer ist
+
+### Hinweis
+- Bewusst minimal-invasiv umgesetzt (kein Proxy/keine Laufzeit-Indirektion, Wechsel lädt stattdessen die Seite neu) und an nur vier Stellen im Code verankert, jede mit "TESTMODUS" markiert — Ziel ist die vollständige Entfernbarkeit, sobald die App produktiv genutzt wird. Live im Browser verifiziert (Umschalten in beide Richtungen, Datenbankname/-inhalt, alle drei Volumen-Reiter, Produktiv-Datenbank bleibt unberührt), alle 18 automatisierten Tests weiterhin grün
+
 ## 2026-09-30 (Segmented-Control-Indikator: Absturz und Fehlmessung behoben)
 
 ### Fixed

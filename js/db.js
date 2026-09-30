@@ -2,7 +2,15 @@
 // Schema entspricht Abschnitt 3 des Konzept-Dokuments, erweitert um
 // workoutExercises (Abschnitt 10, s. ADR 0007).
 
-export const db = new Dexie('fitlog');
+// TESTMODUS (temporär, s. ADR 0024/js/testmode.js): Datenbankname kommt aus
+// getActiveDbName() statt fest 'fitlog' - dieselben `.version(N).stores()`-
+// Migrationen unten legen dadurch bei Bedarf eine komplett separate,
+// schema-identische zweite Datenbank ("fitlog-test") an, ganz ohne eigene
+// Schema-Definition. Zum Entfernen: diese Import-Zeile löschen, die nächste
+// Zeile zurück auf `new Dexie('fitlog')`.
+import { getActiveDbName } from './testmode.js';
+
+export const db = new Dexie(getActiveDbName());
 
 db.version(1).stores({
   exercises: 'id, name, createdAt, updatedAt',

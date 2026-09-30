@@ -1,7 +1,11 @@
-import { db, seedBuiltinExercises } from './db.js';
+import { db, seedBuiltinExercises, getOrCreateWorkoutForDate, addSet, addDays, mondayOf } from './db.js';
 import * as workout from './views/workout.js';
 import * as statistics from './views/statistics.js';
 import * as profile from './views/profile.js';
+// TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für den markierten
+// Seed-Aufruf weiter unten nötig - zum Entfernen diese Zeile sowie den
+// markierten Block in der db.open()-Kette löschen.
+import { isTestModeEnabled, seedTestData } from './testmode.js';
 
 const views = { workout, statistics, profile };
 
@@ -133,6 +137,16 @@ db.open()
   // Standard-Übungen (s. ADR 0021) müssen vor dem ersten Rendern vorhanden
   // sein, damit die Übungs-Liste nicht erst kurz unvollständig aufblitzt.
   .then(() => seedBuiltinExercises())
+  // TESTMODUS (temporär, s. ADR 0024): Testdaten einmalig erzeugen, falls
+  // der Testmodus aktiv ist und die Test-Datenbank noch leer ist -
+  // Umschalten allein (js/views/profile.js) erzeugt noch keine Daten, das
+  // passiert lazy erst hier beim nächsten Start danach. Zum Entfernen:
+  // diesen .then()-Block löschen.
+  .then(async () => {
+    if (isTestModeEnabled() && (await db.workouts.count()) === 0) {
+      await seedTestData(db, { getOrCreateWorkoutForDate, addSet, addDays, mondayOf });
+    }
+  })
   .then(() => showView('workout'))
   .catch((err) => {
     console.error('Fitlog: IndexedDB konnte nicht geöffnet werden', err);
