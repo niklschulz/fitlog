@@ -193,37 +193,60 @@ export function measureSegmentedIndicatorRect(container) {
   return { left: indicatorRect.left - wrapperRect.left, width: indicatorRect.width };
 }
 
+// `container` fehlt regelmäßig absichtlich (z. B. #volume-range-control im
+// Statistik-Tab existiert nur, solange der Übersicht-Reiter aktiv ist, s.
+// statistics.js) - ohne diese Absicherung würde `container.querySelector(...)`
+// bei `null` eine Exception werfen und den Rest der aufrufenden async
+// paint()-Funktion abbrechen, bevor sie z. B. wireEvents() erreicht (Nutzer-
+// Bugreport: Zurückwechseln zu "Übersicht" nach "Übungen" tat nichts mehr,
+// weil die neu gerenderten Buttons dadurch nie ihre Klick-Handler bekamen).
 export function positionSegmentedIndicator(container, { fromRect = null } = {}) {
-  const wrapper = container.querySelector('.segmented-control');
-  const indicator = wrapper?.querySelector('.segmented-control-indicator');
-  const activeBtn = wrapper?.querySelector('.segmented-tab[data-active="true"]');
-  if (!wrapper || !indicator || !activeBtn) return;
+  if (!container) return;
 
-  const wrapperRect = wrapper.getBoundingClientRect();
-  const btnRect = activeBtn.getBoundingClientRect();
-  const target = { left: btnRect.left - wrapperRect.left, width: btnRect.width };
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Eine Ebene Verzögerung per requestAnimationFrame: Tailwind Play CDN
+  // generiert das Stylesheet für neu im DOM auftauchende Klassenkombinationen
+  // asynchronous (MutationObserver-Callback, läuft NACH dem synchron
+  // ausgeführten Skript, das gerade erst per innerHTML gerendert hat). Wird
+  // sofort (noch im selben Tick) gemessen, kann getBoundingClientRect() auf
+  // ungestylte/teilgestylte Elemente treffen (z. B. `flex-1` noch nicht
+  // angewendet) - das Ergebnis ist eine korrekt gemessene, aber falsche
+  // Breite/Position (Nutzer-Bugreport: Indikator beim ersten Rendern nicht
+  // bündig mit dem aktiven Segment, teils nur halb so breit wie der Button).
+  // rAF verschiebt die Messung auf den nächsten Frame, nachdem der Browser
+  // zwischenzeitlich aufgelaufene Mikrotasks (inkl. Tailwinds Stylesheet-
+  // Update) abgearbeitet hat.
+  requestAnimationFrame(() => {
+    const wrapper = container.querySelector('.segmented-control');
+    const indicator = wrapper?.querySelector('.segmented-control-indicator');
+    const activeBtn = wrapper?.querySelector('.segmented-tab[data-active="true"]');
+    if (!wrapper || !indicator || !activeBtn) return;
 
-  if (!fromRect || reduceMotion) {
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    const target = { left: btnRect.left - wrapperRect.left, width: btnRect.width };
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!fromRect || reduceMotion) {
+      indicator.style.left = `${target.left}px`;
+      indicator.style.width = `${target.width}px`;
+      return;
+    }
+
     indicator.style.left = `${target.left}px`;
     indicator.style.width = `${target.width}px`;
-    return;
-  }
 
-  indicator.style.left = `${target.left}px`;
-  indicator.style.width = `${target.width}px`;
+    const stretchLeft = Math.min(fromRect.left, target.left);
+    const stretchWidth = Math.abs(target.left - fromRect.left) + Math.max(fromRect.width, target.width);
 
-  const stretchLeft = Math.min(fromRect.left, target.left);
-  const stretchWidth = Math.abs(target.left - fromRect.left) + Math.max(fromRect.width, target.width);
-
-  indicator.animate(
-    [
-      { left: `${fromRect.left}px`, width: `${fromRect.width}px` },
-      { left: `${stretchLeft}px`, width: `${stretchWidth}px`, offset: 0.55 },
-      { left: `${target.left}px`, width: `${target.width}px` },
-    ],
-    { duration: SEGMENTED_INDICATOR_DURATION_MS, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
-  );
+    indicator.animate(
+      [
+        { left: `${fromRect.left}px`, width: `${fromRect.width}px` },
+        { left: `${stretchLeft}px`, width: `${stretchWidth}px`, offset: 0.55 },
+        { left: `${target.left}px`, width: `${target.width}px` },
+      ],
+      { duration: SEGMENTED_INDICATOR_DURATION_MS, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+    );
+  });
 }
 
 export function renderSetValues(weight, reps) {

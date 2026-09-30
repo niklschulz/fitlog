@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-09-30 (Segmented-Control-Indikator: Absturz und Fehlmessung behoben)
+
+### Fixed
+- `positionSegmentedIndicator()` (`js/utils.js`) warf eine `TypeError`, wenn ihr Container fehlt (z. B. `#volume-range-control` im Statistik-Tab, nur vorhanden solange der Übersicht-Reiter aktiv ist) — brach dadurch die umgebende `async paint()` mitten in der Ausführung ab, noch vor `wireEvents()`. Konkrete Folge: Nach einem Wechsel zum Übungen-Reiter ließ sich nicht mehr zurück zu Übersicht wechseln (Klick-Handler nie angehängt). Behoben durch eine einfache `if (!container) return;`-Absicherung
+- Indikator des Segmented Control war beim allerersten Rendern einer neuen Klassenkombination manchmal nicht bündig mit dem aktiven Segment bzw. deutlich zu schmal (z. B. "Übersicht" und "3M" direkt nach dem Laden des Statistik-Tabs) — Ursache: Tailwind Play CDN generiert das Stylesheet für neue Klassenkombinationen asynchron, die Messung per `getBoundingClientRect()` lief teils davor. Behoben durch eine `requestAnimationFrame()`-Verzögerung um die Mess-/Positionierungs-Logik
+
 ## 2026-09-30 (Statistik: Volumen-Chart mit Zeitraum-Reitern)
 
 ### Added
