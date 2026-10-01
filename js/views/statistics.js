@@ -564,7 +564,7 @@ function renderVolumeSection(volumeRange, stats) {
   if (!hasData) {
     return `
       <div class="flex flex-col gap-2">
-        <p class="text-body text-muted">Volumen</p>
+        <p class="text-label-large text-muted">Volumen</p>
         <div class="${CARD} flex flex-col gap-4">
           <div class="flex justify-end">${tabsHtml}</div>
           <p class="text-body text-muted text-center py-6">Noch keine vollständige Trainingswoche erfasst.</p>
@@ -575,7 +575,7 @@ function renderVolumeSection(volumeRange, stats) {
 
   return `
     <div class="flex flex-col gap-2">
-      <p class="text-body text-muted">Volumen</p>
+      <p class="text-label-large text-muted">Volumen</p>
       <div class="${CARD} flex flex-col gap-4">
         <div class="flex items-start justify-between gap-3">
           <div class="flex flex-col gap-1 min-w-0">
@@ -601,7 +601,7 @@ async function renderOverviewTab() {
 
   return `
     <div class="flex flex-col gap-2">
-      <p class="text-body text-muted">Workouts pro Woche</p>
+      <p class="text-label-large text-muted">Workouts pro Woche</p>
       <div class="${CARD} flex flex-col gap-4">
         <div class="flex divide-x divide-divider">
           ${renderCounterColumn(stats.thisWeekCount, 'Diese Woche', { goal: stats.weeklyGoal, paddingClass: 'pr-4' })}

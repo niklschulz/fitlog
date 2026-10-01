@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-01 (Karten-Überschriften in text-label-large)
+
+### Changed
+- Karten-Überschriften "Workouts pro Woche", "Volumen" (Statistik-Tab) und "Entwicklung" (Profil-Tab) jetzt `text-label-large text-muted` (fett) statt `text-body text-muted` — neues Muster "Karten-Überschrift" in `docs/design-system.md`. `CACHE_NAME` in `sw.js` auf `fitlog-v184`
+
 ## 2026-10-01 (Statistik: deckende Balken und dunklere Trennlinien)
 
 ### Changed

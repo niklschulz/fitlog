@@ -114,7 +114,7 @@ function renderTestModeToggle() {
   const enabled = isTestModeEnabled();
   return `
     <div class="flex flex-col gap-2">
-      <p class="text-body text-muted">Entwicklung</p>
+      <p class="text-label-large text-muted">Entwicklung</p>
       <div class="${CARD} flex items-center justify-between gap-3">
         <div class="flex flex-col gap-1 min-w-0">
           <span class="text-label-large text-muted">Testdaten verwenden</span>
