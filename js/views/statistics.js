@@ -135,7 +135,10 @@ function renderCounterColumn(value, label, { goal, paddingClass = '' } = {}) {
 // (0 % bei trainingsfreien Wochen, bewusst kein Mindest-Balken, s.
 // computeWorkoutsPerWeekStats). Aktuelle Woche in `bg-accent` hervorgehoben,
 // übrige Wochen in einer abgedunkelten Variante derselben Farbe statt eines
-// unabhängigen zweiten Tons (s. Nutzer-Diskussion zum Feature). Die y-Achsen-
+// unabhängigen zweiten Tons (s. Nutzer-Diskussion zum Feature) - als
+// deckendes Token `bg-accent-muted` (#637456) statt `bg-accent/40`: optisch
+// nahezu gleich, aber die gepunkteten Gitterlinien scheinen nicht mehr durch
+// die Balken hindurch (Nutzer-Wunsch). Die y-Achsen-
 // Spalte ist `w-8` (nicht das für einstellige Zahlen eigentlich ausreichende
 // `w-6`) - MUSS mit der Spaltenbreite in renderVolumeChart() übereinstimmen,
 // sonst beginnt der Plot-Bereich (Balken hier, Linie dort) bei
@@ -166,7 +169,7 @@ function renderChart(buckets, weeklyGoal) {
             ${buckets
               .map((b) => {
                 const heightPct = (b.count / ticks[0]) * 100;
-                return `<div class="flex-1 rounded-t-sm ${b.isCurrent ? 'bg-accent' : 'bg-accent/40'}" style="height:${heightPct}%" title="${b.count}"></div>`;
+                return `<div class="flex-1 rounded-t-sm ${b.isCurrent ? 'bg-accent' : 'bg-accent-muted'}" style="height:${heightPct}%" title="${b.count}"></div>`;
               })
               .join('')}
           </div>
@@ -584,7 +587,7 @@ function renderVolumeSection(volumeRange, stats) {
           </div>
           ${tabsHtml}
         </div>
-        <div class="border-t border-white/10"></div>
+        <div class="border-t border-divider"></div>
         ${renderVolumeChart(stats)}
       </div>
     </div>
@@ -600,12 +603,12 @@ async function renderOverviewTab() {
     <div class="flex flex-col gap-2">
       <p class="text-body text-muted">Workouts pro Woche</p>
       <div class="${CARD} flex flex-col gap-4">
-        <div class="flex divide-x divide-white/10">
+        <div class="flex divide-x divide-divider">
           ${renderCounterColumn(stats.thisWeekCount, 'Diese Woche', { goal: stats.weeklyGoal, paddingClass: 'pr-4' })}
           ${renderCounterColumn(stats.thisMonthCount, 'Dieser Monat', { paddingClass: 'px-4' })}
           ${renderCounterColumn(stats.lastMonthCount, 'Vorheriger Monat', { paddingClass: 'pl-4' })}
         </div>
-        <div class="border-t border-white/10"></div>
+        <div class="border-t border-divider"></div>
         ${renderChart(stats.buckets, stats.weeklyGoal)}
       </div>
     </div>

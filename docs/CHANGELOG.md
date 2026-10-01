@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-01 (Statistik: deckende Balken und dunklere Trennlinien)
+
+### Changed
+- Trennlinien in den Statistik-Karten (unter der Zähler-/KPI-Zeile, zwischen den Zähler-Spalten) jetzt dunkler in `#1A1A1A` (neues Design-Token `divider`, nach Live-Vergleich mit `#303030` und Schwarz gewählt) statt `white/10` — vorher kaum von den Diagramm-Gitterlinien zu unterscheiden
+- Balken der nicht-aktuellen Wochen im Diagramm "Workouts pro Woche" jetzt deckend in `#637456` (neues Design-Token `accent-muted`, `index.html`) statt halbtransparent `bg-accent/40` — optisch nahezu gleich, aber die gepunkteten Gitterlinien scheinen nicht mehr durch. `CACHE_NAME` in `sw.js` auf `fitlog-v183`
+
 ## 2026-10-01 (Testmodus: Trainingstage im Workout-Tab leer)
 
 ### Fixed
