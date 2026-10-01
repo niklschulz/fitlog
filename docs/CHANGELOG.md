@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-01 (Testmodus: zwei Bugfixes vom echten iPhone)
+
+### Fixed
+- Testdaten im großen Kalender (Workout-Tab) nicht sichtbar — `CALENDAR_SHEET_MIN_MONTH` (`js/views/workout.js`) war fest auf `'2026-01'` begrenzt, der synthetische Testdatensatz reicht aber bewusst bis ca. 2023 zurück. Im Testmodus jetzt dynamisch aus der Test-Datensatz-Spanne abgeleitet statt einer festen Konstante — der Statistik-Tab war davon nie betroffen (liest direkt per Datumsbereich aus der DB)
+- Spürbar schlechtere Performance mit aktiven Testdaten, besonders nach einer iOS-Hintergrund-Pause (langer schwarzer Bildschirm) — `seedTestData()` erzeugte seine ca. 2500 Datensätze über ebenso viele einzeln committete Dexie-Aufrufe statt einer gebündelten Transaktion; jetzt eine einzige `db.transaction(...)` (lokal gemessen: ca. 300 ms). Zusätzlich prüfte `app.js` bei jedem App-Start per `await db.workouts.count()`, ob bereits gesät wurde — ein zusätzlicher IndexedDB-Roundtrip auf dem kritischen Start-Pfad bei jedem Kaltstart; jetzt ein `localStorage`-Flag statt der DB-Abfrage
+
+### Hinweis
+- Beide Ursachen und die Fixes ausführlich in [ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md) (Nachtrag) dokumentiert. Live im Browser verifiziert (großer Kalender zeigt jetzt 38 statt ca. 10 Monate, trainierte Tage auch vor Januar 2026 korrekt markiert; Seeding isoliert gemessen), alle 18 automatisierten Tests weiterhin grün
+
 ## 2026-09-30 (Testmodus: Schieberegler für synthetische Testdaten)
 
 ### Added

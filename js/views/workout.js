@@ -36,6 +36,10 @@ import {
 } from '../sheet.js';
 import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
+// TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für die dynamische
+// CALENDAR_SHEET_MIN_MONTH weiter unten nötig - zum Entfernen diese Zeile
+// löschen und die markierte Stelle dort zurückbauen.
+import { isTestModeEnabled, TOTAL_WEEKS as TEST_DATA_WEEKS } from '../testmode.js';
 
 let currentContainer = null;
 let state = {
@@ -280,8 +284,16 @@ function formatFullDate(dateStr) {
 
 // --- Monats-Hilfsfunktionen für den großen Kalender (Abschnitt 11) ---
 
-// Fest ab Januar 2026 - App-Startzeitpunkt, keine Trainingsdaten davor möglich.
-const CALENDAR_SHEET_MIN_MONTH = '2026-01';
+// Fest ab Januar 2026 - App-Startzeitpunkt, keine Trainingsdaten davor
+// möglich. TESTMODUS-Ausnahme (s. ADR 0024/js/testmode.js): Der
+// synthetische Testdatensatz reicht bewusst ca. 3 Jahre zurück (deutlich
+// vor diese Grenze) - ohne Ausnahme wäre der Großteil der Testdaten im
+// großen Kalender unerreichbar, obwohl er in der DB existiert und vom
+// Statistik-Tab (der direkt per Datumsbereich liest, nicht über diesen
+// Kalender) korrekt erfasst wird (Nutzer-Bugreport: "Testdaten im
+// Workout-Tab nicht sichtbar"). Zum Entfernen: zurück auf die einfache
+// Konstante `'2026-01'`.
+const CALENDAR_SHEET_MIN_MONTH = isTestModeEnabled() ? yearMonthOf(addDays(todayISODate(), -7 * TEST_DATA_WEEKS)) : '2026-01';
 
 function yearMonthOf(dateStr) {
   return dateStr.slice(0, 7);

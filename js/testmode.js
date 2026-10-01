@@ -50,6 +50,31 @@ export function getActiveDbName() {
   return isTestModeEnabled() ? TEST_DB_NAME : PROD_DB_NAME;
 }
 
+// Eigenes Flag statt bei jedem App-Start erneut `db.workouts.count()` gegen
+// IndexedDB abzufragen (Nutzer-Bugreport: spürbar langsamerer Kaltstart,
+// besonders nach einer iOS-Hintergrund-Pause, in der die App komplett neu
+// lädt) - ein localStorage-Read ist ein synchroner, praktisch kostenloser
+// Vorgleich gegenüber einem zusätzlichen asynchronen IndexedDB-Roundtrip auf
+// JEDEM Start, nicht nur dem ersten.
+const SEEDED_FLAG_KEY = 'fitlog:testDataSeeded';
+
+export function isTestDataSeeded() {
+  try {
+    return localStorage.getItem(SEEDED_FLAG_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function markTestDataSeeded() {
+  try {
+    localStorage.setItem(SEEDED_FLAG_KEY, 'true');
+  } catch {
+    // s. o. - ohne Speicherort würde seedTestData() dann bei jedem Start
+    // erneut laufen; hinnehmbar für dieses Dev-Feature.
+  }
+}
+
 // --- Synthetischer Testdatensatz -------------------------------------------
 //
 // Deterministisch (fester Seed, einfacher linearer Kongruenzgenerator) und
@@ -62,7 +87,9 @@ export function getActiveDbName() {
 // (3M/1J/Max) und "Workouts pro Woche" realistisch aussehen statt einer
 // flachen Linie.
 const SEED = 42;
-const TOTAL_WEEKS = 156; // ca. 3 Jahre
+// Exportiert, da js/views/workout.js (TESTMODUS-Markierung dort) daraus die
+// im großen Kalender erreichbare Vergangenheit ableitet - s. dort.
+export const TOTAL_WEEKS = 156; // ca. 3 Jahre
 const LONG_BREAKS = [
   { startWeek: 60, weeks: 3 },
   { startWeek: 110, weeks: 4 },
@@ -118,30 +145,42 @@ export async function seedTestData(db, dbFns) {
   const lastCompleteMonday = addDays(mondayOf(today), -7);
   const firstMonday = addDays(lastCompleteMonday, -7 * (TOTAL_WEEKS - 1));
 
-  let monday = firstMonday;
-  for (let week = 0; week < TOTAL_WEEKS; week++) {
-    const skip = isInLongBreak(week) || rng() < RANDOM_SKIP_CHANCE;
-    if (!skip) {
-      const trainingDayCount = 2 + Math.floor(rng() * 2); // 2-3 Trainingstage
-      const dayOffsets = [...new Set(Array.from({ length: trainingDayCount }, () => Math.floor(rng() * 7)))];
-      const progress = week / TOTAL_WEEKS; // 0 (vor 3 Jahren) bis knapp 1 (heute)
+  // Die gesamte Erzeugung (ca. 300 Workouts, ca. 2000 Sätze) in EINER
+  // einzigen Transaktion statt ca. 2500 einzeln awaiteten, je für sich
+  // committeten Dexie-Aufrufen - letzteres war auf einem echten iPhone
+  // (langsamere CPU, WebKit-IndexedDB-Overhead pro Transaktion) deutlich
+  // spürbar langsam (Nutzer-Bugreport: langer schwarzer Bildschirm beim
+  // ersten Start mit aktiviertem Testmodus). `getOrCreateWorkoutForDate()`/
+  // `addSet()` öffnen selbst keine eigene Transaktion, reihen sich also
+  // automatisch in diese äußere ein (Dexie-Verhalten).
+  await db.transaction('rw', db.workouts, db.sets, async () => {
+    let monday = firstMonday;
+    for (let week = 0; week < TOTAL_WEEKS; week++) {
+      const skip = isInLongBreak(week) || rng() < RANDOM_SKIP_CHANCE;
+      if (!skip) {
+        const trainingDayCount = 2 + Math.floor(rng() * 2); // 2-3 Trainingstage
+        const dayOffsets = [...new Set(Array.from({ length: trainingDayCount }, () => Math.floor(rng() * 7)))];
+        const progress = week / TOTAL_WEEKS; // 0 (vor 3 Jahren) bis knapp 1 (heute)
 
-      for (const offset of dayOffsets) {
-        const date = addDays(monday, offset);
-        const workout = await getOrCreateWorkoutForDate(date);
-        const exerciseCount = 2 + Math.floor(rng() * 2); // 2-3 Übungen pro Tag
-        const exercisesToday = shuffled(EXERCISE_IDS, rng).slice(0, exerciseCount);
+        for (const offset of dayOffsets) {
+          const date = addDays(monday, offset);
+          const workout = await getOrCreateWorkoutForDate(date);
+          const exerciseCount = 2 + Math.floor(rng() * 2); // 2-3 Übungen pro Tag
+          const exercisesToday = shuffled(EXERCISE_IDS, rng).slice(0, exerciseCount);
 
-        for (const exerciseId of exercisesToday) {
-          const baseWeight = 20 + rng() * 40; // 20-60 kg Basis, je Übung/Tag leicht unterschiedlich
-          for (let s = 0; s < 3; s++) {
-            const weight = Math.round((baseWeight * (1 + progress * 0.35) + (rng() - 0.5) * 4) * 2) / 2; // auf 0,5 kg gerundet
-            const reps = 6 + Math.floor(rng() * 7); // 6-12
-            await addSet(workout.id, exerciseId, Math.max(2, weight), reps);
+          for (const exerciseId of exercisesToday) {
+            const baseWeight = 20 + rng() * 40; // 20-60 kg Basis, je Übung/Tag leicht unterschiedlich
+            for (let s = 0; s < 3; s++) {
+              const weight = Math.round((baseWeight * (1 + progress * 0.35) + (rng() - 0.5) * 4) * 2) / 2; // auf 0,5 kg gerundet
+              const reps = 6 + Math.floor(rng() * 7); // 6-12
+              await addSet(workout.id, exerciseId, Math.max(2, weight), reps);
+            }
           }
         }
       }
+      monday = addDays(monday, 7);
     }
-    monday = addDays(monday, 7);
-  }
+  });
+
+  markTestDataSeeded();
 }
