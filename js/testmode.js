@@ -56,7 +56,14 @@ export function getActiveDbName() {
 // lädt) - ein localStorage-Read ist ein synchroner, praktisch kostenloser
 // Vorgleich gegenüber einem zusätzlichen asynchronen IndexedDB-Roundtrip auf
 // JEDEM Start, nicht nur dem ersten.
-const SEEDED_FLAG_KEY = 'fitlog:testDataSeeded';
+//
+// Versioniert (`:v2`): Die erste Fassung von seedTestData() legte keine
+// `workoutExercises`-Einträge an (s. dort) - ein bereits damit gesätes
+// Gerät hat das alte Flag gesetzt und würde sonst nie neu säen. Der neue
+// Schlüssel erzwingt genau einmal ein erneutes Säen; seedTestData() leert
+// dafür vorher die Trainingsdaten der Test-DB. Bei jeder künftigen
+// Änderung am Datensatz-Aufbau erneut hochzählen.
+const SEEDED_FLAG_KEY = 'fitlog:testDataSeeded:v2';
 
 export function isTestDataSeeded() {
   try {
@@ -129,7 +136,7 @@ function shuffled(array, rng) {
 
 // `db`: Dexie-Instanz der AKTIVEN Datenbank (aus db.js, zeigt bereits auf
 // die Test-DB, wenn diese Funktion aufgerufen wird - s. app.js). `dbFns`:
-// { getOrCreateWorkoutForDate, addSet, addDays, mondayOf } aus db.js, vom
+// { getOrCreateWorkoutForDate, addSet, addDays, mondayOf, generateId } aus db.js, vom
 // Aufrufer hereingereicht (s. o., Begründung Ringbezug).
 export async function seedTestData(db, dbFns) {
   // Sicherheitsnetz: Diese Funktion darf niemals gegen die echte
@@ -139,7 +146,7 @@ export async function seedTestData(db, dbFns) {
     throw new Error('seedTestData() darf nur gegen die Test-Datenbank laufen');
   }
 
-  const { getOrCreateWorkoutForDate, addSet, addDays, mondayOf } = dbFns;
+  const { getOrCreateWorkoutForDate, addSet, addDays, mondayOf, generateId } = dbFns;
   const rng = makeRng(SEED);
   const today = new Date().toISOString().slice(0, 10);
   const lastCompleteMonday = addDays(mondayOf(today), -7);
@@ -153,7 +160,22 @@ export async function seedTestData(db, dbFns) {
   // ersten Start mit aktiviertem Testmodus). `getOrCreateWorkoutForDate()`/
   // `addSet()` öffnen selbst keine eigene Transaktion, reihen sich also
   // automatisch in diese äußere ein (Dexie-Verhalten).
-  await db.transaction('rw', db.workouts, db.sets, async () => {
+  //
+  // Zusätzlich zu den Sätzen pro Übung ein `workoutExercises`-Eintrag (mit
+  // gesetztem `startedAt`, wie nach einem echt erfassten ersten Satz, s.
+  // markWorkoutExerciseStarted() in db.js) - der Workout-Tab listet einen
+  // Tag ausschließlich über diese Einträge (getWorkoutExercises()), die
+  // Sätze allein reichen nicht. Ohne sie zeigte der Kalender (zählt nur
+  // Sätze) zwar Trainingstage, die Tagesansicht blieb aber leer
+  // (Nutzer-Bugreport). Direkt per `db.workoutExercises.add()` statt über
+  // addExercisesToWorkout(), da letzteres eine eigene (verschachtelte)
+  // Transaktion öffnet.
+  await db.transaction('rw', db.workouts, db.sets, db.workoutExercises, async () => {
+    // Vorher gesäte (ggf. noch unvollständige, s. SEEDED_FLAG_KEY)
+    // Trainingsdaten der Test-DB verwerfen - Übungen/Routinen bleiben.
+    // Der Name-Check oben stellt sicher, dass das nie die echte DB trifft.
+    await Promise.all([db.workouts.clear(), db.sets.clear(), db.workoutExercises.clear()]);
+
     let monday = firstMonday;
     for (let week = 0; week < TOTAL_WEEKS; week++) {
       const skip = isInLongBreak(week) || rng() < RANDOM_SKIP_CHANCE;
@@ -168,7 +190,21 @@ export async function seedTestData(db, dbFns) {
           const exerciseCount = 2 + Math.floor(rng() * 2); // 2-3 Übungen pro Tag
           const exercisesToday = shuffled(EXERCISE_IDS, rng).slice(0, exerciseCount);
 
-          for (const exerciseId of exercisesToday) {
+          for (const [order, exerciseId] of exercisesToday.entries()) {
+            // Plausibler Zeitpunkt am Trainingstag selbst (18:00 + 15 min
+            // pro Übung) - bestimmt laut Sortierregel die Reihenfolge im
+            // Roster.
+            const startedAt = new Date(`${date}T18:${String(order * 15).padStart(2, '0')}:00`).toISOString();
+            await db.workoutExercises.add({
+              id: generateId(),
+              workoutId: workout.id,
+              exerciseId,
+              order,
+              sourceRoutineId: null,
+              startedAt,
+              createdAt: startedAt,
+              updatedAt: startedAt,
+            });
             const baseWeight = 20 + rng() * 40; // 20-60 kg Basis, je Übung/Tag leicht unterschiedlich
             for (let s = 0; s < 3; s++) {
               const weight = Math.round((baseWeight * (1 + progress * 0.35) + (rng() - 0.5) * 4) * 2) / 2; // auf 0,5 kg gerundet

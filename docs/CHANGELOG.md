@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-01 (Testmodus: Trainingstage im Workout-Tab leer)
+
+### Fixed
+- Testdaten: Kalender im Workout-Tab markierte Trainingstage, die Tagesansicht blieb beim Aufrufen aber leer — `seedTestData()` (`js/testmode.js`) erzeugte nur Sätze, aber keine `workoutExercises`-Einträge, über die der Workout-Tab einen Tag ausschließlich listet. Jetzt pro Übung und Tag ein Roster-Eintrag (mit `startedAt`). Gesät-Flag versioniert (`fitlog:testDataSeeded:v2`), damit bereits gesäte Geräte einmalig automatisch neu säen (Trainingsdaten der Test-DB werden dafür vorher geleert). `CACHE_NAME` in `sw.js` auf `fitlog-v182`
+
+### Hinweis
+- Details in [ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md) (zweiter Nachtrag). Live im Browser verifiziert, alle automatisierten Tests weiterhin grün
+
 ## 2026-10-01 (Doku: veraltete Tooltip-Angaben zum Volumen-Chart korrigiert)
 
 ### Fixed

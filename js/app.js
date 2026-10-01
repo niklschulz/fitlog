@@ -1,4 +1,4 @@
-import { db, seedBuiltinExercises, getOrCreateWorkoutForDate, addSet, addDays, mondayOf } from './db.js';
+import { db, seedBuiltinExercises, getOrCreateWorkoutForDate, addSet, addDays, mondayOf, generateId } from './db.js';
 import * as workout from './views/workout.js';
 import * as statistics from './views/statistics.js';
 import * as profile from './views/profile.js';
@@ -148,7 +148,7 @@ db.open()
   // .then()-Block löschen.
   .then(async () => {
     if (isTestModeEnabled() && !isTestDataSeeded()) {
-      await seedTestData(db, { getOrCreateWorkoutForDate, addSet, addDays, mondayOf });
+      await seedTestData(db, { getOrCreateWorkoutForDate, addSet, addDays, mondayOf, generateId });
     }
   })
   .then(() => showView('workout'))
