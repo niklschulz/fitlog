@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-01 (Doku: veraltete Tooltip-Angaben zum Volumen-Chart korrigiert)
+
+### Fixed
+- `docs/design-system.md` beschrieb beim Volumen-Chart noch einen `title`-Tooltip an jedem Datenpunkt — der ist mit dem Entfernen der Rohwert-Punkte (Hundertzweiundzwanzigste Iteration) ersatzlos weggefallen; die drei betroffenen Stellen sind jetzt als nicht mehr aktuell gekennzeichnet. Reine Doku-Änderung, kein Code betroffen
+
 ## 2026-10-01 (Testmodus: zwei Bugfixes vom echten iPhone)
 
 ### Fixed
