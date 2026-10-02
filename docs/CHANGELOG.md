@@ -2,6 +2,22 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-02 (Frequenz pro Muskel: Muskelgruppen statt Einzelmuskeln)
+
+### Changed
+- Tabelle "Frequenz pro Muskel" zählt jetzt je Muskelgruppe (7 Zeilen, alphabetisch) statt je Einzelmuskel, ohne Zwischenüberschriften; ein Satz zählt pro Gruppe höchstens einmal
+- Zeitraum-Text "Ø der vergangenen 8 Wochen", Spaltenkopf "Sätze/Wo" (ohne "Ø"), größerer Abstand zwischen den Wertespalten
+- Genau zwei Zeilenformate, nur der Hintergrund wechselt — untrainierte Gruppen werden nicht mehr gedämpft. `CACHE_NAME` in `sw.js` auf `fitlog-v189`
+
+## 2026-10-02 (Frequenz pro Muskel)
+
+### Added
+- Statistik-Tab: Tabelle "Frequenz pro Muskel" unter dem Volumen-Chart — Ø Sätze und Trainingstage pro Woche für alle 18 Muskeln, gegliedert nach Muskelgruppen, über die letzten 8 abgeschlossenen Wochen (bei kürzerer Historie entsprechend weniger). Untrainierte Muskeln gedämpft, Zeilen bereits als Buttons für eine spätere Detailansicht vorbereitet
+- Neues Modul `js/muscleStats.js` (reine Berechnung) mit Tests in `tests/muscleStats.test.js`, Datenzugriff über `getMuscleStatsData()` in `js/db.js`. `CACHE_NAME` in `sw.js` auf `fitlog-v188`, neues Modul in die App-Shell aufgenommen
+
+### Hinweis
+- Regeln und Abweichungen (eigene Wochen-Mittelung statt der des Volumen-Charts, Einzelmuskeln mit Gruppen-Zwischenüberschriften) in [ADR 0027](decisions/0027-frequenz-pro-muskel.md)
+
 ## 2026-10-02 (Volumen-Chart: eine Datenreihe für alle Zeitraum-Reiter)
 
 ### Fixed

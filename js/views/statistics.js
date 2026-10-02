@@ -6,7 +6,8 @@
 // Risiko besteht z. B. auch in profile.js und wird dort ebenfalls nicht
 // per Epoch-Sperre abgesichert, da das Zeitfenster bei rein lokalen
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
-import { getTrainedDates, getWeeklyTrainingVolumes, todayISODate, addDays, mondayOf } from '../db.js';
+import { getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
+import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD } from '../utils.js';
 import { getSettings } from '../settings.js';
 
@@ -567,10 +568,103 @@ function renderVolumeSection(volumeRange, stats) {
   `;
 }
 
+// --- Übersicht-Reiter: "Frequenz pro Muskel" ---
+//
+// Tabelle unter dem Volumen-Chart, s. ADR 0027 - Ø Sätze und Ø Trainingstage
+// pro Woche je Muskelgruppe (MUSCLE_GROUPS, alphabetisch). Übungen sind
+// einzelnen Muskeln zugeordnet; für die Tabelle wird jede Zuordnung auf die
+// Gruppe des Muskels abgebildet, bevor computeMuscleStats() (js/muscleStats.js,
+// reine Funktionen, getestet) rechnet - ein Satz zählt pro Gruppe höchstens
+// einmal, auch wenn er mehrere Muskeln derselben Gruppe trifft (z. B. Bizeps
+// und Unterarme -> "Arme" einmal).
+
+const muscleStatNumberFormat = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+// Platzhalter für die künftige Detailansicht pro Muskelgruppe (noch nicht
+// definiert, s. ADR 0027) - die Zeilen sind bereits Buttons und rufen
+// diese Funktion auf, sie tut vorerst bewusst nichts.
+function openMuscleGroupDetail(muscleGroupId) {}
+
+function formatRangeLabel(weeks) {
+  return weeks === 1 ? 'Ø der vergangenen Woche' : `Ø der vergangenen ${weeks} Wochen`;
+}
+
+function toMuscleGroupMap(exerciseMuscles) {
+  return new Map([...exerciseMuscles].map(([exerciseId, muscleIds]) => [exerciseId, muscleIds.map(muscleGroupIdOf).filter(Boolean)]));
+}
+
+const CHEVRON_ICON = `<svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// Feste Spaltenbreiten für Kopfzeile und Datenzeilen gemeinsam, damit die
+// Zahlen-Spalten exakt untereinander stehen. Freq-Spalte bewusst breiter als
+// ihr Inhalt - da beide Zahlen rechtsbündig sind, bestimmt ihre Breite den
+// sichtbaren Abstand zwischen den beiden Wertespalten (Nutzer-Wunsch).
+const MUSCLE_TABLE_COLS = 'grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem_1rem] items-center gap-2';
+
+// Genau zwei Zeilenformate, die sich NUR im Hintergrund unterscheiden
+// (Nutzer-Vorgabe) - keine Dämpfung untrainierter Gruppen, die Schriftfarbe
+// ist in jeder Zeile dieselbe.
+function renderMuscleGroupRow(group, stat, index) {
+  const sets = muscleStatNumberFormat.format(stat.avgSetsPerWeek);
+  const freq = `${muscleStatNumberFormat.format(stat.freqPerWeek)}x`;
+  return `
+    <button type="button" data-muscle-group-id="${group.id}"
+      class="${MUSCLE_TABLE_COLS} w-full text-left px-3 py-3 rounded-btn ${index % 2 === 0 ? 'bg-raised' : ''}"
+      aria-label="${group.name}: ${sets} Sätze pro Woche, ${freq} pro Woche trainiert">
+      <span class="text-body text-ink">${group.name}</span>
+      <span class="text-body text-muted text-right tabular-nums">${sets}</span>
+      <span class="text-body text-muted text-right tabular-nums">${freq}</span>
+      <span class="text-muted justify-self-end">${CHEVRON_ICON}</span>
+    </button>
+  `;
+}
+
+function renderMuscleStatsSection(data) {
+  const range = getStatsRange(todayISODate(), data.firstTrainedDate);
+  const heading = `<p class="text-label-large text-muted">Frequenz pro Muskel</p>`;
+
+  if (!range) {
+    return `
+      <div class="flex flex-col gap-2">
+        ${heading}
+        <div class="${CARD}">
+          <p class="text-body text-muted text-center py-6">Statistik ab der ersten abgeschlossenen Woche verfügbar.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  const groups = [...MUSCLE_GROUPS].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const statById = Object.fromEntries(
+    computeMuscleStats(data.sets, toMuscleGroupMap(data.exerciseMuscles), groups, range).map((s) => [s.muscleId, s])
+  );
+
+  return `
+    <div class="flex flex-col gap-2">
+      <div class="flex items-baseline justify-between gap-3">
+        ${heading}
+        <span class="text-label text-muted">${formatRangeLabel(range.weeks)}</span>
+      </div>
+      <div class="${CARD} flex flex-col gap-3">
+        <div class="${MUSCLE_TABLE_COLS} px-3 pb-3 border-b border-divider text-label uppercase text-muted">
+          <span>Muskel</span>
+          <span class="text-right whitespace-nowrap">Sätze/Wo</span>
+          <span class="text-right whitespace-nowrap">Freq/Wo</span>
+          <span></span>
+        </div>
+        <div class="flex flex-col">
+          ${groups.map((g, i) => renderMuscleGroupRow(g, statById[g.id], i)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function renderOverviewTab() {
   const trainedDates = await getTrainedDates();
   const stats = computeWorkoutsPerWeekStats(trainedDates, getSettings().weeklyGoal, HISTORY_WEEKS);
   const volumeStats = computeVolumeChartStats(await getWeeklyTrainingVolumes(), state.volumeRange, todayISODate());
+  const muscleStatsData = await getMuscleStatsData();
 
   return `
     <div class="flex flex-col gap-2">
@@ -586,6 +680,7 @@ async function renderOverviewTab() {
       </div>
     </div>
     ${renderVolumeSection(state.volumeRange, volumeStats)}
+    ${renderMuscleStatsSection(muscleStatsData)}
   `;
 }
 
@@ -613,5 +708,9 @@ function wireEvents() {
       state.volumeRange = btn.dataset.tab;
       paint({ volumeFromRect: fromRect });
     });
+  });
+
+  currentContainer.querySelectorAll('[data-muscle-group-id]').forEach((btn) => {
+    btn.addEventListener('click', () => openMuscleGroupDetail(btn.dataset.muscleGroupId));
   });
 }

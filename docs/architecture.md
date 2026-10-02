@@ -25,6 +25,8 @@ fitlog/
 │   ├── reorder.js         Umsortieren per Gedrückthalten + Verschieben (Pointer Events,
 │                           Auto-Scroll) - kein State/Inhalt, meldet nur (von, nach)
 │   ├── pr.js              Reine PR-Berechnung (computePRs), ohne DOM/Dexie, s. ADR 0025
+│   ├── muscleStats.js     Reine Berechnung Frequenz/Sätze pro Muskel (getStatsRange,
+│                           computeMuscleStats), ohne DOM/Dexie, s. ADR 0027
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um

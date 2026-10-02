@@ -738,6 +738,37 @@ export async function getTrainedDates() {
   return [...dates];
 }
 
+// Eingabedaten für "Frequenz pro Muskel" (Statistik-Tab, s. ADR 0027) -
+// reiner Datenzugriff, die Berechnung macht computeMuscleStats() in
+// js/muscleStats.js. Liefert ALLE Sätze mit ihrem Workout-Datum (der
+// Zeitraum wird erst dort gefiltert), die Muskel-Zuordnung jeder Übung
+// (primäre + sekundäre Muskeln zusammen, beide zählen voll) und den ersten
+// Tag mit mindestens einem Satz (Beginn bei kurzer Historie - dieselbe
+// "dokumentiert"-Definition wie getTrainedDates()). Übungen mit nur dem
+// alten Feld `primaryMuscleId` (vor Schema v5, s. ADR 0022) haben hier
+// keine Zuordnung und fließen nicht ein.
+export async function getMuscleStatsData() {
+  const [rawSets, exercises] = await Promise.all([db.sets.toArray(), db.exercises.toArray()]);
+
+  const workoutIds = [...new Set(rawSets.map((s) => s.workoutId))];
+  const workouts = await db.workouts.bulkGet(workoutIds);
+  const dateByWorkoutId = Object.fromEntries(workoutIds.map((id, i) => [id, workouts[i]?.date ?? null]));
+
+  const sets = [];
+  let firstTrainedDate = null;
+  for (const s of rawSets) {
+    const date = dateByWorkoutId[s.workoutId];
+    if (!date) continue; // Workout gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen) - defensiv übersprungen
+    sets.push({ workoutId: s.workoutId, date, exerciseId: s.exerciseId, weight: s.weight, reps: s.reps });
+    if (firstTrainedDate == null || date < firstTrainedDate) firstTrainedDate = date;
+  }
+
+  const exerciseMuscles = new Map(
+    exercises.map((ex) => [ex.id, [...(ex.primaryMuscleIds ?? []), ...(ex.secondaryMuscleIds ?? [])]])
+  );
+  return { sets, exerciseMuscles, firstTrainedDate };
+}
+
 // Trainingsvolumen pro Kalenderwoche (Gewicht × Wiederholungen, aufsummiert
 // über alle Sätze und Übungen einer ISO-8601-Woche, Montag-Sonntag) für den
 // Statistik-Tab ("Volumen"-Chart, s. Hundertzweiundzwanzigste Iteration in
