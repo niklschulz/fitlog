@@ -201,19 +201,19 @@ function renderChart(buckets, weeklyGoal) {
 // vollständig - nach einer vom Nutzer verfassten, deutlich ausführlicheren
 // Markdown-Spezifikation umgesetzt (s. Session). Volumen eines Satzes =
 // Gewicht × Wiederholungen; Wochenvolumen = Summe über alle Sätze/Übungen
-// einer Kalenderwoche (Montag-Sonntag, ISO 8601). Monatswert = DURCHSCHNITT
-// (nicht Summe) der trainierten (nicht leeren) vollständigen Wochen dieses
-// Monats - verhindert, dass eine Urlaubswoche einen Monat künstlich
-// absacken lässt oder Monate mit 4 vs. 5 Wochen unfair verglichen werden.
-// Die laufende (unvollständige) Woche fließt NIRGENDS ein - der laufende
-// Monat dagegen schon, sobald er mindestens eine vollständige trainierte
-// Woche hat (ergibt sich automatisch aus derselben Formel).
+// einer Kalenderwoche (Montag-Sonntag, ISO 8601). Die laufende
+// (unvollständige) Woche fließt NIRGENDS ein.
 //
-// Zwei getrennte Datenreihen im Chart: Die PUNKTE zeigen die Rohwerte
-// (Wochen- bzw. Monatswert), nur an trainierten Perioden. Die LINIE zeigt
-// den gleitenden Durchschnitt (4 Kalenderwochen in der Wochenansicht, 3
-// Kalendermonate in der Monatsansicht) - läuft bei einer leeren Periode
-// flach weiter statt auf 0 zu fallen, s. computeMovingAverage().
+// Seit ADR 0026 gibt es genau EINE Datenreihe für alle drei Reiter: der
+// gleitende Durchschnitt (4 Kalenderwochen) über die Wochenwerte, einmal
+// über die gesamte Historie berechnet - die Reiter schneiden davon nur
+// unterschiedlich lange Ausschnitte ab (13 / 52 Wochen / alles), statt wie
+// vorher in 1J/Max auf eine eigene Monats-Aggregation mit 3-Monats-
+// Durchschnitt umzuschalten. Dadurch endet die Linie in jedem Reiter am
+// selben Punkt (letzte vollständige Woche) mit demselben Wert, und die
+// KPI-Zahl IST dieser Endpunkt (Nutzer-Bugreport: unterschiedliche
+// Endpunkte je Reiter). Läuft bei einer leeren Woche flach weiter statt
+// auf 0 zu fallen, s. computeMovingAverage().
 //
 // `Falls Sätze als Aufwärmsatz markiert werden können, zählen diese nicht
 // mit`: Die App kennt aktuell keine Aufwärmsatz-Markierung (kein `isWarmup`-
@@ -240,10 +240,9 @@ function formatVolumeTick(value) {
   return `${Math.round(value)}`;
 }
 
-const VOLUME_WEEK_WINDOW = 4; // Moving-Average-Fenster in der Wochenansicht (3M), Kalenderwochen
-const VOLUME_MONTH_WINDOW = 3; // Moving-Average-Fenster in der Monatsansicht (1J/Max), Kalendermonate
-const VOLUME_3M_WEEKS = 13;
-const VOLUME_1J_MONTHS = 12;
+const VOLUME_MA_WINDOW = 4; // Moving-Average-Fenster, Kalenderwochen - für ALLE Reiter gleich (ADR 0026)
+// Sichtbare Wochen je Reiter; `null` = gesamte Historie (Max).
+const VOLUME_RANGE_WEEKS = { '3m': 13, '1j': 52, max: null };
 
 // Montag der letzten VOLLSTÄNDIGEN Woche (ihr Sonntag ist bereits vorbei) -
 // die laufende Woche selbst wird nie einbezogen (Nutzer-Vorgabe).
@@ -254,7 +253,8 @@ function lastCompleteWeekMonday(today) {
 // Ordnet eine Woche (per Montag) ihrem Monat zu: der Monat, in dem ihr
 // Donnerstag liegt (dieselbe ISO-8601-Regel wie bei isoWeekNumber() oben) -
 // damit eine über einen Monatswechsel laufende Woche eindeutig genau einem
-// Monat zugeordnet ist.
+// Monat zugeordnet ist. Nur noch für die Achsen-/Vergleichs-Beschriftung in
+// 1J/Max (seit ADR 0026 keine Monats-Aggregation mehr).
 function monthOfWeek(weekStartMonday) {
   const [y, m, d] = weekStartMonday.split('-').map(Number);
   const thursday = new Date(y, m - 1, d + 3);
@@ -283,36 +283,11 @@ function buildWeeklySeries(rawVolumes, today) {
   return series;
 }
 
-// Dichte Monats-Reihe, aus der Wochen-Reihe abgeleitet: ein Monatswert ist
-// der Durchschnitt der trainierten (nicht leeren) Wochen dieses Monats -
-// leere Wochen zählen nicht mit. Der laufende Monat bekommt - anders als
-// die laufende Woche - durchaus einen Slot (und ggf. schon einen Wert,
-// sobald er mindestens eine vollständige trainierte Woche hat); das ergibt
-// sich automatisch aus derselben Formel, kein Sonderfall nötig.
-function buildMonthlySeries(weeklySeries, today) {
-  if (weeklySeries.length === 0) return [];
-  const volumesByMonth = {};
-  for (const w of weeklySeries) {
-    if (w.volume == null) continue;
-    (volumesByMonth[monthOfWeek(w.weekStart)] ??= []).push(w.volume);
-  }
-  const firstMonth = monthOfWeek(weeklySeries[0].weekStart);
-  const lastMonth = yearMonthOf(today);
-
-  const series = [];
-  for (let m = firstMonth; m <= lastMonth; m = addMonths(m, 1)) {
-    const volumes = volumesByMonth[m];
-    series.push({ month: m, volume: volumes ? volumes.reduce((sum, v) => sum + v, 0) / volumes.length : null });
-  }
-  return series;
-}
-
-// Gleitender Durchschnitt über eine dichte Perioden-Reihe (Wochen oder
-// Monate, je nach `windowSize`) - exakt gegen das Rechenbeispiel der
-// Spezifikation verifiziert. Regeln: Bei einer TRAINIERTEN Periode ist der
+// Gleitender Durchschnitt über eine dichte Wochen-Reihe - exakt gegen das Rechenbeispiel der
+// Spezifikation verifiziert. Regeln: Bei einer TRAINIERTEN Woche ist der
 // Wert der Durchschnitt der vorhandenen (nicht-leeren) Werte innerhalb der
-// letzten `windowSize` Kalenderperioden (leere Perioden im Fenster werden
-// übersprungen, nicht als 0 gezählt); bei einer LEEREN Periode bleibt der
+// letzten `windowSize` Kalenderwochen (leere Wochen im Fenster werden
+// übersprungen, nicht als 0 gezählt); bei einer LEEREN Woche bleibt der
 // Wert unverändert (Linie läuft flach weiter statt auf 0 zu fallen). Wird
 // über die GESAMTE Historie berechnet (nicht nur den sichtbaren
 // Ausschnitt), damit die Linie am linken Rand des sichtbaren Bereichs
@@ -331,43 +306,21 @@ function computeMovingAverage(periods, windowSize) {
 }
 
 // Reine Berechnung, getrennt vom Rendering (gleicher Grund wie
-// computeWorkoutsPerWeekStats oben). `tabKey`: '3m' | '1j' | 'max'.
+// computeWorkoutsPerWeekStats oben). `tabKey`: '3m' | '1j' | 'max'. Der
+// Reiter bestimmt NUR den sichtbaren Ausschnitt (ADR 0026) - `maLast` ist
+// dadurch in allen Reitern identisch und zugleich der Endpunkt der Linie;
+// nur `changePct` (erster vs. letzter sichtbarer Punkt) hängt vom Reiter ab.
 function computeVolumeChartStats(rawWeeklyVolumes, tabKey, today) {
   const weeklySeries = buildWeeklySeries(rawWeeklyVolumes, today);
-  if (weeklySeries.length === 0) return { periods: [], ma: [], unit: 'week', maLast: null, changePct: null, tabKey };
+  if (weeklySeries.length === 0) return { periods: [], ma: [], maLast: null, changePct: null, tabKey };
 
-  const weeklyMA = computeMovingAverage(weeklySeries, VOLUME_WEEK_WINDOW);
-  const monthlySeries = buildMonthlySeries(weeklySeries, today);
-  const monthlyMA = computeMovingAverage(monthlySeries, VOLUME_MONTH_WINDOW);
-
-  // `maStart` ist die Vergleichsbasis für die %-Veränderung - bleibt
-  // reiter-spezifisch (wochenbasiert für 3M, monatsbasiert für 1J/Max), da
-  // ein Wochenwert "vor 12 Monaten" bzw. "beim allerersten Training" wenig
-  // aussagekräftig wäre. Nutzer-Vorgabe.
-  let periods, ma, unit, maStart;
-  if (tabKey === '3m') {
-    const start = Math.max(0, weeklySeries.length - VOLUME_3M_WEEKS);
-    periods = weeklySeries.slice(start);
-    ma = weeklyMA.slice(start);
-    unit = 'week';
-    maStart = ma.length > 0 ? ma[0] : null;
-  } else {
-    const count = tabKey === '1j' ? VOLUME_1J_MONTHS : monthlySeries.length;
-    const start = Math.max(0, monthlySeries.length - count);
-    periods = monthlySeries.slice(start);
-    ma = monthlyMA.slice(start);
-    unit = 'month';
-    maStart = ma.length > 0 ? ma[0] : null;
-  }
-
-  // KPI-Zahl IMMER auf Wochenbasis (Nutzer-Vorgabe: soll sich zwischen den
-  // Reitern nicht ändern) - unabhängig von `tabKey` der letzte Wert der
-  // vollständigen Wochen-Serie (4-Wochen-Durchschnitt der letzten
-  // vollständigen Woche). Für 3M identisch zum bisherigen Verhalten (der
-  // letzte Eintrag der 3M-Wochenauswahl IST bereits dieser Wert); für
-  // 1J/Max weicht die Zahl jetzt bewusst vom (weiterhin für die Linie im
-  // Chart verwendeten) monatsbasierten `ma` ab.
-  const maLast = weeklyMA.length > 0 ? weeklyMA[weeklyMA.length - 1] : null;
+  const weeklyMA = computeMovingAverage(weeklySeries, VOLUME_MA_WINDOW);
+  const visibleWeeks = VOLUME_RANGE_WEEKS[tabKey] ?? weeklySeries.length;
+  const start = Math.max(0, weeklySeries.length - visibleWeeks);
+  const periods = weeklySeries.slice(start);
+  const ma = weeklyMA.slice(start);
+  const maLast = ma[ma.length - 1];
+  const maStart = ma[0];
 
   // "Nur ein Datenpunkt" (s. Sonderfälle in der Spezifikation) - global
   // über die GESAMTE Wochen-Historie ausgewertet, nicht nur den sichtbaren
@@ -375,11 +328,12 @@ function computeVolumeChartStats(rawWeeklyVolumes, tabKey, today) {
   // zwangsläufig überall identisch (nichts zum Vergleichen), eine
   // prozentuale Veränderung wäre also immer exakt 0 % und damit
   // nichtssagend statt informativ, selbst wenn zufällig ≥2 Slots im
-  // sichtbaren Fenster liegen.
+  // sichtbaren Fenster liegen. Ebenso keine Anzeige bei nur einer
+  // sichtbaren Woche (Vergleich mit sich selbst).
   const trainedCount = weeklySeries.filter((p) => p.volume != null).length;
-  const changePct = trainedCount > 1 && maStart ? Math.round(((maLast - maStart) / maStart) * 100) : null;
+  const changePct = trainedCount > 1 && periods.length > 1 && maStart ? Math.round(((maLast - maStart) / maStart) * 100) : null;
 
-  return { periods, ma, unit, maLast, changePct, tabKey };
+  return { periods, ma, maLast, changePct, tabKey };
 }
 
 // "KW 37" statt Datum - auf Nutzer-Wunsch dasselbe Format wie im
@@ -390,8 +344,8 @@ function formatWeekAxisLabel(weekStart) {
   return `KW ${isoWeekNumber(weekStart)}`;
 }
 
-// `tabKey` unterscheidet 1J von Max (beide `unit: 'month'`, aber
-// unterschiedliches Label-Format, auf Nutzer-Wunsch): 1J zeigt
+// `tabKey` unterscheidet 1J von Max (unterschiedliches Label-Format, auf
+// Nutzer-Wunsch): 1J zeigt
 // Monat+Jahr zweistellig ("Sep 26"), da hier immer nur ein einziges Jahr
 // oder ein Jahreswechsel sichtbar ist - Max dagegen oft mehrere Jahre
 // gleichzeitig, dort wären wiederholte Monatskürzel ohne Jahr mehrdeutig
@@ -402,6 +356,21 @@ function formatMonthAxisLabel(yearMonth, tabKey) {
   if (tabKey === 'max') return `${y}`;
   const monthShort = new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'short' });
   return `${monthShort} ${String(y).slice(-2)}`;
+}
+
+// X-Achsen-Beschriftung einer Woche je Reiter: 3M als Kalenderwoche, 1J/Max
+// über den Monat der Woche (s. monthOfWeek()) - die Datenpunkte selbst sind
+// seit ADR 0026 in allen Reitern Wochen, nur die Beschriftung wird gröber.
+function volumeAxisLabel(weekStart, tabKey) {
+  return tabKey === '3m' ? formatWeekAxisLabel(weekStart) : formatMonthAxisLabel(monthOfWeek(weekStart), tabKey);
+}
+
+// Bezugspunkt der Prozent-Veränderung ("seit KW 27" / "seit Okt 25") - macht
+// sichtbar, dass nur diese Zahl vom Reiter abhängt, die KPI-Zahl daneben
+// nicht (ADR 0026). Auch in Max mit Monat statt nur Jahreszahl, da hier ein
+// einzelner Zeitpunkt gemeint ist, keine Achsen-Einteilung.
+function formatChangeSinceLabel(weekStart, tabKey) {
+  return `seit ${tabKey === '3m' ? formatWeekAxisLabel(weekStart) : formatMonthAxisLabel(monthOfWeek(weekStart), '1j')}`;
 }
 
 // Liniendiagramm ohne Chart-Library (kein Build-Schritt, s. CLAUDE.md) - Y-
@@ -433,7 +402,7 @@ function formatMonthAxisLabel(yearMonth, tabKey) {
 // nach Zufall (Nutzer-Vorgabe: soll wie beim Balkendiagramm darüber immer da
 // sein).
 function renderVolumeChart(stats) {
-  const { periods, ma, unit, tabKey } = stats;
+  const { periods, ma, tabKey } = stats;
   const maValues = ma.filter((v) => v != null);
 
   const rawMin = Math.min(...maValues);
@@ -476,7 +445,7 @@ function renderVolumeChart(stats) {
   // bewusstes Verdichten (Nutzer-Bugreport: "KW37 fehlt").
   const labelCount = periods.length <= 6 ? periods.length : 4;
   const labelIndices = [...new Set(Array.from({ length: labelCount }, (_, i) => Math.round((i / (labelCount - 1 || 1)) * (periods.length - 1))))];
-  const axisLabelOf = (p) => (unit === 'week' ? formatWeekAxisLabel(p.weekStart) : formatMonthAxisLabel(p.month, tabKey));
+  const axisLabelOf = (p) => volumeAxisLabel(p.weekStart, tabKey);
   // Aufeinanderfolgende Duplikate entfernen (z. B. zwei Monate desselben
   // Jahres im Max-Reiter, dessen Format nur die Jahreszahl zeigt - beide
   // ergäben "2026") - nur die jeweils erste Beschriftung eines Werts bleibt
@@ -548,10 +517,16 @@ const VOLUME_RANGE_TABS = [
 
 function renderVolumeSection(volumeRange, stats) {
   const hasData = stats.periods.length > 0;
+  // Eigene Zeile unter der KPI-Zahl statt daneben (flex-wrap) - sonst
+  // sprang die Zeile je nach Textlänge ("+31 % seit Okt 25" vs. "-2 % seit
+  // Okt 23") beim Reiter-Wechsel zwischen neben und unter die Zahl.
   const changeHtml =
     stats.changePct == null
       ? ''
-      : `<span class="text-body ${stats.changePct >= 0 ? 'text-accent' : 'text-red-400'}">${stats.changePct >= 0 ? '+' : ''}${stats.changePct} %</span>`;
+      : `<span class="inline-flex items-baseline gap-1 whitespace-nowrap">
+           <span class="text-body ${stats.changePct >= 0 ? 'text-accent' : 'text-red-400'}">${stats.changePct >= 0 ? '+' : ''}${stats.changePct} %</span>
+           <span class="text-label text-muted">${formatChangeSinceLabel(stats.periods[0].weekStart, stats.tabKey)}</span>
+         </span>`;
 
   // Kompakt statt volle Kartenbreite (Nutzer-Wunsch): derselbe
   // renderSegmentedControl() wie überall sonst, aber in einen schmalen,
@@ -579,10 +554,8 @@ function renderVolumeSection(volumeRange, stats) {
       <div class="${CARD} flex flex-col gap-4">
         <div class="flex items-start justify-between gap-3">
           <div class="flex flex-col gap-1 min-w-0">
-            <div class="flex items-baseline gap-2 flex-wrap">
-              <span class="text-kpi text-ink whitespace-nowrap">${Math.round(stats.maLast)} <span class="text-muted text-body font-normal">kg</span></span>
-              ${changeHtml}
-            </div>
+            <span class="text-kpi text-ink whitespace-nowrap">${Math.round(stats.maLast)} <span class="text-muted text-body font-normal">kg</span></span>
+            ${changeHtml}
             <span class="text-label uppercase text-muted whitespace-nowrap">Ø Wochenvolumen</span>
           </div>
           ${tabsHtml}

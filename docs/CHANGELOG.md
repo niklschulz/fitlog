@@ -2,6 +2,17 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-02 (Volumen-Chart: eine Datenreihe für alle Zeitraum-Reiter)
+
+### Fixed
+- Volumen-Chart (Statistik-Tab): Die Linie endet in 3M, 1J und Max jetzt am selben Punkt mit demselben Wert wie die KPI-Zahl. Alle Reiter zeigen denselben wöchentlichen 4-Wochen-Durchschnitt, nur unterschiedlich lange Ausschnitte (13 / 52 Wochen / alles) — die frühere Monats-Aggregation für 1J/Max entfällt. `CACHE_NAME` in `sw.js` auf `fitlog-v187`
+
+### Changed
+- Prozent-Veränderung steht in eigener Zeile unter der KPI-Zahl und nennt ihren Bezugspunkt ("seit KW 27" / "seit Okt 25")
+
+### Hinweis
+- Begründung in [ADR 0026](decisions/0026-volumen-chart-eine-datenreihe.md), löst die Monats-Aggregation aus ADR 0023 ab
+
 ## 2026-10-01 (PR-Markierungen an Sätzen)
 
 ### Added
