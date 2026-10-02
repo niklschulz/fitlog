@@ -3,6 +3,7 @@ import {
   getWorkoutByDate,
   getOrCreateWorkoutForDate,
   getWorkoutExercises,
+  getPRsForExercises,
   applyRoutineToWorkout,
   removeRoutineFromWorkout,
   addExercisesToWorkout,
@@ -25,7 +26,7 @@ import {
   daysBetween,
   mondayOf,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -433,6 +434,8 @@ async function paint() {
       (setsByExercise[s.exerciseId] ??= []).push(s);
     }
   }
+  // PR-Markierungen (s. ADR 0025) nur für Übungen mit Sätzen an diesem Tag.
+  const prs = await getPRsForExercises(Object.keys(setsByExercise));
 
   const html = `
     <div class="py-4 flex flex-col gap-4">
@@ -453,7 +456,7 @@ async function paint() {
 
       ${await renderRoutineSection(workout, routine)}
 
-      ${renderExerciseRoster(entries, nameById, setsByExercise)}
+      ${renderExerciseRoster(entries, nameById, setsByExercise, prs)}
 
       <button id="add-exercise-to-workout-btn" type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] ${TEXTLINK_ACTION}">
         Übung hinzufügen
@@ -1299,7 +1302,7 @@ function wireRoutinesSheetDrag() {
   });
 }
 
-function renderExerciseRoster(entries, nameById, setsByExercise) {
+function renderExerciseRoster(entries, nameById, setsByExercise, prs) {
   if (entries.length === 0) {
     return `<p class="text-body text-muted text-center py-6">Noch keine Übungen in diesem Workout.</p>`;
   }
@@ -1313,7 +1316,7 @@ function renderExerciseRoster(entries, nameById, setsByExercise) {
   // Das Modul kennt nur die Zeilen "seiner" Liste, eine unbegonnene Übung
   // kann dadurch nie vor eine begonnene gezogen werden. Optisch identisch zu
   // einer einzigen Liste (gleicher `gap-2` dazwischen).
-  const row = (entry) => renderExerciseRow(entry, nameById[entry.exerciseId], setsByExercise[entry.exerciseId] ?? []);
+  const row = (entry) => renderExerciseRow(entry, nameById[entry.exerciseId], setsByExercise[entry.exerciseId] ?? [], prs);
   const started = entries.filter((e) => e.startedAt !== null);
   const unstarted = entries.filter((e) => e.startedAt === null);
 
@@ -1345,11 +1348,11 @@ function renderExerciseRoster(entries, nameById, setsByExercise) {
 // (ungültiges HTML) - die Satz-Liste bekommt aus demselben Grund ihren
 // eigenen, zweiten `.exercise-row-toggle`-Button (dieselbe Klasse/dasselbe
 // `data-entry` wie der Titel-Button, dadurch automatisch mitverdrahtet).
-function renderExerciseRow(entry, name, sets) {
+function renderExerciseRow(entry, name, sets, prs) {
   const label = name ?? 'Gelöschte Übung';
   const setRows = sets
     .map((s, i) =>
-      renderSetTimelineRow(i + 1, renderSetValues(s.weight, s.reps), { isLast: i === sets.length - 1 })
+      renderSetTimelineRow(i + 1, renderSetValues(s.weight, s.reps) + renderPRBadge(prs.get(s.id)), { isLast: i === sets.length - 1 })
     )
     .join('');
   const canRemove = entry.startedAt === null;

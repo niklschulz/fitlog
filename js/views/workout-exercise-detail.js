@@ -4,11 +4,12 @@
 // wie die echten Views (workout.js/profile.js), damit sie sich vollständig
 // selbst verwaltet - workout.js übergibt nur die IDs plus einen
 // onBack-Callback und mischt sich sonst nicht ein.
-import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted } from '../db.js';
+import { db, addSet, deleteSet, updateSet, getLastSetForExercise, getExerciseSetHistory, markWorkoutExerciseStarted, getPRsForExercises } from '../db.js';
 import {
   escapeHtml,
   renderSetTimelineRow,
   renderSetValues,
+  renderPRBadge,
   renderSegmentedControl,
   positionSegmentedIndicator,
   measureSegmentedIndicatorRect,
@@ -36,6 +37,11 @@ let state = {
 // Tagesübersicht oder einer ganz anderen View belegten Container
 // überschreiben.
 let renderEpoch = 0;
+
+// PR-Markierungen der aktuell angezeigten Übung (setId -> 'weight' | 'reps',
+// s. ADR 0025), bei jedem paint() neu berechnet - modulweit statt als
+// Parameter, da renderSetContent() von beiden Reitern aus aufgerufen wird.
+let prs = new Map();
 
 export async function render(container, { entryId, onBack: onBackCallback }) {
   renderEpoch++;
@@ -98,6 +104,8 @@ async function paint(indicatorFromRect = null) {
   }
 
   const history = state.activeTab === 'history' ? await getExerciseSetHistory(entry.exerciseId) : [];
+  // PR-Markierungen (s. ADR 0025) - im Tages- und Verlauf-Reiter.
+  prs = state.activeTab === 'stats' ? new Map() : await getPRsForExercises([entry.exerciseId]);
 
   const html = `
     <div class="py-4 flex flex-col gap-4">
@@ -163,9 +171,15 @@ function renderStepperRow(field, label, value) {
 // Auswahl-Hervorhebung selbst wird nicht hier, sondern über den
 // `highlighted`-Parameter von renderSetTimelineRow() gezeichnet (eigenes,
 // aus dem Layout-Fluss genommenes Element - s. dort für die Begründung).
-function renderSetContent(set) {
+//
+// `badgeInset`: Im Tages-Reiter stehen die Zeilen ohne umgebende Karte direkt
+// auf der Seite - das PR-Badge säße dort bündig mit dem Seiteninhalt (z. B.
+// der Kante des "Löschen"-Buttons). `mr-4` rückt es um denselben
+// Innenabstand ein, den es in den Karten (Roster, Verlauf) durch deren `p-4`
+// ohnehin hat.
+function renderSetContent(set, { badgeInset = false } = {}) {
   if (!set) return `<span class="text-muted">–</span>`;
-  return renderSetValues(set.weight, set.reps);
+  return renderSetValues(set.weight, set.reps) + renderPRBadge(prs.get(set.id), { extraClasses: badgeInset ? 'mr-4' : '' });
 }
 
 function renderTodayTab(sets, formWeight, formReps, routineLabel) {
@@ -196,7 +210,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
             // bildschirmbreite Hervorhebungs-Band (highlighted) angezeigt,
             // ein zusätzlich eingefärbter Kreis wirkte wie ein
             // überflüssiges zweites Element.
-            return renderSetTimelineRow(i + 1, renderSetContent(set), {
+            return renderSetTimelineRow(i + 1, renderSetContent(set, { badgeInset: true }), {
               isLast: i === rows.length - 1,
               liClasses: set ? 'set-row' : 'empty-set-row',
               liAttrs: set ? `data-set="${set.id}"` : 'data-row-empty="true"',

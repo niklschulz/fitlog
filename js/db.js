@@ -9,6 +9,7 @@
 // Schema-Definition. Zum Entfernen: diese Import-Zeile löschen, die nächste
 // Zeile zurück auf `new Dexie('fitlog')`.
 import { getActiveDbName } from './testmode.js';
+import { computePRs } from './pr.js';
 
 export const db = new Dexie(getActiveDbName());
 
@@ -677,6 +678,39 @@ export async function getExerciseSetHistory(exerciseId) {
       sets: daySets.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
     }))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+// PR-Markierungen (s. ADR 0025/js/pr.js) für mehrere Übungen auf einmal -
+// lädt die komplette Satz-Historie jeder Übung (über den vorhandenen
+// `exerciseId`-Index, kein neuer Index nötig), sortiert sie chronologisch
+// (Workout-Datum, dann createdAt - ein eigenes Reihenfolge-Feld haben Sätze
+// nicht, die Anzeige sortiert überall ebenfalls nach createdAt) und
+// berechnet die PRs je Übung getrennt. Ergebnis: eine gemeinsame Map
+// setId -> 'weight' | 'reps' über alle Übungen. Bewusst kein Cache: ein
+// Aufruf kostet zwei IndexedDB-Abfragen, gemessen deutlich unter dem
+// 100-ms-Ziel, und spart dafür jede Invalidierungslogik.
+export async function getPRsForExercises(exerciseIds) {
+  const ids = [...new Set(exerciseIds)];
+  if (ids.length === 0) return new Map();
+
+  const sets = await db.sets.where('exerciseId').anyOf(ids).toArray();
+  const workoutIds = [...new Set(sets.map((s) => s.workoutId))];
+  const workouts = await db.workouts.bulkGet(workoutIds);
+  const dateByWorkoutId = Object.fromEntries(workoutIds.map((id, i) => [id, workouts[i]?.date ?? null]));
+
+  const setsByExercise = {};
+  for (const s of sets) {
+    const date = dateByWorkoutId[s.workoutId];
+    if (!date) continue; // Workout gelöscht (sollte laut Kaskaden-Regeln nicht vorkommen) - defensiv übersprungen
+    (setsByExercise[s.exerciseId] ??= []).push({ ...s, date });
+  }
+
+  const result = new Map();
+  for (const exerciseSets of Object.values(setsByExercise)) {
+    exerciseSets.sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : a.createdAt < b.createdAt ? -1 : 1));
+    for (const [setId, type] of computePRs(exerciseSets)) result.set(setId, type);
+  }
+  return result;
 }
 
 // --- Statistik ---

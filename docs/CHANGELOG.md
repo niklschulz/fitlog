@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-01 (PR-Markierungen an Sätzen)
+
+### Added
+- Persönliche Rekorde werden direkt am Satz markiert (Badge **GEWICHT** bzw. **REPS**) — in der Roster-Zeile des Workout-Tabs sowie im Tages- und Verlauf-Reiter der Übungs-Detailseite. Reine Berechnung in der neuen Datei `js/pr.js` (`computePRs()`), geladen über `getPRsForExercises()` in `js/db.js`, kein Schema-Wechsel, nichts gespeichert. Neue Tests in `tests/pr.test.js`. Im Tages-Reiter der Detailseite (ohne Karte) ist das Badge um 16 px vom rechten Rand eingerückt, wie in den Karten. `js/pr.js` in `APP_SHELL`, `CACHE_NAME` in `sw.js` auf `fitlog-v186`
+
+### Hinweis
+- Regeln und bewusste Abweichungen von der Feature-Spezifikation (kein Cache, Reihenfolge über `createdAt`, Icon-Größe) in [ADR 0025](decisions/0025-pr-markierungen.md)
+
 ## 2026-10-01 (Karten-Überschriften in text-label-large)
 
 ### Changed

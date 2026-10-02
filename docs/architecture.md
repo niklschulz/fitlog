@@ -24,6 +24,7 @@ fitlog/
 │                           Drag-to-Dismiss) - kein State/Inhalt, s. ADR 0011
 │   ├── reorder.js         Umsortieren per Gedrückthalten + Verschieben (Pointer Events,
 │                           Auto-Scroll) - kein State/Inhalt, meldet nur (von, nach)
+│   ├── pr.js              Reine PR-Berechnung (computePRs), ohne DOM/Dexie, s. ADR 0025
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um

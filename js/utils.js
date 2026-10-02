@@ -259,3 +259,39 @@ export function renderSetValues(weight, reps) {
     </span>
   `;
 }
+
+// PR-Badge rechts in einer Satz-Zeile (s. ADR 0025, design-system.md
+// "PR-Badge"): runder Icon-Container + Label. Wird von den Aufrufern an
+// renderSetValues() angehängt (`ml-auto` schiebt es an den rechten Rand der
+// `h-6`-Inhaltsbox von renderSetTimelineRow()). Container bewusst 24px statt
+// der ursprünglich angedachten 20px-Icons - die Satz-Zeile ist exakt 24px
+// hoch (s. dort), ein größerer Kreis würde die Zeile aufziehen. Hintergrund
+// `bg-white/[0.08]` statt eines festen Grautons, damit der Kreis sowohl auf
+// `bg-surface`-Karten (Roster, Verlauf) als auch direkt auf dem
+// Seiten-Hintergrund (Tages-Reiter der Detailseite) sichtbar bleibt. Label
+// unter 360px Viewport-Breite ausgeblendet, das Icon bleibt. `extraClasses`
+// für Abweichungen je Kontext, z. B. zusätzlicher Abstand nach rechts im
+// Tages-Reiter der Detailseite (dort ohne umgebende Karte, s. Aufrufer).
+const PR_BADGES = {
+  weight: {
+    label: 'Gewicht',
+    ariaLabel: 'Neuer Gewichtsrekord',
+    icon: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5" aria-hidden="true"><path d="M9 9V7.5a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M6.8 9h10.4a1 1 0 0 1 .97.76l2.3 9.6A1.3 1.3 0 0 1 19.2 21H4.8a1.3 1.3 0 0 1-1.27-1.64l2.3-9.6A1 1 0 0 1 6.8 9Z" fill="currentColor"/></svg>`,
+  },
+  reps: {
+    label: 'Reps',
+    ariaLabel: 'Neuer Wiederholungsrekord',
+    icon: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 10A8 8 0 0 0 5 7.5"/><path d="M4.5 3.5v4.5H9"/><path d="M4.5 14A8 8 0 0 0 19 16.5"/><path d="M19.5 20.5V16H15"/></svg>`,
+  },
+};
+
+export function renderPRBadge(type, { extraClasses = '' } = {}) {
+  const badge = PR_BADGES[type];
+  if (!badge) return '';
+  return `
+    <span class="ml-auto flex items-center gap-2 ${extraClasses}" role="img" aria-label="${badge.ariaLabel}">
+      <span class="w-6 h-6 rounded-full bg-white/[0.08] text-accent flex items-center justify-center flex-shrink-0">${badge.icon}</span>
+      <span class="hidden min-[360px]:inline text-label text-muted uppercase tracking-wide" aria-hidden="true">${badge.label}</span>
+    </span>
+  `;
+}
