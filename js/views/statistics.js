@@ -568,7 +568,7 @@ function renderVolumeSection(volumeRange, stats) {
   `;
 }
 
-// --- Übersicht-Reiter: "Frequenz pro Muskel" ---
+// --- Übersicht-Reiter: "Frequenz pro Muskelgruppe" ---
 //
 // Tabelle unter dem Volumen-Chart, s. ADR 0027 - Ø Sätze und Ø Trainingstage
 // pro Woche je Muskelgruppe (MUSCLE_GROUPS, alphabetisch). Übungen sind
@@ -586,20 +586,27 @@ const muscleStatNumberFormat = new Intl.NumberFormat('de-DE', { minimumFractionD
 function openMuscleGroupDetail(muscleGroupId) {}
 
 function formatRangeLabel(weeks) {
-  return weeks === 1 ? 'Ø der vergangenen Woche' : `Ø der vergangenen ${weeks} Wochen`;
+  return weeks === 1 ? 'Durchschnitt der vergangenen Woche' : `Durchschnitt der vergangenen ${weeks} Wochen`;
 }
 
 function toMuscleGroupMap(exerciseMuscles) {
   return new Map([...exerciseMuscles].map(([exerciseId, muscleIds]) => [exerciseId, muscleIds.map(muscleGroupIdOf).filter(Boolean)]));
 }
 
+// Kleines "i" im Kreis vor der Zeitraum-Erklärung (erstes Info-Icon der
+// App, gleiche Strich-Optik wie CHEVRON_ICON).
+const INFO_ICON = `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.75" r="1.25" fill="currentColor"/></svg>`;
+
 const CHEVRON_ICON = `<svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // Feste Spaltenbreiten für Kopfzeile und Datenzeilen gemeinsam, damit die
 // Zahlen-Spalten exakt untereinander stehen. Freq-Spalte bewusst breiter als
 // ihr Inhalt - da beide Zahlen rechtsbündig sind, bestimmt ihre Breite den
-// sichtbaren Abstand zwischen den beiden Wertespalten (Nutzer-Wunsch).
-const MUSCLE_TABLE_COLS = 'grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem_1rem] items-center gap-2';
+// sichtbaren Abstand zwischen den beiden Wertespalten (Nutzer-Wunsch). Auf
+// 375px Viewport-Breite ausgereizt: Dort bleiben für die erste Spalte noch
+// ~107px, gerade genug für den Kopf "MUSKELGRUPPE" (~103px) - die Wertespalten
+// nicht weiter verbreitern, sonst stößt er an "SÄTZE/WO".
+const MUSCLE_TABLE_COLS = 'grid grid-cols-[minmax(0,1fr)_4.25rem_4.5rem_1rem] items-center gap-2';
 
 // Genau zwei Zeilenformate, die sich NUR im Hintergrund unterscheiden
 // (Nutzer-Vorgabe) - keine Dämpfung untrainierter Gruppen, die Schriftfarbe
@@ -621,7 +628,7 @@ function renderMuscleGroupRow(group, stat, index) {
 
 function renderMuscleStatsSection(data) {
   const range = getStatsRange(todayISODate(), data.firstTrainedDate);
-  const heading = `<p class="text-label-large text-muted">Frequenz pro Muskel</p>`;
+  const heading = `<p class="text-label-large text-muted">Frequenz pro Muskelgruppe</p>`;
 
   if (!range) {
     return `
@@ -641,13 +648,10 @@ function renderMuscleStatsSection(data) {
 
   return `
     <div class="flex flex-col gap-2">
-      <div class="flex items-baseline justify-between gap-3">
-        ${heading}
-        <span class="text-label text-muted">${formatRangeLabel(range.weeks)}</span>
-      </div>
+      ${heading}
       <div class="${CARD} flex flex-col gap-3">
-        <div class="${MUSCLE_TABLE_COLS} px-3 pb-3 border-b border-divider text-label uppercase text-muted">
-          <span>Muskel</span>
+        <div class="${MUSCLE_TABLE_COLS} px-3 text-label uppercase text-muted">
+          <span>Muskelgruppe</span>
           <span class="text-right whitespace-nowrap">Sätze/Wo</span>
           <span class="text-right whitespace-nowrap">Freq/Wo</span>
           <span></span>
@@ -655,6 +659,7 @@ function renderMuscleStatsSection(data) {
         <div class="flex flex-col">
           ${groups.map((g, i) => renderMuscleGroupRow(g, statById[g.id], i)).join('')}
         </div>
+        <p class="flex items-center gap-1.5 px-3 mt-2 text-label text-muted">${INFO_ICON}${formatRangeLabel(range.weeks)}</p>
       </div>
     </div>
   `;

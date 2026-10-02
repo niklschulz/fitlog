@@ -23,7 +23,7 @@ Vorab geprüft (Schritte 1–3 der Spezifikation):
 
 **Daten** lädt `getMuscleStatsData()` (`js/db.js`): alle Sätze mit Workout-Datum, Muskelzuordnung je Übung, erster Trainingstag. Bei jedem Öffnen neu berechnet, kein Cache.
 
-**Darstellung:** Karte unter dem Volumen-Chart, rechts neben der Überschrift der Zeitraum ("Ø der vergangenen 8 Wochen" bzw. kürzer, Singular bei einer Woche). Spalten "Muskel", "Sätze/Wo", "Freq/Wo". Zahlen mit einer Nachkommastelle über `Intl.NumberFormat('de-DE')`, Frequenz mit "x". Genau zwei Zeilenformate, die sich nur im Hintergrund unterscheiden (abwechselnd `bg-raised` / transparent); Schriftfarben in allen Zeilen gleich.
+**Darstellung:** Karte "Frequenz pro Muskelgruppe" unter dem Volumen-Chart. Spalten "Muskelgruppe", "Sätze/Wo", "Freq/Wo". Der Zeitraum steht als Fußzeile in der Karte, mit Info-Icon davor ("Durchschnitt der vergangenen 8 Wochen" bzw. kürzer, Singular bei einer Woche) — ursprünglich rechts neben der Überschrift, dort reichte der Platz nach der Umbenennung bei 375px Breite nicht mehr. Zahlen mit einer Nachkommastelle über `Intl.NumberFormat('de-DE')`, Frequenz mit "x". Genau zwei Zeilenformate, die sich nur im Hintergrund unterscheiden (abwechselnd `bg-raised` / transparent); Schriftfarben in allen Zeilen gleich.
 
 **Abweichung von der Spezifikation:** Untrainierte Gruppen werden **nicht** gedämpft dargestellt — die anfängliche Dämpfung (`opacity-40`) erzeugte zusätzliche Zeilenformate mit anderer Schriftfarbe, was der Nutzer ausdrücklich nicht wollte. Lücken sind weiterhin an "0,0" erkennbar.
 

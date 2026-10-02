@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-02 (Frequenz pro Muskelgruppe: Benennung und Zeitraum-Hinweis)
+
+### Changed
+- Überschrift "Frequenz pro Muskelgruppe", Spaltenkopf "Muskelgruppe"
+- Zeitraum-Hinweis als Fußzeile in der Karte mit Info-Icon, ausgeschrieben ("Durchschnitt der vergangenen 8 Wochen") statt neben der Überschrift
+- Spaltenbreiten angepasst, damit "Muskelgruppe" auch bei 375px Breite nicht an "Sätze/Wo" stößt
+- Trennlinie unter der Tabellen-Kopfzeile entfernt und Abstand zwischen Kopfzeile und Tabelle verkleinert (24 → 12px), mehr Abstand zwischen Tabelle und Zeitraum-Hinweis. `CACHE_NAME` in `sw.js` auf `fitlog-v192`
+
 ## 2026-10-02 (Frequenz pro Muskel: Muskelgruppen statt Einzelmuskeln)
 
 ### Changed
