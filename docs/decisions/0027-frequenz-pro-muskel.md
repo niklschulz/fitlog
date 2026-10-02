@@ -27,11 +27,11 @@ Vorab geprüft (Schritte 1–3 der Spezifikation):
 
 **Abweichung von der Spezifikation:** Untrainierte Gruppen werden **nicht** gedämpft dargestellt — die anfängliche Dämpfung (`opacity-40`) erzeugte zusätzliche Zeilenformate mit anderer Schriftfarbe, was der Nutzer ausdrücklich nicht wollte. Lücken sind weiterhin an "0,0" erkennbar.
 
-**Detailansicht vorbereitet:** Jede Zeile ist ein `<button>` mit `aria-label` und ruft `openMuscleGroupDetail(muscleGroupId)` auf — vorerst ein leerer Platzhalter.
+**Detailansicht vorbereitet:** Jede Zeile ist ein `<button>` mit `aria-label`. Ursprünglich mit leerem Platzhalter-Handler, seit [ADR 0028](0028-muskelgruppen-sheet.md) öffnet sie ein Bottom-Sheet mit der Statistik pro Muskel der Gruppe.
 
 ## Konsequenzen
 
 - Übungen ohne Muskelzuordnung und Alt-Übungen mit nur dem früheren Feld `primaryMuscleId` (ADR 0022) fließen nicht ein.
 - `js/muscleStats.js` enthält eigene kleine Datums-Helfer statt `addDays()`/`mondayOf()` aus `db.js` zu importieren: `db.js` setzt beim Import ein globales `Dexie` voraus, die Datei soll aber wie `pr.js` ohne Datenbank testbar sein.
 - Tests in `tests/muscleStats.test.js` (Node-Test-Runner, keine weitere Abhängigkeit): Beispiel der Spezifikation (1,75 → "1,8x", 5,625 → "5,6"), Hilfsmuskeln, gleicher Tag, Gruppen-Ebene (zwei Muskeln derselben Gruppe), laufende Woche, Wochen ohne Training, kurze Historie, Wochenwechsel Sonntag/Montag, Sätze ohne Gewicht bzw. mit 0 Wiederholungen.
-- Offen für später: Detailansicht pro Muskelgruppe, eventuell wählbarer Zeitraum (4/8/12 Wochen).
+- Offen für später: eventuell wählbarer Zeitraum (4/8/12 Wochen). Die Detailansicht pro Muskelgruppe ist mit ADR 0028 umgesetzt.

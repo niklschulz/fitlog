@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-02 (Muskelgruppen-Sheet)
+
+### Added
+- Statistik-Tab: Tipp auf eine Muskelgruppe in "Frequenz pro Muskelgruppe" öffnet ein Bottom-Sheet mit dem Gruppennamen als Titel, Glass-Schließen-Button rechts oben und der Tabelle "Frequenz pro Muskel" für die einzelnen Muskeln der Gruppe. Gruppen mit nur einem Muskel zeigen ein leeres Sheet
+- Tabelle im Sheet sitzt in einer eigenen optischen Karte (aufgehellte Fläche auf dem Sheet)
+- `unmount()` in `js/views/statistics.js`: setzt Scroll-Sperre und Nav-z-index zurück, wenn bei offenem Sheet der Tab gewechselt wird. `CACHE_NAME` in `sw.js` auf `fitlog-v194`
+
+### Hinweis
+- Erstes Sheet mit Schließen-Button rechts statt links, s. [ADR 0028](decisions/0028-muskelgruppen-sheet.md)
+
 ## 2026-10-02 (Frequenz pro Muskelgruppe: Benennung und Zeitraum-Hinweis)
 
 ### Changed

@@ -6,22 +6,41 @@
 // Risiko besteht z. B. auch in profile.js und wird dort ebenfalls nicht
 // per Epoch-Sperre abgesichert, da das Zeitfenster bei rein lokalen
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
-import { getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
+import { getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD } from '../utils.js';
 import { getSettings } from '../settings.js';
+import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
 // Anzahl der im Balkendiagramm gezeigten Wochen (inkl. aktueller Woche),
 // s. Markdown-Vorgabe "Default: letzte 8 Wochen".
 const HISTORY_WEEKS = 8;
 
 let currentContainer = null;
-let state = { activeTab: 'overview', volumeRange: '3m' }; // activeTab: 'overview' | 'exercises'; volumeRange: '3m' | '1j' | 'max'
+// activeTab: 'overview' | 'exercises'; volumeRange: '3m' | '1j' | 'max';
+// muscleGroupSheetId: geöffnetes Muskelgruppen-Sheet (null = keins)
+const initialState = () => ({ activeTab: 'overview', volumeRange: '3m', muscleGroupSheetId: null, muscleGroupSheetClosing: false });
+let state = initialState();
 
 export function render(container) {
   currentContainer = container;
-  state = { activeTab: 'overview', volumeRange: '3m' };
+  state = initialState();
   paint();
+}
+
+// Analog zu profile.js's unmount() - ein offenes Muskelgruppen-Sheet hält
+// einen unbeantworteten lockBodyScroll()/raiseNavAboveSheet()-Aufruf, der
+// beim Tab-Wechsel (Bottom-Nav liegt über dem Sheet) ausgeglichen werden
+// muss, s. js/sheet.js.
+export function unmount() {
+  if (pendingMuscleGroupSheetCloseTimeout) {
+    clearTimeout(pendingMuscleGroupSheetCloseTimeout);
+    pendingMuscleGroupSheetCloseTimeout = null;
+  }
+  if (state.muscleGroupSheetId) {
+    unlockBodyScroll();
+    resetNavZIndex();
+  }
 }
 
 // Zwei unabhängige Segmented Controls auf derselben Seite (der Seiten-Reiter
@@ -576,14 +595,11 @@ function renderVolumeSection(volumeRange, stats) {
 // Gruppe des Muskels abgebildet, bevor computeMuscleStats() (js/muscleStats.js,
 // reine Funktionen, getestet) rechnet - ein Satz zählt pro Gruppe höchstens
 // einmal, auch wenn er mehrere Muskeln derselben Gruppe trifft (z. B. Bizeps
-// und Unterarme -> "Arme" einmal).
+// und Unterarme -> "Arme" einmal). Ein Tipp auf eine Gruppe öffnet ein
+// Bottom-Sheet mit derselben Tabelle für die einzelnen Muskeln dieser Gruppe
+// (ADR 0028) - beide Tabellen kommen aus renderFrequencyTable().
 
 const muscleStatNumberFormat = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-// Platzhalter für die künftige Detailansicht pro Muskelgruppe (noch nicht
-// definiert, s. ADR 0027) - die Zeilen sind bereits Buttons und rufen
-// diese Funktion auf, sie tut vorerst bewusst nichts.
-function openMuscleGroupDetail(muscleGroupId) {}
 
 function formatRangeLabel(weeks) {
   return weeks === 1 ? 'Durchschnitt der vergangenen Woche' : `Durchschnitt der vergangenen ${weeks} Wochen`;
@@ -592,6 +608,8 @@ function formatRangeLabel(weeks) {
 function toMuscleGroupMap(exerciseMuscles) {
   return new Map([...exerciseMuscles].map(([exerciseId, muscleIds]) => [exerciseId, muscleIds.map(muscleGroupIdOf).filter(Boolean)]));
 }
+
+const byGermanName = (a, b) => a.name.localeCompare(b.name, 'de');
 
 // Kleines "i" im Kreis vor der Zeitraum-Erklärung (erstes Info-Icon der
 // App, gleiche Strich-Optik wie CHEVRON_ICON).
@@ -605,29 +623,54 @@ const CHEVRON_ICON = `<svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true
 // sichtbaren Abstand zwischen den beiden Wertespalten (Nutzer-Wunsch). Auf
 // 375px Viewport-Breite ausgereizt: Dort bleiben für die erste Spalte noch
 // ~107px, gerade genug für den Kopf "MUSKELGRUPPE" (~103px) - die Wertespalten
-// nicht weiter verbreitern, sonst stößt er an "SÄTZE/WO".
-const MUSCLE_TABLE_COLS = 'grid grid-cols-[minmax(0,1fr)_4.25rem_4.5rem_1rem] items-center gap-2';
+// nicht weiter verbreitern, sonst stößt er an "SÄTZE/WO". Die Variante ohne
+// Chevron-Spalte gilt für die nicht antippbaren Muskel-Zeilen im Sheet.
+const FREQUENCY_TABLE_COLS_WITH_CHEVRON = 'grid grid-cols-[minmax(0,1fr)_4.25rem_4.5rem_1rem] items-center gap-2';
+const FREQUENCY_TABLE_COLS = 'grid grid-cols-[minmax(0,1fr)_4.25rem_4.5rem] items-center gap-2';
 
 // Genau zwei Zeilenformate, die sich NUR im Hintergrund unterscheiden
-// (Nutzer-Vorgabe) - keine Dämpfung untrainierter Gruppen, die Schriftfarbe
-// ist in jeder Zeile dieselbe.
-function renderMuscleGroupRow(group, stat, index) {
+// (Nutzer-Vorgabe) - keine Dämpfung untrainierter Einträge, die Schriftfarbe
+// ist in jeder Zeile dieselbe. `interactive`: Zeile als Button mit Chevron
+// (Muskelgruppen, öffnen das Sheet), sonst reine Anzeige (Muskeln im Sheet).
+// `stripeClass`: Hintergrund jeder zweiten Zeile - abhängig davon, auf
+// welcher Karte die Tabelle sitzt (s. renderMuscleGroupSheet()).
+function renderFrequencyRow(item, stat, index, interactive, stripeClass) {
   const sets = muscleStatNumberFormat.format(stat.avgSetsPerWeek);
   const freq = `${muscleStatNumberFormat.format(stat.freqPerWeek)}x`;
-  return `
-    <button type="button" data-muscle-group-id="${group.id}"
-      class="${MUSCLE_TABLE_COLS} w-full text-left px-3 py-3 rounded-btn ${index % 2 === 0 ? 'bg-raised' : ''}"
-      aria-label="${group.name}: ${sets} Sätze pro Woche, ${freq} pro Woche trainiert">
-      <span class="text-body text-ink">${group.name}</span>
+  const cells = `
+      <span class="text-body text-ink">${item.name}</span>
       <span class="text-body text-muted text-right tabular-nums">${sets}</span>
-      <span class="text-body text-muted text-right tabular-nums">${freq}</span>
+      <span class="text-body text-muted text-right tabular-nums">${freq}</span>`;
+  const rowClass = `w-full text-left px-3 py-3 rounded-btn ${index % 2 === 0 ? stripeClass : ''}`;
+  if (!interactive) return `<div class="${FREQUENCY_TABLE_COLS} ${rowClass}">${cells}</div>`;
+  return `
+    <button type="button" data-muscle-group-id="${item.id}"
+      class="${FREQUENCY_TABLE_COLS_WITH_CHEVRON} ${rowClass}"
+      aria-label="${item.name}: ${sets} Sätze pro Woche, ${freq} pro Woche trainiert. Details öffnen">
+      ${cells}
       <span class="text-muted justify-self-end">${CHEVRON_ICON}</span>
     </button>
   `;
 }
 
-function renderMuscleStatsSection(data) {
-  const range = getStatsRange(todayISODate(), data.firstTrainedDate);
+// Kopfzeile, Zeilen und Zeitraum-Fußzeile - ohne umgebende Karte, damit das
+// Sheet (selbst schon `bg-surface`) dieselbe Tabelle direkt einbetten kann.
+function renderFrequencyTable({ firstColumnLabel, items, statById, range, interactive, stripeClass = 'bg-raised' }) {
+  return `
+    <div class="${interactive ? FREQUENCY_TABLE_COLS_WITH_CHEVRON : FREQUENCY_TABLE_COLS} px-3 text-label uppercase text-muted">
+      <span>${firstColumnLabel}</span>
+      <span class="text-right whitespace-nowrap">Sätze/Wo</span>
+      <span class="text-right whitespace-nowrap">Freq/Wo</span>
+      ${interactive ? '<span></span>' : ''}
+    </div>
+    <div class="flex flex-col">
+      ${items.map((item, i) => renderFrequencyRow(item, statById[item.id], i, interactive, stripeClass)).join('')}
+    </div>
+    <p class="flex items-center gap-1.5 px-3 mt-2 text-label text-muted">${INFO_ICON}${formatRangeLabel(range.weeks)}</p>
+  `;
+}
+
+function renderMuscleStatsSection(data, range) {
   const heading = `<p class="text-label-large text-muted">Frequenz pro Muskelgruppe</p>`;
 
   if (!range) {
@@ -641,7 +684,7 @@ function renderMuscleStatsSection(data) {
     `;
   }
 
-  const groups = [...MUSCLE_GROUPS].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const groups = [...MUSCLE_GROUPS].sort(byGermanName);
   const statById = Object.fromEntries(
     computeMuscleStats(data.sets, toMuscleGroupMap(data.exerciseMuscles), groups, range).map((s) => [s.muscleId, s])
   );
@@ -650,19 +693,112 @@ function renderMuscleStatsSection(data) {
     <div class="flex flex-col gap-2">
       ${heading}
       <div class="${CARD} flex flex-col gap-3">
-        <div class="${MUSCLE_TABLE_COLS} px-3 text-label uppercase text-muted">
-          <span>Muskelgruppe</span>
-          <span class="text-right whitespace-nowrap">Sätze/Wo</span>
-          <span class="text-right whitespace-nowrap">Freq/Wo</span>
-          <span></span>
-        </div>
-        <div class="flex flex-col">
-          ${groups.map((g, i) => renderMuscleGroupRow(g, statById[g.id], i)).join('')}
-        </div>
-        <p class="flex items-center gap-1.5 px-3 mt-2 text-label text-muted">${INFO_ICON}${formatRangeLabel(range.weeks)}</p>
+        ${renderFrequencyTable({ firstColumnLabel: 'Muskelgruppe', items: groups, statById, range, interactive: true })}
       </div>
     </div>
   `;
+}
+
+// --- Muskelgruppen-Sheet (ADR 0028) ---
+//
+// Top-Level-Bottom-Sheet wie "Profil verknüpfen" (profile.js) - Teil des
+// normalen paint()-Strings, Öffnen/Schließen über State + paint(). Abweichend
+// vom Standard-Sheet-Kopf (Schließen links) sitzt der Glass-Schließen-Button
+// hier auf Nutzer-Wunsch rechts oben; links ein leerer Platzhalter, damit der
+// Titel zentriert bleibt. Inhalt: "Frequenz pro Muskel" für alle Muskeln der
+// Gruppe (alphabetisch, gleicher Zeitraum und dieselbe Berechnung wie die
+// Gruppen-Tabelle, nur ohne Abbildung auf Gruppen). Die Tabelle sitzt in
+// einer eigenen optischen Karte (Nutzer-Wunsch): Da das Sheet selbst schon
+// `bg-surface` ist, hellt sie die Fläche per `bg-white/[0.06]` auf (dieselbe
+// Sheet-Konvention wie Suchfeld/Chips mit `bg-white/[0.08]`), die
+// Zebra-Zeilen hellen darauf noch einmal um denselben Wert auf. Gruppen mit nur einem
+// Muskel (Brust, Po) bekommen bewusst keinen Inhalt - die Tabelle würde
+// exakt die Gruppen-Zeile wiederholen (Nutzer-Vorgabe: Sheet bleibt leer).
+function renderMuscleGroupSheet(data, range) {
+  const group = MUSCLE_GROUPS.find((g) => g.id === state.muscleGroupSheetId);
+  if (!group) return '';
+  const muscles = MUSCLES.filter((m) => m.groupId === group.id).sort(byGermanName);
+  const closing = state.muscleGroupSheetClosing ? 'closing' : '';
+
+  let content = '';
+  if (muscles.length > 1 && range) {
+    const statById = Object.fromEntries(computeMuscleStats(data.sets, data.exerciseMuscles, muscles, range).map((s) => [s.muscleId, s]));
+    content = `
+      <div class="flex flex-col gap-2">
+        <p class="text-label-large text-muted">Frequenz pro Muskel</p>
+        <div class="bg-white/[0.06] rounded-card p-4 flex flex-col gap-3">
+          ${renderFrequencyTable({ firstColumnLabel: 'Muskel', items: muscles, statById, range, interactive: false, stripeClass: 'bg-white/[0.06]' })}
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div id="muscle-group-sheet-backdrop" class="bottom-sheet-backdrop ${closing} fixed inset-0 z-50 bg-black/50"></div>
+    <div class="bottom-sheet ${closing} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" role="dialog" aria-label="${group.name}">
+      <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-5 flex-shrink-0">
+        <div></div>
+        <div id="muscle-group-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+          <span class="text-card-title">${group.name}</span>
+        </div>
+        <button id="muscle-group-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
+      <div class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+112px)]">
+        ${content}
+      </div>
+    </div>
+  `;
+}
+
+function openMuscleGroupSheet(muscleGroupId) {
+  if (state.muscleGroupSheetId) return;
+  state.muscleGroupSheetId = muscleGroupId;
+  state.muscleGroupSheetClosing = false;
+  lockBodyScroll();
+  raiseNavAboveSheet();
+  paint();
+}
+
+// Analog zu closeLinkSheet in profile.js: erst die Schließen-Animation
+// abspielen (muss zur Dauer von .bottom-sheet.closing in css/styles.css
+// passen), danach erst wirklich aus State/DOM entfernen.
+let pendingMuscleGroupSheetCloseTimeout = null;
+
+function finalizeMuscleGroupSheetClose() {
+  pendingMuscleGroupSheetCloseTimeout = null;
+  state.muscleGroupSheetId = null;
+  state.muscleGroupSheetClosing = false;
+  unlockBodyScroll();
+  resetNavZIndex();
+  paint();
+}
+
+function closeMuscleGroupSheet() {
+  if (!state.muscleGroupSheetId || state.muscleGroupSheetClosing) return;
+  state.muscleGroupSheetClosing = true;
+  paint();
+  pendingMuscleGroupSheetCloseTimeout = setTimeout(finalizeMuscleGroupSheetClose, SHEET_CLOSE_ANIMATION_MS);
+}
+
+function wireMuscleGroupSheet() {
+  const backdropEl = currentContainer.querySelector('#muscle-group-sheet-backdrop');
+  if (!backdropEl) return;
+  backdropEl.addEventListener('click', closeMuscleGroupSheet);
+  currentContainer.querySelector('#muscle-group-sheet-close-btn')?.addEventListener('click', closeMuscleGroupSheet);
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#muscle-group-sheet-handle'),
+    sheetEl: backdropEl.nextElementSibling,
+    backdropEl,
+    isClosing: () => state.muscleGroupSheetClosing,
+    onDismiss: () => {
+      state.muscleGroupSheetClosing = true;
+      pendingMuscleGroupSheetCloseTimeout = setTimeout(finalizeMuscleGroupSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
+  });
 }
 
 async function renderOverviewTab() {
@@ -670,6 +806,7 @@ async function renderOverviewTab() {
   const stats = computeWorkoutsPerWeekStats(trainedDates, getSettings().weeklyGoal, HISTORY_WEEKS);
   const volumeStats = computeVolumeChartStats(await getWeeklyTrainingVolumes(), state.volumeRange, todayISODate());
   const muscleStatsData = await getMuscleStatsData();
+  const muscleStatsRange = getStatsRange(todayISODate(), muscleStatsData.firstTrainedDate);
 
   return `
     <div class="flex flex-col gap-2">
@@ -685,7 +822,8 @@ async function renderOverviewTab() {
       </div>
     </div>
     ${renderVolumeSection(state.volumeRange, volumeStats)}
-    ${renderMuscleStatsSection(muscleStatsData)}
+    ${renderMuscleStatsSection(muscleStatsData, muscleStatsRange)}
+    ${state.muscleGroupSheetId ? renderMuscleGroupSheet(muscleStatsData, muscleStatsRange) : ''}
   `;
 }
 
@@ -716,6 +854,7 @@ function wireEvents() {
   });
 
   currentContainer.querySelectorAll('[data-muscle-group-id]').forEach((btn) => {
-    btn.addEventListener('click', () => openMuscleGroupDetail(btn.dataset.muscleGroupId));
+    btn.addEventListener('click', () => openMuscleGroupSheet(btn.dataset.muscleGroupId));
   });
+  wireMuscleGroupSheet();
 }
