@@ -8,7 +8,7 @@
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
 import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
-import { escapeHtml, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
@@ -551,15 +551,9 @@ function renderVolumeChart(stats) {
   `;
 }
 
-// Zeitraum-Reiter (3M/1J/Max) als zweite, eigenständige Segmented Control
-// auf derselben Seite - Wrapper-`id` s. paint()/wireEvents() für die
+// Zeitraum-Reiter (3M/1J/Max): renderRangeControl() in utils.js (geteilt mit der
+// Statistik der Übungs-Seite) - Wrapper-`id` s. paint()/wireEvents() für die
 // Begründung, warum ein eigener Wrapper nötig ist.
-const VOLUME_RANGE_TABS = [
-  { key: '3m', label: '3M' },
-  { key: '1j', label: '1J' },
-  { key: 'max', label: 'Max' },
-];
-
 function renderVolumeSection(volumeRange, stats) {
   const hasData = stats.periods.length > 0;
   // Eigene Zeile unter der KPI-Zahl statt daneben (flex-wrap) - sonst
@@ -579,7 +573,7 @@ function renderVolumeSection(volumeRange, stats) {
   // Segmente selbst bleiben `flex-1` (füllen weiterhin GENAU diesen
   // schmalen Wrapper, nicht mehr die ganze Karte). Keine Änderung an
   // utils.js nötig.
-  const tabsHtml = `<div id="volume-range-control" class="w-36 shrink-0">${renderSegmentedControl(VOLUME_RANGE_TABS, volumeRange)}</div>`;
+  const tabsHtml = renderRangeControl('volume-range-control', volumeRange);
 
   if (!hasData) {
     return `

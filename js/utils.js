@@ -184,6 +184,21 @@ export function renderSegmentedControl(tabs, activeKey) {
 // (erstes Rendern) wird nur direkt positioniert, keine Animation.
 const SEGMENTED_INDICATOR_DURATION_MS = 170;
 
+// Zeitraum-Auswahl 3M / 1J / Max - EINE Quelle für das Volumen-Chart der
+// Statistik-Übersicht und die Statistik der Übungs-Seite. Kompakt, in einen
+// schmalen Wrapper gesteckt (`w-36`); der Wrapper trägt eine eigene `id`, weil
+// measure-/positionSegmentedIndicator() jeweils nur die ERSTE
+// `.segmented-control` im übergebenen Container finden (s. statistics.js).
+export const RANGE_TABS = [
+  { key: '3m', label: '3M' },
+  { key: '1j', label: '1J' },
+  { key: 'max', label: 'Max' },
+];
+
+export function renderRangeControl(id, activeKey) {
+  return `<div id="${id}" class="w-36 shrink-0">${renderSegmentedControl(RANGE_TABS, activeKey)}</div>`;
+}
+
 export function measureSegmentedIndicatorRect(container) {
   const wrapper = container.querySelector('.segmented-control');
   const indicator = wrapper?.querySelector('.segmented-control-indicator');
@@ -284,6 +299,23 @@ const PR_BADGES = {
     icon: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 10A8 8 0 0 0 5 7.5"/><path d="M4.5 3.5v4.5H9"/><path d="M4.5 14A8 8 0 0 0 19 16.5"/><path d="M19.5 20.5V16H15"/></svg>`,
   },
 };
+
+// Nur das Icon eines PR-Typs ('weight' | 'reps') - dieselben Formen wie die
+// PR-Badges, auch für die Bestwerte-Tabelle der Statistik-Übungs-Seite.
+// `sizeClass` ersetzt die Standardgröße des Badges (`w-3.5 h-3.5`).
+// `outline: true` = Linien-Variante im Stil der übrigen Icons dieser Tabelle
+// (Stärke 1.75, Gewicht ohne Füllung) statt der kräftigen Badge-Variante.
+export function renderPRIcon(type, { sizeClass = 'w-3.5 h-3.5', outline = false } = {}) {
+  if (!outline) return (PR_BADGES[type]?.icon ?? '').replace('w-3.5 h-3.5', sizeClass);
+  const attrs = `viewBox="0 0 24 24" class="${sizeClass}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
+  if (type === 'weight') {
+    return `<svg ${attrs}><path d="M9 9V7.5a3 3 0 0 1 6 0V9"/><path d="M6.8 9h10.4a1 1 0 0 1 .97.76l2.3 9.6A1.3 1.3 0 0 1 19.2 21H4.8a1.3 1.3 0 0 1-1.27-1.64l2.3-9.6A1 1 0 0 1 6.8 9Z"/></svg>`;
+  }
+  if (type === 'reps') {
+    return `<svg ${attrs}><path d="M19.5 10A8 8 0 0 0 5 7.5"/><path d="M4.5 3.5v4.5H9"/><path d="M4.5 14A8 8 0 0 0 19 16.5"/><path d="M19.5 20.5V16H15"/></svg>`;
+  }
+  return '';
+}
 
 export function renderPRBadge(type, { extraClasses = '' } = {}) {
   const badge = PR_BADGES[type];

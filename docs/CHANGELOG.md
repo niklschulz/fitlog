@@ -2,6 +2,17 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-03 (Statistik: Persönliche Bestwerte und Zeitraum)
+
+### Added
+- Reiter "Statistik" der Übungs-Seite: Tabelle "Persönliche Bestwerte" nach Vorbild der Referenz-App (Icon-Kreis, Name, rechts Wert + Datum; Überschrift links, Zeitraum rechts). Zeilen: **1RM** (bleibt vorerst leer "–"), **Gewicht** (höchstes Gewicht, mit Wiederholungen), **Volumen** (bester Einzelsatz aus Gewicht × Reps), **Reps** (meiste Wiederholungen, mit Gewicht). Bei Gleichstand zählt der früheste Satz, Gewicht 0 und ungültige Sätze zählen nicht (wie bei den PR-Markierungen)
+- Zeitraum-Auswahl 3M / 1J / Max oben auf dem Reiter, gilt für alle Statistiken der Übung (startet bei jedem Öffnen auf 3M, bleibt beim Reiter-Wechsel erhalten). Kalendermonate/-jahre rückwärts ab heute
+- `js/exerciseStats.js` (`getRangeStart()`, `computePersonalBests()`) mit Tests in `tests/exerciseStats.test.js`
+
+### Changed
+- Bestwerte-Tabelle: Gewicht und Reps nutzen dieselben Formen wie die PR-Markierungen als Outline-Variante (`renderPRIcon(..., { outline: true })` in `js/utils.js`, Stärke 1.75 wie 1RM/Volumen); Zeitraum und Datumsangaben zeigen das Jahr immer
+- Zeitraum-Auswahl als gemeinsame Quelle `renderRangeControl()`/`RANGE_TABS` in `js/utils.js`, genutzt vom Volumen-Chart der Übersicht und der Übungs-Seite. `CACHE_NAME` auf `fitlog-v209`
+
 ## 2026-10-03 (Statistik: Info-Reiter der Übungs-Seite)
 
 ### Added
