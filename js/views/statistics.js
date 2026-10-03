@@ -10,6 +10,7 @@ import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSC
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { escapeHtml, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
+import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
@@ -47,6 +48,7 @@ export function render(container) {
 // beim Tab-Wechsel (Bottom-Nav liegt über dem Sheet) ausgeglichen werden
 // muss, s. js/sheet.js.
 export function unmount() {
+  exerciseDetail.unmount();
   unmountExerciseCreateSheet();
   if (pendingMuscleGroupSheetCloseTimeout) {
     clearTimeout(pendingMuscleGroupSheetCloseTimeout);
@@ -857,7 +859,7 @@ async function renderOverviewTab() {
 // alle Übungen gezeigt: Die Liste startet leer; Favoriten setzt/entfernt man im
 // Übungs-Sheet ("Alle Übungen"), die IDs liegen geräte-lokal in den
 // Einstellungen.
-// Noch ohne Klick-Aktion auf die Zeilen (Detail-Statistik folgt).
+// Tipp auf eine Zeile öffnet die Übungs-Seite (statistics-exercise-detail.js).
 async function renderExercisesTab() {
   const all = await db.exercises.orderBy('name').toArray();
   const listedIds = new Set(getSettings().statsExerciseIds);
@@ -1163,6 +1165,18 @@ function toggleFavorite(id) {
   repaintExerciseSheetBodyInPlace();
 }
 
+// Übungs-Seite übernimmt den Container komplett (wie die Workout-
+// Übungsseite im Workout-Tab); Zurück zeichnet den Übungen-Reiter neu.
+function openExerciseDetail(exerciseId) {
+  exerciseDetail.render(currentContainer, {
+    exerciseId,
+    onBack: () => {
+      exerciseDetail.unmount();
+      paint();
+    },
+  });
+}
+
 function wireEvents() {
   currentContainer.querySelectorAll('#page-tabs .segmented-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1190,4 +1204,7 @@ function wireEvents() {
   });
   wireMuscleGroupSheet();
   currentContainer.querySelector('#all-exercises-btn')?.addEventListener('click', openExerciseSheet);
+  currentContainer.querySelectorAll('[data-stat-exercise-id]').forEach((btn) => {
+    btn.addEventListener('click', () => openExerciseDetail(btn.dataset.statExerciseId));
+  });
 }

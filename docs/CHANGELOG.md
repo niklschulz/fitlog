@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-03 (Statistik: Übungs-Seite)
+
+### Added
+- Tipp auf eine Übung im Statistik-Tab, Reiter "Übungen", öffnet eine Übungs-Seite (`js/views/statistics-exercise-detail.js`) im Aufbau der Workout-Übungsseite: Zurück-Pfeil, Übungsname, Reiter "Statistik", "Verlauf", "Info". "Verlauf" ist dieselbe Darstellung wie in der Workout-Übungsseite (`renderExerciseHistory()` aus `workout-exercise-detail.js`), "Statistik" und "Info" sind noch Platzhalter. `CACHE_NAME` auf `fitlog-v205`
+
 ## 2026-10-03 (Alle Bestätigungen als Action Sheet)
 
 ### Changed

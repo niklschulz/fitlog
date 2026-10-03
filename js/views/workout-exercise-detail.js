@@ -177,9 +177,11 @@ function renderStepperRow(field, label, value) {
 // der Kante des "Löschen"-Buttons). `mr-4` rückt es um denselben
 // Innenabstand ein, den es in den Karten (Roster, Verlauf) durch deren `p-4`
 // ohnehin hat.
-function renderSetContent(set, { badgeInset = false } = {}) {
+// `prsMap` optional, damit der Verlauf auch von der Statistik-Übungsseite
+// (s. exportierte renderExerciseHistory) mit eigener PR-Map gerendert werden kann.
+function renderSetContent(set, { badgeInset = false, prsMap = prs } = {}) {
   if (!set) return `<span class="text-muted">–</span>`;
-  return renderSetValues(set.weight, set.reps) + renderPRBadge(prs.get(set.id), { extraClasses: badgeInset ? 'mr-4' : '' });
+  return renderSetValues(set.weight, set.reps) + renderPRBadge(prsMap.get(set.id), { extraClasses: badgeInset ? 'mr-4' : '' });
 }
 
 function renderTodayTab(sets, formWeight, formReps, routineLabel) {
@@ -228,7 +230,14 @@ function formatHistoryDate(dateStr) {
   return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-function renderHistoryTab(history) {
+// Verlauf-Reiter, auch vom Statistik-Tab (js/views/statistics-exercise-detail.js)
+// unverändert genutzt: `history` = getExerciseSetHistory(), `prsMap` =
+// getPRsForExercises()-Map der Übung.
+export function renderExerciseHistory(history, prsMap) {
+  return renderHistoryTab(history, prsMap);
+}
+
+function renderHistoryTab(history, prsMap = prs) {
   if (history.length === 0) {
     return `<p class="text-body text-muted text-center py-6">Noch kein Verlauf für diese Übung.</p>`;
   }
@@ -243,7 +252,7 @@ function renderHistoryTab(history) {
           <ul class="flex flex-col">
             ${day.sets
               .map((s, i) =>
-                renderSetTimelineRow(i + 1, renderSetContent(s), { isLast: i === day.sets.length - 1 })
+                renderSetTimelineRow(i + 1, renderSetContent(s, { prsMap }), { isLast: i === day.sets.length - 1 })
               )
               .join('')}
           </ul>
