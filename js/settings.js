@@ -9,6 +9,8 @@ const STORAGE_KEY = 'fitlog:settings';
 const DEFAULTS = {
   defaultSetCount: 3,
   weeklyGoal: 5,
+  // Statistik-Tab, Reiter "Übungen": vom Nutzer ausgewählte Übungen (IDs)
+  statsExerciseIds: [],
 };
 
 export function getSettings() {

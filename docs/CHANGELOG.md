@@ -2,6 +2,30 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-03 (Workout: Haken im Übungs-Sheet grün und umschaltbar)
+
+### Changed
+- Übungs-Sheet: der Haken ist jetzt grün (`bg-accent`) statt ausgegraut und bleibt antippbar. Erneutes Antippen entfernt die Übung wieder aus dem Tages-Workout bzw. dem Routinen-Entwurf. Hat die Übung im Workout bereits mindestens einen gespeicherten Satz, erscheint stattdessen eine native Fehlermeldung (`alert()`), die Übung bleibt abgehakt. Das "⋮"-Kontextmenü der Roster-Karte bleibt unverändert. `CACHE_NAME` auf `fitlog-v201`
+
+## 2026-10-03 (Workout: Übungs-Sheet fügt sofort hinzu)
+
+### Changed
+- Übungs-Sheet (Workout-Tab, ebenso im Routinen-Entwurf): Tipp aufs Kästchen fügt die Übung sofort hinzu, die Zeile wechselt auf das deaktivierte Häkchen-Badge, das Sheet bleibt für weitere Auswahl offen. "Hinzufügen"-Button und Auswahl-State entfallen. Entfernen weiter über das "⋮"-Kontextmenü der Roster-Karte. Eine über "+" neu angelegte Übung wird ebenfalls sofort hinzugefügt (vorher vorausgewählt). Roster hinter dem Sheet aktualisiert sich beim Schließen. `CACHE_NAME` auf `fitlog-v201`
+
+## 2026-10-03 (Statistik: Favoriten-Stern im Übungs-Sheet)
+
+### Changed
+- Statistik-Tab, Übungs-Sheet: Auswahl-Kästchen durch einen Favoriten-Stern ersetzt (Akzentgrün gefüllt = Favorit). Der Stern speichert sofort, "Hinzufügen"-Leiste entfällt. Im Reiter "Übungen" erscheinen alle Favoriten; Stern erneut antippen nimmt sie wieder heraus. Über "+" neu angelegte Übungen werden automatisch Favorit. `CACHE_NAME` auf `fitlog-v199`
+
+## 2026-10-03 (Statistik: Übungen-Reiter)
+
+### Changed
+- Neue-Übung-/Übung-bearbeiten-Sheet aus `js/views/workout.js` nach `js/exerciseCreateSheet.js` ausgelagert (eigener State, `openExerciseCreateSheet({ container, editExerciseId, z, onSaved })`), damit Workout- und Statistik-Tab dasselbe Sheet nutzen und Änderungen überall wirken. Verhalten im Workout-Tab unverändert
+
+### Added
+- Statistik-Tab, Reiter "Übungen": alphabetische Liste aller Übungen als Buttons im Stil der unbegonnenen Roster-Karte im Workout-Tab (`bg-surface rounded-card`). Zeilenhöhe 68px wie im Workout-Tab (12px Padding + 44px Inhalt). Noch ohne Klick-Aktion.
+- Die Liste zeigt nicht automatisch alle Übungen: sie startet leer, darunter der Textlink "Alle Übungen" öffnet ein Übungs-Sheet (Suche, Muskelgruppen-Filter, Mehrfachauswahl, "Hinzufügen") — kompakte Variante des Workout-Tab-Sheets ohne Detail-/Neue-Übung-Sheets. Bereits gelistete Übungen zeigen ein deaktiviertes Häkchen. Rechts oben "+" öffnet das Neue-Übung-Sheet; die neue Übung erscheint vorausgewählt. Auswahl liegt geräte-lokal in `js/settings.js` (`statsExerciseIds`). `CACHE_NAME` auf `fitlog-v199`
+
 ## 2026-10-02 (Muskelgruppen-Sheet)
 
 ### Added

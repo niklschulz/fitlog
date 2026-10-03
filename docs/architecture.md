@@ -111,3 +111,8 @@ Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (priv
 ## Bekannte Abweichungen vom ursprünglichen Konzept
 
 - **Gewicht-Eingabe**: `inputmode="decimal"` statt `inputmode="numeric"` — Scheiben-Abstufungen wie 82,5 kg brauchen eine Kommastelle, die bei `numeric` auf dem iOS-Tastenfeld fehlt. Wiederholungen bleiben bei `numeric`.
+
+
+## Geteiltes Neue-Übung-Sheet
+
+`js/exerciseCreateSheet.js` enthält Neue-Übung-/Übung-bearbeiten-Sheet samt eigenem State. Aufrufer (Workout-Tab, Statistik-Tab) übergeben Container, z-Ebene und einen `onSaved`-Callback und rufen in `unmount()` `unmountExerciseCreateSheet()` auf.

@@ -6,10 +6,11 @@
 // Risiko besteht z. B. auch in profile.js und wird dort ebenfalls nicht
 // per Epoch-Sperre abgesichert, da das Zeitfenster bei rein lokalen
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
-import { getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
+import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
-import { renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD } from '../utils.js';
-import { getSettings } from '../settings.js';
+import { escapeHtml, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { getSettings, saveSettings } from '../settings.js';
+import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
 // Anzahl der im Balkendiagramm gezeigten Wochen (inkl. aktueller Woche),
@@ -19,7 +20,20 @@ const HISTORY_WEEKS = 8;
 let currentContainer = null;
 // activeTab: 'overview' | 'exercises'; volumeRange: '3m' | '1j' | 'max';
 // muscleGroupSheetId: geöffnetes Muskelgruppen-Sheet (null = keins)
-const initialState = () => ({ activeTab: 'overview', volumeRange: '3m', muscleGroupSheetId: null, muscleGroupSheetClosing: false });
+// exerciseSheet*: Übungs-Sheet des Übungen-Reiters (Auswahl, welche Übungen
+// in der Liste erscheinen)
+const initialState = () => ({
+  activeTab: 'overview',
+  volumeRange: '3m',
+  muscleGroupSheetId: null,
+  muscleGroupSheetClosing: false,
+  exerciseSheetOpen: false,
+  exerciseSheetClosing: false,
+  exerciseSheetSearch: '',
+  exerciseSheetMuscleFilterId: null,
+  exerciseSheetMuscleFilterOpen: false,
+  exerciseSheetMuscleFilterClosing: false,
+});
 let state = initialState();
 
 export function render(container) {
@@ -33,11 +47,20 @@ export function render(container) {
 // beim Tab-Wechsel (Bottom-Nav liegt über dem Sheet) ausgeglichen werden
 // muss, s. js/sheet.js.
 export function unmount() {
+  unmountExerciseCreateSheet();
   if (pendingMuscleGroupSheetCloseTimeout) {
     clearTimeout(pendingMuscleGroupSheetCloseTimeout);
     pendingMuscleGroupSheetCloseTimeout = null;
   }
-  if (state.muscleGroupSheetId) {
+  if (pendingExerciseSheetCloseTimeout) {
+    clearTimeout(pendingExerciseSheetCloseTimeout);
+    pendingExerciseSheetCloseTimeout = null;
+  }
+  if (pendingExerciseSheetMuscleFilterCloseTimeout) {
+    clearTimeout(pendingExerciseSheetMuscleFilterCloseTimeout);
+    pendingExerciseSheetMuscleFilterCloseTimeout = null;
+  }
+  if (state.muscleGroupSheetId || state.exerciseSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
   }
@@ -57,7 +80,7 @@ export function unmount() {
 // repositioniert (kein Sprung, da er sich ja nicht bewegt hat).
 async function paint({ pageFromRect = null, volumeFromRect = null } = {}) {
   const overviewHtml = state.activeTab === 'overview' ? await renderOverviewTab() : '';
-  const exercisesHtml = state.activeTab === 'exercises' ? renderExercisesTab() : '';
+  const exercisesHtml = state.activeTab === 'exercises' ? await renderExercisesTab() : '';
 
   currentContainer.innerHTML = `
     <div class="py-4 flex flex-col gap-4">
@@ -827,8 +850,317 @@ async function renderOverviewTab() {
   `;
 }
 
-function renderExercisesTab() {
-  return `<p class="text-body text-muted text-center py-12">Übungen folgen.</p>`;
+// Übungen-Reiter: als Favorit (Stern) markierte Übungen als Buttons, optisch
+// identisch zur unbegonnenen Roster-Karte im Workout-Tab (`bg-surface
+// rounded-card`, Titel `text-card-title`, Zeilenhöhe 68px = 12px Padding +
+// 44px Inhalt, s. renderExerciseRow() in workout.js). Es werden bewusst NICHT
+// alle Übungen gezeigt: Die Liste startet leer; Favoriten setzt/entfernt man im
+// Übungs-Sheet ("Alle Übungen"), die IDs liegen geräte-lokal in den
+// Einstellungen.
+// Noch ohne Klick-Aktion auf die Zeilen (Detail-Statistik folgt).
+async function renderExercisesTab() {
+  const all = await db.exercises.orderBy('name').toArray();
+  const listedIds = new Set(getSettings().statsExerciseIds);
+  // Gelöschte Übungen fallen automatisch raus (nur existierende werden gezeigt)
+  const listed = all.filter((e) => listedIds.has(e.id));
+  const rows = listed
+    .map(
+      (e) => `
+      <li>
+        <button type="button" data-stat-exercise-id="${e.id}" class="tap-feedback w-full text-left px-4 py-3 bg-surface rounded-card">
+          <span class="text-card-title truncate flex items-center min-h-[44px]">${escapeHtml(e.name)}</span>
+        </button>
+      </li>`
+    )
+    .join('');
+  return `
+    ${listed.length > 0 ? `<ul class="flex flex-col gap-2">${rows}</ul>` : `<p class="text-body text-muted text-center py-8">Noch keine Favoriten markiert.</p>`}
+    <button id="all-exercises-btn" type="button" class="tap-feedback w-full flex items-center justify-center py-3 min-h-[44px] ${TEXTLINK_ACTION}">Alle Übungen</button>
+  `;
+}
+
+// --- Übungs-Sheet (Übungen-Reiter) ---
+//
+// Kompakte Variante des Übungs-Sheets aus workout.js (Suche, Muskelgruppen-
+// Filter, "+" für neue Übungen), nur ohne das gestapelte Detail-Sheet. Statt
+// Auswahl-Kästchen hat jede Zeile einen Favoriten-Stern: Favoriten erscheinen
+// im Übungen-Reiter, ein erneuter Tipp nimmt sie wieder heraus. Der Stern
+// speichert sofort, ein "Hinzufügen" gibt es nicht. Wie dort wird das Sheet NICHT per paint() eingefügt,
+// sondern direkt angehängt, und Suche/Auswahl ersetzen nur Teilbäume - sonst
+// würde bei jedem Tastendruck die Slide-Animation neu spielen bzw. das
+// Such-<input> neu erzeugt.
+let exerciseSheetCache = { allExercises: [], listedIds: new Set() };
+let pendingExerciseSheetCloseTimeout = null;
+// Favoriten haben sich geändert -> Liste im Reiter nach dem Schließen neu zeichnen
+let repaintListAfterSheetClose = false;
+let pendingExerciseSheetMuscleFilterCloseTimeout = null;
+const FILTER_CLOSE_ANIMATION_MS = 150;
+
+function renderExerciseSheetBody() {
+  const { allExercises, listedIds } = exerciseSheetCache;
+  const query = state.exerciseSheetSearch.trim().toLowerCase();
+  let filtered = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
+  const groupId = state.exerciseSheetMuscleFilterId;
+  if (groupId) {
+    filtered = filtered.filter((ex) => (ex.primaryMuscleIds ?? []).some((id) => muscleGroupIdOf(id) === groupId));
+  }
+  if (allExercises.length === 0) {
+    return `<p class="text-body text-muted text-center py-12">Noch keine Übungen angelegt.</p>`;
+  }
+  if (filtered.length === 0) {
+    return `<p class="text-body text-muted text-center py-12">Keine Übungen gefunden.</p>`;
+  }
+  return `<ul class="flex flex-col gap-1">${filtered.map((ex) => renderExerciseSheetRow(ex, listedIds.has(ex.id))).join('')}</ul>`;
+}
+
+function renderExerciseSheetRow(exercise, isFavorite) {
+  const muscleNames = (exercise.primaryMuscleIds ?? []).map((id) => MUSCLES.find((m) => m.id === id)?.name).filter(Boolean);
+  return `
+    <li class="${LIST_ROW} flex items-center gap-3">
+      <div class="flex-1 min-w-0 flex flex-col gap-0.5 text-left">
+        <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
+        ${muscleNames.length > 0 ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleNames.join(', '))}</span>` : ''}
+      </div>
+      <button type="button" data-id="${exercise.id}" class="exercise-favorite-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 ${isFavorite ? 'text-accent' : 'text-muted'}" aria-pressed="${isFavorite}" aria-label="${escapeHtml(exercise.name)} ${isFavorite ? 'als Favorit entfernen' : 'als Favorit markieren'}">
+        <svg viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" class="w-6 h-6">
+          <path d="M12 3.5l2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 16.9l-5.25 2.75 1-5.85L3.5 9.65l5.9-.85L12 3.5z" />
+        </svg>
+      </button>
+    </li>
+  `;
+}
+
+function renderExerciseSheetMuscleFilter() {
+  const selected = MUSCLE_GROUPS.find((m) => m.id === state.exerciseSheetMuscleFilterId);
+  const label = selected ? selected.name : 'Alle Muskelgruppen';
+  const open = state.exerciseSheetMuscleFilterOpen;
+  const closing = state.exerciseSheetMuscleFilterClosing;
+  const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
+
+  const options = [{ id: '', name: 'Alle Muskelgruppen' }, ...MUSCLE_GROUPS]
+    .map(
+      (m) => `
+        <li>
+          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
+            <span>${escapeHtml(m.name)}</span>
+            ${(m.id === '' ? state.exerciseSheetMuscleFilterId === null : state.exerciseSheetMuscleFilterId === m.id) ? '<span class="text-accent">✓</span>' : ''}
+          </button>
+        </li>`
+    )
+    .join('');
+
+  return `
+    <div class="px-4 pb-4 flex-shrink-0">
+      <div class="relative">
+        <button id="exercise-sheet-muscle-filter-btn" type="button" class="tap-feedback w-full bg-white/[0.08] rounded-btn pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
+          <span class="text-card-title truncate">${escapeHtml(label)}</span>
+          <span class="dropdown-chevron-icon ${stateClass} flex-shrink-0" aria-hidden="true"><span class="bar bar-a"></span><span class="bar bar-b"></span></span>
+        </button>
+        ${
+          open
+            ? `<div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
+               <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-[#363636] rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
+                 <ul class="flex flex-col gap-0">${options}</ul>
+               </div>`
+            : ''
+        }
+      </div>
+    </div>
+  `;
+}
+
+function renderExerciseSheetContent() {
+  return `
+    <div class="px-4 pb-2 flex-shrink-0">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M20 20l-4.7-4.7" />
+          </svg>
+        </span>
+        <input id="exercise-sheet-search-input" type="text" inputmode="search" autocomplete="off" placeholder="Suche" value="${escapeHtml(state.exerciseSheetSearch)}" class="w-full bg-white/[0.08] rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]" />
+      </div>
+    </div>
+    ${renderExerciseSheetMuscleFilter()}
+    <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-2">
+      ${renderExerciseSheetBody()}
+    </div>
+  `;
+}
+
+function renderExerciseSheet() {
+  const closing = state.exerciseSheetClosing ? 'closing' : '';
+  return `
+    <div id="exercise-sheet-root">
+      <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing} fixed inset-0 z-50 bg-black/50"></div>
+      <div class="bottom-sheet ${closing} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" role="dialog" aria-label="Übungen">
+        <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
+          <button id="exercise-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Übungen schließen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+          <div id="exercise-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
+            <span class="text-card-title">Übungen</span>
+          </div>
+          <button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Übung erstellen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        </div>
+        <div id="exercise-sheet-content" class="flex-1 min-h-0 flex flex-col">
+          ${renderExerciseSheetContent()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Ersetzt `#exercise-sheet-content` (Suchfeld, Filter, Liste, Commit-Leiste)
+// - Scroll-Position der Liste bleibt erhalten. Das Suchfeld selbst wird nur
+// bei Filter-/Auswahl-Änderungen neu erzeugt, nie beim Tippen.
+function repaintExerciseSheetContentInPlace() {
+  const content = currentContainer?.querySelector('#exercise-sheet-content');
+  if (!content) return;
+  const scrollTop = content.querySelector('#exercise-sheet-body')?.scrollTop ?? 0;
+  content.innerHTML = renderExerciseSheetContent();
+  const body = content.querySelector('#exercise-sheet-body');
+  if (body) body.scrollTop = scrollTop;
+  wireExerciseSheetContentEvents();
+}
+
+function repaintExerciseSheetBodyInPlace() {
+  const body = currentContainer?.querySelector('#exercise-sheet-body');
+  if (!body) return;
+  body.innerHTML = renderExerciseSheetBody();
+  wireExerciseSheetBodyEvents();
+}
+
+function closeExerciseSheetMuscleFilter() {
+  if (!state.exerciseSheetMuscleFilterOpen || state.exerciseSheetMuscleFilterClosing) return;
+  state.exerciseSheetMuscleFilterClosing = true;
+  repaintExerciseSheetContentInPlace();
+  pendingExerciseSheetMuscleFilterCloseTimeout = setTimeout(() => {
+    pendingExerciseSheetMuscleFilterCloseTimeout = null;
+    state.exerciseSheetMuscleFilterOpen = false;
+    state.exerciseSheetMuscleFilterClosing = false;
+    repaintExerciseSheetContentInPlace();
+  }, FILTER_CLOSE_ANIMATION_MS);
+}
+
+async function openExerciseSheet() {
+  if (state.exerciseSheetOpen) return;
+  state.exerciseSheetOpen = true;
+  state.exerciseSheetClosing = false;
+  state.exerciseSheetSearch = '';
+  state.exerciseSheetMuscleFilterId = null;
+  state.exerciseSheetMuscleFilterOpen = false;
+  state.exerciseSheetMuscleFilterClosing = false;
+  lockBodyScroll();
+  raiseNavAboveSheet();
+  exerciseSheetCache = {
+    allExercises: await db.exercises.orderBy('name').toArray(),
+    listedIds: new Set(getSettings().statsExerciseIds),
+  };
+  currentContainer.insertAdjacentHTML('beforeend', renderExerciseSheet());
+  wireExerciseSheetEvents();
+}
+
+function finalizeExerciseSheetClose() {
+  pendingExerciseSheetCloseTimeout = null;
+  state.exerciseSheetOpen = false;
+  state.exerciseSheetClosing = false;
+  unlockBodyScroll();
+  resetNavZIndex();
+  currentContainer?.querySelector('#exercise-sheet-root')?.remove();
+  if (repaintListAfterSheetClose) {
+    repaintListAfterSheetClose = false;
+    paint();
+  }
+}
+
+function closeExerciseSheet() {
+  if (!state.exerciseSheetOpen || state.exerciseSheetClosing) return;
+  state.exerciseSheetClosing = true;
+  const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
+  backdrop?.classList.add('closing');
+  backdrop?.nextElementSibling?.classList.add('closing');
+  pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+}
+
+function wireExerciseSheetEvents() {
+  const backdropEl = currentContainer.querySelector('#exercise-sheet-backdrop');
+  backdropEl?.addEventListener('click', closeExerciseSheet);
+  currentContainer.querySelector('#exercise-sheet-close-btn')?.addEventListener('click', closeExerciseSheet);
+  // Geteiltes Neue-Übung-Sheet (js/exerciseCreateSheet.js, dasselbe wie im
+  // Workout-Tab) - liegt eine Ebene über diesem Sheet (z-52/53). Die neue
+  // Übung erscheint vorausgewählt in der Liste dahinter.
+  currentContainer.querySelector('#exercise-sheet-new-btn')?.addEventListener('click', () => {
+    openExerciseCreateSheet({
+      container: currentContainer,
+      z: { bg: 52, panel: 53 },
+      onSaved: async ({ exercise }) => {
+        exerciseSheetCache.allExercises = await db.exercises.orderBy('name').toArray();
+        // Neu angelegte Übung gleich als Favorit markieren
+        toggleFavorite(exercise.id);
+      },
+    });
+  });
+  wireSheetDrag({
+    handle: currentContainer.querySelector('#exercise-sheet-handle'),
+    sheetEl: backdropEl?.nextElementSibling ?? null,
+    backdropEl,
+    isClosing: () => state.exerciseSheetClosing,
+    onDismiss: () => {
+      pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+    },
+  });
+  wireExerciseSheetContentEvents();
+}
+
+function wireExerciseSheetContentEvents() {
+  currentContainer.querySelector('#exercise-sheet-search-input')?.addEventListener('input', (e) => {
+    state.exerciseSheetSearch = e.target.value;
+    repaintExerciseSheetBodyInPlace();
+  });
+
+  currentContainer.querySelector('#exercise-sheet-muscle-filter-btn')?.addEventListener('click', () => {
+    if (state.exerciseSheetMuscleFilterOpen) {
+      closeExerciseSheetMuscleFilter();
+    } else {
+      state.exerciseSheetMuscleFilterOpen = true;
+      repaintExerciseSheetContentInPlace();
+    }
+  });
+  currentContainer.querySelector('#exercise-sheet-muscle-filter-backdrop')?.addEventListener('click', closeExerciseSheetMuscleFilter);
+  currentContainer.querySelectorAll('.pick-muscle-filter-option-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.exerciseSheetMuscleFilterId = btn.dataset.muscle === '' ? null : btn.dataset.muscle;
+      closeExerciseSheetMuscleFilter();
+    });
+  });
+
+  wireExerciseSheetBodyEvents();
+}
+
+function wireExerciseSheetBodyEvents() {
+  currentContainer.querySelectorAll('.exercise-favorite-btn').forEach((btn) => {
+    btn.addEventListener('click', () => toggleFavorite(btn.dataset.id));
+  });
+}
+
+// Speichert sofort (kein Bestätigen-Schritt) und zeichnet nur die Liste im
+// Sheet neu; der Reiter dahinter folgt nach dem Schließen.
+function toggleFavorite(id) {
+  const ids = new Set(getSettings().statsExerciseIds);
+  if (ids.has(id)) ids.delete(id);
+  else ids.add(id);
+  saveSettings({ ...getSettings(), statsExerciseIds: [...ids] });
+  exerciseSheetCache.listedIds = ids;
+  repaintListAfterSheetClose = true;
+  repaintExerciseSheetBodyInPlace();
 }
 
 function wireEvents() {
@@ -857,4 +1189,5 @@ function wireEvents() {
     btn.addEventListener('click', () => openMuscleGroupSheet(btn.dataset.muscleGroupId));
   });
   wireMuscleGroupSheet();
+  currentContainer.querySelector('#all-exercises-btn')?.addEventListener('click', openExerciseSheet);
 }
