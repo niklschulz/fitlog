@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-03 (Statistik: Info-Reiter der Übungs-Seite)
+
+### Added
+- Reiter "Info" der Statistik-Übungs-Seite zeigt denselben Inhalt wie das Übungs-Detail-Sheet im Workout-Tab (Primäre/Sekundäre Muskeln)
+
+### Changed
+- Inhalt des Detail-Sheets nach `renderExerciseInfo()` in `js/exerciseInfo.js` ausgelagert (vorher `renderExerciseDetailSheetContent()` in `workout.js`): eine gemeinsame Quelle, künftige Änderungen wirken in beiden Stellen. `CACHE_NAME` auf `fitlog-v206`
+
 ## 2026-10-03 (Statistik: Übungs-Seite)
 
 ### Added

@@ -2,12 +2,14 @@
 // Eigenständiges Sub-View-Modul wie workout-exercise-detail.js (gleiches
 // render()/paint()/wireEvents()-Muster, Kopfzeile mit Zurück-Pfeil, Reiter als
 // Segmented Control), aber übungsbezogen statt auf einen Tages-Eintrag
-// bezogen: Reiter "Statistik", "Verlauf" und "Info". Der Verlauf-Reiter nutzt
-// dieselbe Darstellung wie die Workout-Übungsseite (renderExerciseHistory).
+// bezogen: Reiter "Statistik", "Verlauf" und "Info". Verlauf nutzt dieselbe
+// Darstellung wie die Workout-Übungsseite (renderExerciseHistory), Info
+// denselben Inhalt wie das Übungs-Detail-Sheet (renderExerciseInfo).
 // statistics.js übergibt nur die Übungs-ID und einen onBack-Callback.
 import { db, getExerciseSetHistory, getPRsForExercises } from '../db.js';
 import { escapeHtml, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect } from '../utils.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
+import { renderExerciseInfo } from '../exerciseInfo.js';
 
 let currentContainer = null;
 let onBack = null;
@@ -49,7 +51,7 @@ async function paint(indicatorFromRect = null) {
     const [history, prs] = await Promise.all([getExerciseSetHistory(exercise.id), getPRsForExercises([exercise.id])]);
     tabHtml = renderExerciseHistory(history, prs);
   } else if (state.activeTab === 'info') {
-    tabHtml = `<p class="text-body text-muted text-center py-12">Info folgt.</p>`;
+    tabHtml = renderExerciseInfo(exercise);
   } else {
     tabHtml = `<p class="text-body text-muted text-center py-12">Statistik folgt.</p>`;
   }

@@ -39,6 +39,7 @@ import {
 import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
+import { renderExerciseInfo } from '../exerciseInfo.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 // TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für die dynamische
 // CALENDAR_SHEET_MIN_MONTH weiter unten nötig - zum Entfernen diese Zeile
@@ -2214,42 +2215,14 @@ async function renderExerciseDetailSheet() {
         ${menuBtnHtml}
       </div>
       <div id="exercise-detail-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
-        ${renderExerciseDetailSheetContent(exercise)}
+        ${renderExerciseInfo(exercise)}
       </div>
     </div>
   `;
 }
 
-// Muskelgruppen als reine Anzeige-Chips (nicht antippbar, `text-ink` auf
-// `bg-white/[0.08]` wie die unausgewählten Chips im Neue-Übung-Sheet).
-// Übungen ohne Zuordnung (ältere, vor ADR 0013 angelegte) zeigen "Nicht
-// zugeordnet" statt einer leeren Fläche. `primaryMuscleIds`/
-// `secondaryMuscleIds` können bei solchen älteren Übungen fehlen
-// (`undefined`), daher `?? []`. Seit ADR 0022 kann `primaryMuscleIds` auch
-// mehrere Einträge haben - Anzeige analog zu den sekundären Muskeln (mehrere
-// Chips statt genau einem).
-function renderExerciseDetailSheetContent(exercise) {
-  if (!exercise) return '';
-  const muscleName = (id) => MUSCLES.find((m) => m.id === id)?.name;
-  const chip = (id) =>
-    `<span class="rounded-full px-3 py-1 text-body bg-white/[0.08] text-ink">${escapeHtml(muscleName(id) ?? id)}</span>`;
-  const none = `<span class="text-body text-muted">Nicht zugeordnet</span>`;
-  const primary = exercise.primaryMuscleIds ?? [];
-  const secondary = exercise.secondaryMuscleIds ?? [];
-
-  return `
-    <div class="flex flex-col gap-6 py-1">
-      <div class="flex flex-col gap-2">
-        <span class="text-label-large text-muted">Primäre Muskeln</span>
-        <div class="flex flex-wrap gap-2">${primary.length > 0 ? primary.map(chip).join('') : none}</div>
-      </div>
-      <div class="flex flex-col gap-2">
-        <span class="text-label-large text-muted">Sekundäre Muskeln</span>
-        <div class="flex flex-wrap gap-2">${secondary.length > 0 ? secondary.map(chip).join('') : none}</div>
-      </div>
-    </div>
-  `;
-}
+// Inhalt des Detail-Sheets: renderExerciseInfo() in js/exerciseInfo.js
+// (geteilt mit dem Info-Reiter der Statistik-Übungs-Seite).
 
 // Aktualisiert Titel und Inhalt des offenen Detail-Sheets nach einer
 // Bearbeitung - direkt am bestehenden DOM (kein Neuaufbau, keine erneute
@@ -2260,7 +2233,7 @@ async function refreshExerciseDetailSheet() {
   const title = currentContainer?.querySelector('#exercise-detail-sheet-title');
   if (title) title.textContent = exercise?.name ?? 'Gelöschte Übung';
   const content = currentContainer?.querySelector('#exercise-detail-sheet-content');
-  if (content) content.innerHTML = renderExerciseDetailSheetContent(exercise);
+  if (content) content.innerHTML = renderExerciseInfo(exercise);
 }
 
 // Kontextmenü - dasselbe Muster wie renderRoutinesSheetMenu()/
