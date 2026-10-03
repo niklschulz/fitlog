@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-03 (Alle Bestätigungen als Action Sheet)
+
+### Changed
+- Die drei verbliebenen `confirm()`-Dialoge (Profil entfernen, Routine löschen, Übung löschen) nutzen jetzt `showActionSheet()` mit roter, passend beschrifteter Aktion ("Profil entfernen", "Routine löschen", "Übung löschen") und "Abbrechen". Texte unverändert. Damit gibt es in der App keine nativen Dialoge mehr. `CLAUDE.md` angepasst. `CACHE_NAME` auf `fitlog-v204`
+
 ## 2026-10-03 (Action Sheet beim Entfernen von Übungen mit Sätzen)
 
 ### Added

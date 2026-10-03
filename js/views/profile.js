@@ -1,5 +1,6 @@
 import { getProfile, saveProfile, clearProfile } from '../profile.js';
 import { getSettings, saveSettings } from '../settings.js';
+import { showActionSheet } from '../actionSheet.js';
 import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 // TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für renderTestModeToggle()/
@@ -344,8 +345,12 @@ function wireEvents() {
     closeLinkSheet();
   });
 
-  currentContainer.querySelector('#link-sheet-remove-btn')?.addEventListener('click', () => {
-    if (!confirm('Profil wirklich entfernen? Der Token muss danach erneut eingegeben werden.')) return;
+  currentContainer.querySelector('#link-sheet-remove-btn')?.addEventListener('click', async () => {
+    const confirmed = await showActionSheet({
+      message: 'Profil wirklich entfernen? Der Token muss danach erneut eingegeben werden.',
+      actionLabel: 'Profil entfernen',
+    });
+    if (!confirmed) return;
     clearProfile();
     state.mode = 'empty';
     closeLinkSheet();

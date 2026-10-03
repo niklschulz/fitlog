@@ -956,7 +956,8 @@ function wireRoutinesSheetContentEvents() {
 
   currentContainer.querySelector('.routines-sheet-delete-btn')?.addEventListener('click', async (e) => {
     const routineId = e.currentTarget.dataset.routine;
-    if (!confirm('Routine wirklich löschen?')) return;
+    const confirmed = await showActionSheet({ message: 'Routine wirklich löschen?', actionLabel: 'Routine löschen' });
+    if (!confirmed) return;
     await deleteRoutine(routineId);
     state.routinesSheetMenuRoutineId = null;
     state.routinesSheetMenuClosing = false;
@@ -2309,9 +2310,11 @@ function openExerciseDetailMenu() {
   // Anlegen einer neuen Übung (s. openExerciseCreateSheet-Submit).
   currentContainer.querySelector('#exercise-detail-menu-delete-btn')?.addEventListener('click', async () => {
     closeExerciseDetailMenu();
-    if (!confirm('Übung wirklich löschen? Sie wird aus allen Routinen entfernt, bereits erfasste Sätze bleiben erhalten.')) {
-      return;
-    }
+    const confirmed = await showActionSheet({
+      message: 'Übung wirklich löschen? Sie wird aus allen Routinen entfernt, bereits erfasste Sätze bleiben erhalten.',
+      actionLabel: 'Übung löschen',
+    });
+    if (!confirmed) return;
     const exerciseId = state.exerciseDetailSheetExerciseId;
     await deleteExercise(exerciseId);
     await loadExerciseSheetCache();
