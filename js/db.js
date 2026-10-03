@@ -553,6 +553,19 @@ export async function removeExerciseFromWorkout(entryId) {
   await db.workoutExercises.delete(entryId);
 }
 
+// Entfernt eine Übung samt ALLEN an diesem Tag erfassten Sätzen aus dem
+// Workout (Übungs-Sheet, Haken zurücknehmen -> Action Sheet "Sätze und Übung
+// entfernen", s. ADR 0029). Ausdrücklich nur der Tag dieses Workouts - Sätze
+// anderer Tage und die Übung selbst bleiben unberührt, das Workout bleibt
+// bestehen (ein ganzes Tages-Workout zu löschen ist weiterhin nicht
+// vorgesehen, s. ADR 0007).
+export async function removeExerciseWithSetsFromWorkout(workoutId, exerciseId) {
+  await db.transaction('rw', db.workoutExercises, db.sets, async () => {
+    await db.sets.where('workoutId').equals(workoutId).and((s) => s.exerciseId === exerciseId).delete();
+    await db.workoutExercises.where('workoutId').equals(workoutId).and((e) => e.exerciseId === exerciseId).delete();
+  });
+}
+
 // Legt die Reihenfolge der NOCH NICHT BEGONNENEN Übungen eines Workouts neu
 // fest (Roster im Workout-Tab, Umsortieren per Gedrückthalten). `orderedEntryIds`
 // = workoutExercises-IDs in der gewünschten Reihenfolge. Begonnene Übungen

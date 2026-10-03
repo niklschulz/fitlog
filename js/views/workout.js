@@ -8,6 +8,7 @@ import {
   removeRoutineFromWorkout,
   addExercisesToWorkout,
   removeExerciseFromWorkout,
+  removeExerciseWithSetsFromWorkout,
   reorderWorkoutExercises,
   createExercise,
   updateExercise,
@@ -37,6 +38,7 @@ import {
 } from '../sheet.js';
 import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
+import { showActionSheet } from '../actionSheet.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 // TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für die dynamische
 // CALENDAR_SHEET_MIN_MONTH weiter unten nötig - zum Entfernen diese Zeile
@@ -2052,12 +2054,12 @@ function wireExerciseSheetContentEvents() {
 // gewählt werden können: leer -> hinzufügen, grüner Haken -> wieder entfernen
 // (Workout-Tag bzw. Routinen-Entwurf). Hinzufügen schaltet die Zeile sofort
 // optimistisch um (vor dem DB-Zugriff, verhindert auch Doppel-Taps).
-// Entfernen ist im Workout-Kontext nur ohne erfasste Sätze erlaubt (dieselbe
-// Schutzregel wie beim "⋮"-Kontextmenü, s. removeExerciseFromWorkout): sonst
-// native Fehlermeldung per alert() (iOS-Systemdialog) und die Zeile bleibt
-// abgehakt. Im Routinen-Kontext ist nur der lokale Entwurf betroffen (s.
-// renderRoutinesSheetEditContent), das Routinen-Sheet darunter wird direkt
-// aktualisiert. Der Roster hinter dem Sheet wird beim Schließen per paint()
+// Entfernen ohne erfasste Sätze geht direkt (wie beim "⋮"-Kontextmenü, s.
+// removeExerciseFromWorkout); mit erfassten Sätzen fragt ein Action Sheet
+// (js/actionSheet.js, "Sätze und Übung entfernen" / "Abbrechen") nach, bei
+// Abbrechen bleibt die Zeile abgehakt (s. ADR 0029). Im Routinen-Kontext ist
+// nur der lokale Entwurf betroffen (s. renderRoutinesSheetEditContent), das
+// Routinen-Sheet darunter wird direkt aktualisiert. Der Roster hinter dem Sheet wird beim Schließen per paint()
 // neu gelesen (s. closeExerciseSheet).
 let exerciseSheetToggleBusy = new Set();
 
@@ -2091,10 +2093,16 @@ async function toggleExerciseFromSheet(id) {
     const entry = workout ? (await getWorkoutExercises(workout.id)).find((e) => e.exerciseId === id) : null;
     const setCount = workout ? await db.sets.where('workoutId').equals(workout.id).and((x) => x.exerciseId === id).count() : 0;
     if (entry && (entry.startedAt !== null || setCount > 0)) {
-      alert('Diese Übung kann nicht entfernt werden, weil dafür bereits Sätze gespeichert sind.');
-      return;
+      const name = exerciseSheetCache.allExercises.find((x) => x.id === id)?.name ?? 'Diese Übung';
+      const confirmed = await showActionSheet({
+        message: `Für ${name} sind in diesem Workout bereits Sätze gespeichert.`,
+        actionLabel: 'Sätze und Übung entfernen',
+      });
+      if (!confirmed) return;
+      await removeExerciseWithSetsFromWorkout(workout.id, id);
+    } else if (entry) {
+      await removeExerciseFromWorkout(entry.id);
     }
-    if (entry) await removeExerciseFromWorkout(entry.id);
     exerciseSheetCache.inWorkoutIds.delete(id);
     repaintExerciseSheetBodyInPlace();
   } finally {

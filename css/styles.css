@@ -344,6 +344,16 @@ input[type="number"]::-webkit-outer-spin-button {
   to { transform: translateY(100%); }
 }
 
+/* Action Sheet (js/actionSheet.js): schiebt sich wie ein Bottom-Sheet von
+   unten herein/heraus, nutzt dieselben Keyframes. */
+.action-sheet {
+  animation: bottom-sheet-slide-up 220ms ease-out;
+}
+
+.action-sheet.closing {
+  animation: bottom-sheet-slide-down 220ms ease-in forwards;
+}
+
 /* Backdrop-Abdunklung fadet statt hart ein-/auszublenden (vorher ohne
    jede Übergangs-Animation - wirkte "ruckartig", s. CHANGELOG). */
 .bottom-sheet-backdrop {

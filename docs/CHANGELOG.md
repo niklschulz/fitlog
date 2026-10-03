@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-03 (Action Sheet beim Entfernen von Übungen mit Sätzen)
+
+### Added
+- `js/actionSheet.js`: eigenes Action Sheet im SwiftUI-Stil (Nachricht, rote Aktion, abgesetzte "Abbrechen"-Karte). `.action-sheet` in `css/styles.css`
+- `removeExerciseWithSetsFromWorkout()` in `js/db.js` mit Test
+
+### Changed
+- Übungs-Sheet (Workout): Haken zurücknehmen bei Übung mit gespeicherten Sätzen zeigt statt `alert()` das Action Sheet "Sätze und Übung entfernen" / "Abbrechen". Erste Aktion löscht Sätze dieses Tages und den Roster-Eintrag, s. [ADR 0029](decisions/0029-action-sheet-saetze-und-uebung-entfernen.md). `CACHE_NAME` auf `fitlog-v203`
+
 ## 2026-10-03 (Workout: Haken im Übungs-Sheet grün und umschaltbar)
 
 ### Changed

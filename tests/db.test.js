@@ -23,6 +23,7 @@ import {
   applyRoutineToWorkout,
   removeRoutineFromWorkout,
   removeExerciseFromWorkout,
+  removeExerciseWithSetsFromWorkout,
   addExercisesToWorkout,
   reorderWorkoutExercises,
   markWorkoutExerciseStarted,
@@ -291,4 +292,27 @@ test('updateExercise/deleteExercise lehnen Standard-Übungen ab (ADR 0021)', asy
 
   const stillThere = await db.exercises.get('test-gesperrt');
   assert.equal(stillThere.name, 'Gesperrt', 'Standard-Übung darf durch den fehlgeschlagenen Versuch nicht verändert sein');
+});
+
+test('removeExerciseWithSetsFromWorkout entfernt Übung und deren Sätze nur an diesem Tag', async () => {
+  const a = await createExercise('Bankdrücken');
+  const b = await createExercise('Latzug');
+  const today = await getOrCreateWorkoutForDate('2026-01-05');
+  const other = await getOrCreateWorkoutForDate('2026-01-06');
+  await addExercisesToWorkout(today.id, [a.id, b.id]);
+  await addExercisesToWorkout(other.id, [a.id]);
+  await addSet(today.id, a.id, 60, 8);
+  await markWorkoutExerciseStarted(today.id, a.id);
+  await addSet(today.id, b.id, 40, 10);
+  await addSet(other.id, a.id, 62.5, 8);
+
+  await removeExerciseWithSetsFromWorkout(today.id, a.id);
+
+  assert.deepEqual((await getWorkoutExercises(today.id)).map((e) => e.exerciseId), [b.id]);
+  assert.equal(await db.sets.where('workoutId').equals(today.id).and((s) => s.exerciseId === a.id).count(), 0);
+  // andere Übung am selben Tag, derselbe Tag-fremde Satz und die Übung selbst bleiben
+  assert.equal(await db.sets.where('workoutId').equals(today.id).and((s) => s.exerciseId === b.id).count(), 1);
+  assert.equal(await db.sets.where('workoutId').equals(other.id).count(), 1);
+  assert.equal((await getWorkoutExercises(other.id)).length, 1);
+  assert.ok(await db.exercises.get(a.id));
 });
