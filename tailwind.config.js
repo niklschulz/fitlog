@@ -3,7 +3,7 @@
 // die App selbst lädt nur das fertig erzeugte css/tailwind.css.
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./index.html', './js/**/*.js'],
+  content: ['./index.html', './js/**/*.js', '!./js/vendor/**'],
   theme: {
     extend: {
       colors: {

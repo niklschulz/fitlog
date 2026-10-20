@@ -14,4 +14,4 @@ Zusätzlich im Service Worker: CDN-URLs werden normalisiert, und ein fehlgeschla
 
 - Nach Änderung an Tailwind-Klassen oder Tokens muss `npm run build:css` laufen und `css/tailwind.css` mit committet werden, sonst fehlen neue Klassen (steht in `CLAUDE.md`)
 - Kein Tailwind-JS, keine Produktionswarnung mehr, kein Layout-Flackern durch asynchrone CSS-Generierung
-- Die Erstinstallation braucht nur noch für Dexie (CDN) Internet
+- Die Erstinstallation braucht nur noch für Dexie (CDN) Internet — später durch [ADR 0031](0031-dexie-lokal.md) entfallen

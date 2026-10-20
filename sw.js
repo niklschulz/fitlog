@@ -1,6 +1,6 @@
 // App-Shell-Caching für vollständige Offline-Nutzung (s. Konzept Abschnitt 6).
 // Cache-Name bei Änderungen an der Datei-Liste hochzählen, damit Clients aktualisieren.
-const CACHE_NAME = 'fitlog-v210';
+const CACHE_NAME = 'fitlog-v211';
 
 const APP_SHELL = [
   './',
@@ -17,6 +17,7 @@ const APP_SHELL = [
   './js/exerciseStats.js',
   './js/reorder.js',
   './js/utils.js',
+  './js/vendor/dexie.min.js',
   './js/profile.js',
   './js/settings.js',
   './js/pr.js',
@@ -39,15 +40,6 @@ const APP_SHELL = [
 // Browser-API, keine relativen Pfade wie in APP_SHELL oben.
 const APP_SHELL_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.location.href).href));
 
-// Cross-Origin-CDN-Skripte liefern keine Access-Control-Allow-Origin-Header,
-// daher scheitert cache.addAll (cors-Modus) daran. Einzeln im no-cors-Modus
-// cachen und als opaque Response ablegen - fürs Ausführen als <script src> reicht das.
-const CDN_SHELL = ['https://cdn.jsdelivr.net/npm/dexie@4.0.8/dist/dexie.min.js'];
-// Wie bei APP_SHELL_URLS normalisieren: event.request.url ist immer die
-// aufgelöste Form (z. B. mit abschließendem "/" bei URLs ohne Pfad) - ein
-// Vergleich mit dem Rohstring würde solche Einträge im fetch-Handler nie treffen.
-const CDN_SHELL_URLS = new Set(CDN_SHELL.map((url) => new URL(url).href));
-
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
@@ -57,17 +49,6 @@ self.addEventListener('install', (event) => {
       // wirklich alles frisch vom Server zu holen.
       const requests = APP_SHELL.map((url) => new Request(url, { cache: 'reload' }));
       await cache.addAll(requests);
-      // Fehler hier bewusst NICHT abfangen: scheitert der CDN-Precache, bricht der
-      // Install ab, der bisherige Worker samt Cache bleibt aktiv und der Browser
-      // versucht es beim nächsten Laden erneut. Sonst würde ein unvollständiger
-      // neuer Cache aktiviert und der alte gelöscht -> Offline-Start kaputt.
-      await Promise.all(
-        CDN_SHELL.map((url) =>
-          fetch(url, { mode: 'no-cors', cache: 'reload' }).then((response) =>
-            cache.put(url, response)
-          )
-        )
-      );
       await self.skipWaiting();
     })
   );
@@ -84,8 +65,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Cache-first, aber ausschließlich für die bekannte App-Shell (lokale
-// Dateien oben in APP_SHELL sowie das CDN-Skript) - Offline-Start
+// Cache-first, aber ausschließlich für die bekannte App-Shell (alle
+// Dateien oben in APP_SHELL, auch Dexie unter js/vendor/) - Offline-Start
 // ohne Netzwerk-Abhängigkeit. Alles andere (insbesondere künftige
 // Sync-Anfragen an den eigenen Server, s. "Sync & Infrastruktur" in
 // architecture.md) läuft bewusst NICHT über diesen Handler und wird daher
@@ -95,20 +76,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  const isAppShellRequest = APP_SHELL_URLS.has(event.request.url);
-  const isCdnShellRequest = CDN_SHELL_URLS.has(event.request.url);
-  if (!isAppShellRequest && !isCdnShellRequest) return;
+  if (!APP_SHELL_URLS.has(event.request.url)) return;
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((response) => {
-        // Cross-Origin-CDN-Antworten sind wegen mode:'no-cors' immer opaque
-        // (response.ok === false, unabhängig vom tatsächlichen Erfolg) -
-        // trotzdem cachen, wie schon beim Install-Precache oben. Bei
-        // eigenen App-Shell-Dateien dagegen nur tatsächlich erfolgreiche
-        // Antworten übernehmen, keine Fehlerantworten.
-        if (isCdnShellRequest || response.ok) {
+        // Nur tatsächlich erfolgreiche Antworten übernehmen, keine Fehlerantworten.
+        if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         }

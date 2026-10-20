@@ -21,7 +21,8 @@
      eingebunden wie früher die Play-CDN-Styles. Nach Änderungen an Klassen neu bauen. -->
 <link rel="stylesheet" href="css/tailwind.css">
 
-<script src="https://cdn.jsdelivr.net/npm/dexie@4.0.8/dist/dexie.min.js"></script>
+<!-- Dexie lokal ausgeliefert (js/vendor/, s. ADR 0031) - kein Drittserver beim Start. -->
+<script src="js/vendor/dexie.min.js"></script>
 </head>
 <body class="bg-base text-ink font-sans">
   <div id="app" class="min-h-screen flex flex-col">

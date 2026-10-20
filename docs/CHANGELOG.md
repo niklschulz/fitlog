@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-20 (Dexie lokal statt CDN)
+
+### Changed
+- Dexie wird aus `js/vendor/dexie.min.js` geladen statt von `cdn.jsdelivr.net`: Der blockierende Drittserver-Request beim Start (langer schwarzer Screen bei schlechtem Netz) entfällt, ebenso der `no-cors`-Sonderweg im Service Worker. s. [ADR 0031](decisions/0031-dexie-lokal.md). `CACHE_NAME` auf `fitlog-v211`
+
 ## 2026-10-20 (Offline-Start: UI ohne Styling)
 
 ### Fixed
