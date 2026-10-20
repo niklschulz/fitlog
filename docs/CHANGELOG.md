@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-20 (Offline-Start: UI ohne Styling)
+
+### Fixed
+- App startete ohne Netzwerk komplett ungestylt. Ursache: `CDN_SHELL_URLS` in `sw.js` enthielt `https://cdn.tailwindcss.com` ohne abschließenden Slash, `event.request.url` ist aber `https://cdn.tailwindcss.com/` - der `fetch`-Handler griff nie, das Skript kam nie aus dem Cache. CDN-URLs werden jetzt wie `APP_SHELL_URLS` per `new URL().href` normalisiert
+- Schlägt der CDN-Precache beim Service-Worker-Install fehl, bricht der Install jetzt ab (alter Worker/Cache bleibt aktiv), statt den Fehler nur zu loggen und einen unvollständigen Cache zu aktivieren
+
+### Changed
+- Tailwind Play CDN durch vorkompiliertes `css/tailwind.css` ersetzt (Tokens jetzt in `tailwind.config.js`, `npm run build:css`), s. [ADR 0030](decisions/0030-tailwind-vorkompiliert.md). `CACHE_NAME` auf `fitlog-v210`
+
 ## 2026-10-03 (Statistik: Persönliche Bestwerte und Zeitraum)
 
 ### Added

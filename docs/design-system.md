@@ -2,7 +2,7 @@
 
 Lebende Referenz für alle visuellen Tokens und Komponenten-Muster in Fitlog. Entstanden aus einer Design-Überarbeitung (2026-08-30) auf Basis einer Screenshot-Analyse einer anderen Gym-Tracker-App — übernommen wurden ausschließlich optische Prinzipien (Farben, Formen, Abstände, Typografie), keine Funktionalität, Texte, Icons oder Branding der Referenz.
 
-**Wo die Tokens tatsächlich leben:** Nicht in einer `tailwind.config.js`-Datei, wie in einem klassischen Tailwind-Projekt üblich. Fitlog nutzt bewusst keinen Build-Schritt (s. [ADR 0002](decisions/0002-tailwind-play-cdn.md)) — Tailwind läuft über die Play-CDN. Alle Tokens sind im inline `tailwind.config`-Objekt in [`index.html`](../index.html) hinterlegt. Das ist der einzige Ort, an dem sie geändert werden müssen.
+**Wo die Tokens tatsächlich leben:** In [`tailwind.config.js`](../tailwind.config.js) (seit [ADR 0030](decisions/0030-tailwind-vorkompiliert.md); davor inline in `index.html` für die Play-CDN). Das ist der einzige Ort, an dem sie geändert werden müssen — danach `npm run build:css`, damit `css/tailwind.css` neu erzeugt wird.
 
 ## Farben
 

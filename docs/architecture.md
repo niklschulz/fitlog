@@ -5,7 +5,7 @@
 | Bereich | Wahl | Details |
 |---|---|---|
 | Frontend | Vanilla JavaScript, ES-Module | Kein Framework, kein Bundler. Begründung: [ADR 0001](decisions/0001-vanilla-js-ohne-framework.md) |
-| Styling | Tailwind CSS (Play CDN) | Kein Build-Schritt. Begründung: [ADR 0002](decisions/0002-tailwind-play-cdn.md) |
+| Styling | Tailwind CSS 3.4, vorkompiliert (`css/tailwind.css`) | Einmaliger CLI-Lauf, kein laufender Build. Begründung: [ADR 0030](decisions/0030-tailwind-vorkompiliert.md) (löst [ADR 0002](decisions/0002-tailwind-play-cdn.md) ab) |
 | Datenhaltung | IndexedDB via Dexie.js | Einzige Datenquelle, UUID-basiert. Begründung: [ADR 0003](decisions/0003-dexie-uuid-datenmodell.md) |
 | Hosting | GitHub Pages | Öffentliches Repo. Begründung: [ADR 0005](decisions/0005-github-pages-hosting.md) |
 | Backend | Keins (Stand: aktuell) | Geplant, s. "Sync & Infrastruktur" unten |
@@ -14,10 +14,11 @@
 
 ```
 fitlog/
-├── index.html            Einstiegspunkt, lädt Tailwind/Dexie per CDN, registriert Service Worker
+├── index.html            Einstiegspunkt, lädt Dexie per CDN und `css/tailwind.css`, registriert Service Worker
 ├── manifest.json          PWA-Manifest (Icons, Standalone-Modus, Theme-Farbe)
 ├── sw.js                  Service Worker: Cache-first App-Shell für Offline-Betrieb
 ├── css/styles.css         Ergänzungen, die Tailwind nicht abdeckt (Safe-Area, Font-Faces)
+├── css/tailwind.css       Generiert (`npm run build:css` aus tailwind.config.js + css/tailwind.input.css), eingecheckt
 ├── js/
 │   ├── db.js              Dexie-Schema + alle Datenbank-Operationen (CRUD, Kaskaden)
 │   ├── sheet.js           Geteilte Bottom-Sheet-Mechanik (Body-Scroll-Sperre, Nav-z-index,
@@ -76,7 +77,7 @@ Details zu Beziehungen und Lösch-Kaskaden: [ADR 0004](decisions/0004-loesch-kas
 - **Manifest** (`manifest.json`): `display: standalone`, Icons, Theme-Farbe `#121212` (s. [design-system.md](design-system.md) für die vollständige Farbpalette)
 - **iOS-Sonderfall**: `apple-mobile-web-app-capable` + `apple-touch-icon` zusätzlich zum Manifest nötig, da iOS das Web-App-Manifest für den Standalone-Modus nicht vollständig respektiert
 - **Safe-Area**: `viewport-fit=cover` + `env(safe-area-inset-*)` in CSS, für Notch/Dynamic-Island/Home-Indicator. Muss an jedem Screen-Rand, der Inhalt zeigen könnte, explizit angewendet werden (`.safe-top`, `.safe-bottom`) — wird nicht automatisch vererbt
-- **Service Worker** (`sw.js`): Cache-first für alle GET-Requests. Cached sowohl lokale Dateien (`cache.addAll`) als auch die beiden Cross-Origin-CDN-Skripte (Tailwind, Dexie) einzeln im `no-cors`-Modus, da `cache.addAll` im `cors`-Modus an fehlenden CORS-Headern von `cdn.tailwindcss.com` scheitert
+- **Service Worker** (`sw.js`): Cache-first für alle GET-Requests. Cached sowohl lokale Dateien (`cache.addAll`) als auch das Cross-Origin-CDN-Skript (Dexie) einzeln im `no-cors`-Modus, da `cache.addAll` im `cors`-Modus an fehlenden CORS-Headern scheitert. Die CDN-URLs werden für den Abgleich im `fetch`-Handler normalisiert (`new URL(...).href`); scheitert der CDN-Precache, bricht der Install ab und der alte Worker bleibt aktiv
 - **Cache-Versionierung**: `CACHE_NAME` in `sw.js` muss bei jeder Änderung an einer gecachten Datei hochgezählt werden — sonst bleiben Nutzer auf dem alten Stand hängen (Cache-first bedient aus dem Cache, bevor überhaupt geprüft wird, ob es was Neueres gibt)
 - **iOS-Update-Verhalten (Icon)**: Ein bereits zum Home-Bildschirm hinzugefügtes Icon wird von iOS nicht automatisch aktualisiert, wenn sich `apple-touch-icon.png` ändert — erfordert Entfernen + Neu-Hinzufügen
 - **iOS-Update-Verhalten (Service Worker)**: Eine als Home-Bildschirm-App (standalone) geöffnete PWA prüft von sich aus deutlich seltener auf Service-Worker-Updates als ein normaler Safari-Tab — ein einfaches Neuöffnen reicht auf iOS oft nicht. Gegenmaßnahme in `app.js`: `registration.update()` explizit bei jedem App-Start und bei `visibilitychange` (zu "visible") aufrufen, plus ein `controllerchange`-Listener, sobald ein neuer Service Worker die Kontrolle übernimmt (dank `skipWaiting`/`clients.claim()` in `sw.js` passiert das automatisch, sobald ein Update gefunden wurde) — damit ist die neue Version zeitnah sichtbar statt erst nach mehrfachem manuellem Neustart. Der Reload selbst läuft aber NICHT bedingungslos: Ist `document.visibilityState` zu diesem Zeitpunkt `"visible"` (App gerade aktiv in Benutzung — offenes Sheet, halb ausgefülltes Formular), wird er auf den nächsten Wechsel in den Hintergrund zurückgestellt (`pendingReloadAfterUpdate`-Flag) statt sofort auszuführen; ist die App bereits unsichtbar, läuft er sofort, da das dann niemanden stört. Ursprünglich bedingungslos, per Nutzer-Bugreport korrigiert (s. design-system.md, Einundneunzigste Iteration): ein zufällig mit einem App-Update zusammenfallendes Öffnen eines Sheets (z. B. "Profil verknüpfen") wirkte dadurch wie ein spontanes Schließen des Sheets samt Rücksprung zum Start-Tab. Mit einem simulierten Update lokal verifiziert (Reload löst tatsächlich aus, alte Caches werden korrekt ersetzt).
@@ -88,7 +89,7 @@ Icons werden nicht mit einem Grafikprogramm erstellt, sondern durch ein kleines 
 
 ## Nicht-funktionale Anforderungen
 
-- **Offline-Fähigkeit (zentrale Anforderung)**: App muss vollständig funktionsfähig sein, ohne dass je eine Internetverbindung bestanden hat (Erstinstallation ausgenommen, s. [ADR 0002](decisions/0002-tailwind-play-cdn.md)). Alle Kernfunktionen laufen ausschließlich gegen IndexedDB, ohne Netzwerk-Abhängigkeit.
+- **Offline-Fähigkeit (zentrale Anforderung)**: App muss vollständig funktionsfähig sein, ohne dass je eine Internetverbindung bestanden hat (Erstinstallation ausgenommen, s. [ADR 0030](decisions/0030-tailwind-vorkompiliert.md)). Alle Kernfunktionen laufen ausschließlich gegen IndexedDB, ohne Netzwerk-Abhängigkeit.
 - **HTTPS-Voraussetzung**: Service Worker funktionieren nur über HTTPS (oder `localhost` lokal) — GitHub Pages liefert das automatisch.
 - **Performance**: App-Start aus dem Cache (offline) soll praktisch verzögerungsfrei sein. Vanilla JS ohne Framework-Overhead erreicht das ohne gesonderte Optimierung.
 - **Datenpersistenz/Robustheit**: Kein Datenverlust bei normalem Gebrauch (regelmäßige Nutzung verhindert iOS-Cache-Löschen nach Inaktivität). Kein Verlassen auf Netzwerk für Datenintegrität, da kein Backend existiert.

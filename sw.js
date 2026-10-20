@@ -1,12 +1,13 @@
 // App-Shell-Caching für vollständige Offline-Nutzung (s. Konzept Abschnitt 6).
 // Cache-Name bei Änderungen an der Datei-Liste hochzählen, damit Clients aktualisieren.
-const CACHE_NAME = 'fitlog-v209';
+const CACHE_NAME = 'fitlog-v210';
 
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
   './css/styles.css',
+  './css/tailwind.css',
   './js/app.js',
   './js/db.js',
   './js/sheet.js',
@@ -41,11 +42,11 @@ const APP_SHELL_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.locati
 // Cross-Origin-CDN-Skripte liefern keine Access-Control-Allow-Origin-Header,
 // daher scheitert cache.addAll (cors-Modus) daran. Einzeln im no-cors-Modus
 // cachen und als opaque Response ablegen - fürs Ausführen als <script src> reicht das.
-const CDN_SHELL = [
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/dexie@4.0.8/dist/dexie.min.js',
-];
-const CDN_SHELL_URLS = new Set(CDN_SHELL);
+const CDN_SHELL = ['https://cdn.jsdelivr.net/npm/dexie@4.0.8/dist/dexie.min.js'];
+// Wie bei APP_SHELL_URLS normalisieren: event.request.url ist immer die
+// aufgelöste Form (z. B. mit abschließendem "/" bei URLs ohne Pfad) - ein
+// Vergleich mit dem Rohstring würde solche Einträge im fetch-Handler nie treffen.
+const CDN_SHELL_URLS = new Set(CDN_SHELL.map((url) => new URL(url).href));
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -56,11 +57,15 @@ self.addEventListener('install', (event) => {
       // wirklich alles frisch vom Server zu holen.
       const requests = APP_SHELL.map((url) => new Request(url, { cache: 'reload' }));
       await cache.addAll(requests);
+      // Fehler hier bewusst NICHT abfangen: scheitert der CDN-Precache, bricht der
+      // Install ab, der bisherige Worker samt Cache bleibt aktiv und der Browser
+      // versucht es beim nächsten Laden erneut. Sonst würde ein unvollständiger
+      // neuer Cache aktiviert und der alte gelöscht -> Offline-Start kaputt.
       await Promise.all(
         CDN_SHELL.map((url) =>
-          fetch(url, { mode: 'no-cors', cache: 'reload' })
-            .then((response) => cache.put(url, response))
-            .catch((err) => console.error('Fitlog SW: CDN-Precache fehlgeschlagen', url, err))
+          fetch(url, { mode: 'no-cors', cache: 'reload' }).then((response) =>
+            cache.put(url, response)
+          )
         )
       );
       await self.skipWaiting();
@@ -80,7 +85,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // Cache-first, aber ausschließlich für die bekannte App-Shell (lokale
-// Dateien oben in APP_SHELL sowie die beiden CDN-Skripte) - Offline-Start
+// Dateien oben in APP_SHELL sowie das CDN-Skript) - Offline-Start
 // ohne Netzwerk-Abhängigkeit. Alles andere (insbesondere künftige
 // Sync-Anfragen an den eigenen Server, s. "Sync & Infrastruktur" in
 // architecture.md) läuft bewusst NICHT über diesen Handler und wird daher

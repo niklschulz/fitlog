@@ -19,7 +19,7 @@ Identisch zum bestehenden Muster auf jedem Haupt-Tab (z. B. "Workout" in `js/vie
 ```
 
 - Nur ein reines `<h1>` mit der einzigen Klasse `text-screen-title` — keine eigene Komponente, kein Wrapper.
-- Token `text-screen-title` (`index.html`, inline `tailwind.config`, gespiegelt in [design-system.md](design-system.md)): **21px / font-weight 700 / line-height 1.2**.
+- Token `text-screen-title` (`tailwind.config.js`, gespiegelt in [design-system.md](design-system.md)): **21px / font-weight 700 / line-height 1.2**.
 - Farbe wird nicht durch die Klasse selbst gesetzt, sondern über `text-ink` (`#F5F5F5`) vom `<body>` vererbt.
 - Font-Family global `font-sans` (`-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif`).
 - Umgesetzt in `js/views/statistics.js`.

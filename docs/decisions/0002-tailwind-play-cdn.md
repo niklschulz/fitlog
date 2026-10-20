@@ -1,5 +1,7 @@
 # 0002 – Tailwind CSS über Play CDN statt Build-Pipeline
 
+> **Abgelöst durch [ADR 0030](0030-tailwind-vorkompiliert.md)** (2026-10-20): Die hier genannte "nächste Eskalationsstufe" (einmalig kompiliertes CSS) wurde umgesetzt.
+
 ## Kontext
 
 Tailwind CSS wurde für schnelles, konsistentes Mobile-First-Styling gewählt (s. [ADR 0001](0001-vanilla-js-ohne-framework.md) zum "kein Build-Schritt"-Prinzip). Der reguläre Tailwind-Workflow erfordert aber normalerweise einen Build-Schritt (CLI oder PostCSS-Plugin), der von Tailwind selbst für Produktion empfohlen wird — die Play CDN (`cdn.tailwindcss.com`) ist explizit nur für Prototyping gedacht.
