@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-21 (Zielarchitektur: App vom Server ausliefern)
+
+### Added
+- [ADR 0032](decisions/0032-app-vom-server-ausliefern.md): Zielarchitektur - der Server liefert die App selbst aus (Same-Origin, relative `api/...`-Pfade). Ergebnis eines Netzwerktests mit Mac-Stub über Tailscale-HTTPS auf dem iPhone; der dafür gebaute Testknopf wurde wieder entfernt (keine Code-Änderung an der App)
+
 ## 2026-10-20 (Dexie lokal statt CDN)
 
 ### Changed

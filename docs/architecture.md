@@ -99,6 +99,8 @@ Icons werden nicht mit einem Grafikprogramm erstellt, sondern durch ein kleines 
 
 ## Sync & Infrastruktur (geplant, noch nicht gebaut)
 
+**Zielarchitektur:** Der Server liefert die App selbst aus (Same-Origin, relative `api/...`-Pfade), s. [ADR 0032](decisions/0032-app-vom-server-ausliefern.md).
+
 IndexedDB bleibt auch nach Einführung eines Syncs die primäre Datenquelle ("Source of Truth") — ein späteres Backend ist reines Backup-/Persistenz-Ziel, keine Voraussetzung für die App-Nutzung. Geplanter Mechanismus: Sync über `online`/`offline`-Browser-Events, kein manueller Button. Safari unterstützt keine Background Sync API, Sync funktioniert daher nur bei aktiv geöffneter App.
 
 Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (privates Mesh-VPN, kein offener Router-Port). **Konkrete Infrastruktur-Details (Tailnet-Name, Geräte-Hostnames, IP-Adressen, Ports, SSH-Zugang) werden bewusst nicht in diesem öffentlichen Repo dokumentiert**, sondern im separaten privaten Repo `fitlog-infra`. Grund: dieses Repo ist public.
