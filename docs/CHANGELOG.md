@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Scroll-Leiste ausgeblendet)
+
+### Changed
+- Scroll-Leiste app-weit ausgeblendet (`scrollbar-width: none` und `::-webkit-scrollbar { display: none }` in `css/styles.css`), Scrollen bleibt unverändert. `CACHE_NAME` auf `fitlog-v220`
+
 ## 2026-10-24 (Übung nach Satz-Löschen wieder unbegonnen)
 
 ### Fixed

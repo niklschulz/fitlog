@@ -19,6 +19,17 @@
   min-height: 0;
 }
 
+/* Scroll-Leiste app-weit ausgeblendet (Nutzer-Wunsch) - Scrollen funktioniert
+   unverändert. `scrollbar-width` für Firefox/aktuelle Browser, das
+   -webkit-Pseudoelement für Safari/iOS und Chromium. */
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Pinch- und Doppeltipp-Zoom deaktivieren, Scrollen bleibt erlaubt.
    Das viewport-Meta-Tag allein reicht nicht mehr (moderne Safari-Versionen
    ignorieren user-scalable=no aus Barrierefreiheits-Gründen bewusst) -
