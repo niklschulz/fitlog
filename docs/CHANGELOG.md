@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Statusleisten-Scrim, zweite Nachbesserung)
+
+### Changed
+- `.top-scrim` ohne Blur, nur noch abdunkelnder Verlauf (0.7, unterste 32px laufen aus), reicht 20px weiter nach unten (unter die Safe-Area). Gummiband-Überscrollen per `overscroll-behavior-y: none` auf `html`/`body` abgeschaltet, weil es das Fixed-Layer am Seitenende nach oben wegschob. `CACHE_NAME` auf `fitlog-v217`
+
 ## 2026-10-24 (Statusleisten-Scrim, Nachbesserung)
 
 ### Fixed
