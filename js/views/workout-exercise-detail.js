@@ -157,9 +157,9 @@ function renderStepperRow(field, label, value) {
     <div class="flex flex-col items-center gap-2">
       <span class="text-label uppercase text-muted">${label}</span>
       <div class="flex items-center gap-2">
-        <button data-stepper="${field}" data-delta="-1" type="button" class="stepper-btn tap-feedback w-9 h-9 rounded-full bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">−</button>
+        <button data-stepper="${field}" data-delta="-1" type="button" class="stepper-btn tap-feedback w-9 h-9 rounded-btn bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">−</button>
         <input id="detail-${field}-input" type="number" inputmode="${inputMode}" step="${step}" min="0" value="${value}" class="w-16 text-center bg-base rounded-btn py-2 text-ink" />
-        <button data-stepper="${field}" data-delta="1" type="button" class="stepper-btn tap-feedback w-9 h-9 rounded-full bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">+</button>
+        <button data-stepper="${field}" data-delta="1" type="button" class="stepper-btn tap-feedback w-9 h-9 rounded-btn bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">+</button>
       </div>
     </div>
   `;
