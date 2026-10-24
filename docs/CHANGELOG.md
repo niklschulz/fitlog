@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Dependabot)
+
+### Added
+- `.github/dependabot.yml`: wöchentliche npm-Updates und Security-Advisories als Pull Requests, Tailwind-Major-Updates ausgenommen. s. [ADR 0033](decisions/0033-dependabot-abhaengigkeiten.md) (keine Änderung an der App)
+
 ## 2026-10-21 (Zielarchitektur: App vom Server ausliefern)
 
 ### Added

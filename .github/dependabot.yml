@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      # Tailwind 4 ist ein Breaking Change (neue Konfiguration), s. ADR 0033
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
