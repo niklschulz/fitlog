@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Stepper-Buttons grau hinterlegt)
+
+### Changed
+- Die −/+-Stepper-Buttons der Übungs-Detailseite (Gewicht/Reps) sind jetzt grau hinterlegt (`bg-raised` statt `bg-base`, dieselbe Farbe wie der sekundäre Button "Speichern") und wirken dadurch wie echte Buttons statt wie reine Symbole. `CACHE_NAME` auf `fitlog-v223`
+
 ## 2026-10-24 (Übungs-Detailseite: Titel zentriert)
 
 ### Changed
