@@ -10,6 +10,7 @@ import {
   removeExerciseFromWorkout,
   removeExerciseWithSetsFromWorkout,
   reorderWorkoutExercises,
+  resetStartedWithoutSets,
   createExercise,
   updateExercise,
   deleteExercise,
@@ -392,6 +393,7 @@ async function paint() {
 
   const workout = await getWorkoutByDate(state.selectedDate);
   const routine = workout?.routineId ? await db.routines.get(workout.routineId) : null;
+  if (workout) await resetStartedWithoutSets(workout.id);
   const entries = workout ? await getWorkoutExercises(workout.id) : [];
 
   const exerciseIds = entries.map((e) => e.exerciseId);

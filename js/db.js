@@ -627,6 +627,23 @@ export async function markWorkoutExerciseStarted(workoutId, exerciseId) {
   }
 }
 
+// Reparatur für Altbestand: Vor dem Zurücksetzen in deleteSet() blieb eine
+// Übung nach dem Löschen ihres letzten Satzes dauerhaft "begonnen". Setzt alle
+// begonnenen Einträge des Workouts ohne einen einzigen Satz auf unbegonnen
+// zurück (idempotent, ohne Treffer kein Schreibzugriff).
+export async function resetStartedWithoutSets(workoutId) {
+  const entries = await db.workoutExercises.where('workoutId').equals(workoutId).toArray();
+  const stale = entries.filter((e) => e.startedAt !== null);
+  if (stale.length === 0) return;
+  const sets = await db.sets.where('workoutId').equals(workoutId).toArray();
+  const withSets = new Set(sets.map((x) => x.exerciseId));
+  for (const e of stale) {
+    if (!withSets.has(e.exerciseId)) {
+      await db.workoutExercises.update(e.id, { startedAt: null, updatedAt: nowISO() });
+    }
+  }
+}
+
 // --- Sets ---
 
 export async function addSet(workoutId, exerciseId, weight, reps) {
@@ -644,8 +661,26 @@ export async function addSet(workoutId, exerciseId, weight, reps) {
   return set;
 }
 
+// Löscht einen Satz. War es der letzte Satz der Übung in diesem Workout, wird
+// die Übung wieder "unbegonnen" (startedAt = null) - sonst bliebe sie ohne
+// Sätze dauerhaft begonnen: kein "⋮"-Menü, feste Position vorn, nicht mehr
+// umsortierbar. Sie kehrt dabei an ihre ursprüngliche Stelle (`order`) zurück.
 export async function deleteSet(id) {
-  await db.sets.delete(id);
+  await db.transaction('rw', db.sets, db.workoutExercises, async () => {
+    const set = await db.sets.get(id);
+    await db.sets.delete(id);
+    if (!set) return;
+    const remaining = await db.sets
+      .where('workoutId')
+      .equals(set.workoutId)
+      .and((x) => x.exerciseId === set.exerciseId)
+      .count();
+    if (remaining > 0) return;
+    const entry = await db.workoutExercises.where({ workoutId: set.workoutId, exerciseId: set.exerciseId }).first();
+    if (entry && entry.startedAt !== null) {
+      await db.workoutExercises.update(entry.id, { startedAt: null, updatedAt: nowISO() });
+    }
+  });
 }
 
 // Nachträgliches Bearbeiten eines bereits erfassten Satz-Werts - mit ADR

@@ -28,6 +28,8 @@ import {
   reorderWorkoutExercises,
   markWorkoutExerciseStarted,
   addSet,
+  deleteSet,
+  resetStartedWithoutSets,
 } from '../js/db.js';
 
 await db.open();
@@ -315,4 +317,39 @@ test('removeExerciseWithSetsFromWorkout entfernt Übung und deren Sätze nur an 
   assert.equal(await db.sets.where('workoutId').equals(other.id).count(), 1);
   assert.equal((await getWorkoutExercises(other.id)).length, 1);
   assert.ok(await db.exercises.get(a.id));
+});
+
+test('deleteSet setzt die Übung auf unbegonnen zurück, sobald der letzte Satz gelöscht ist', async () => {
+  const a = await createExercise('A');
+  const b = await createExercise('B');
+  const workout = await getOrCreateWorkoutForDate('2026-10-24');
+  await addExercisesToWorkout(workout.id, [a.id, b.id]);
+  const s1 = await addSet(workout.id, b.id, 50, 10);
+  const s2 = await addSet(workout.id, b.id, 50, 8);
+  await markWorkoutExerciseStarted(workout.id, b.id);
+
+  await deleteSet(s1.id);
+  let entries = await getWorkoutExercises(workout.id);
+  assert.notEqual(entries.find((e) => e.exerciseId === b.id).startedAt, null, 'mit verbleibendem Satz bleibt sie begonnen');
+  assert.equal(entries[0].exerciseId, b.id);
+
+  await deleteSet(s2.id);
+  entries = await getWorkoutExercises(workout.id);
+  assert.equal(entries.find((e) => e.exerciseId === b.id).startedAt, null);
+  assert.deepEqual(entries.map((e) => e.exerciseId), [a.id, b.id], 'ursprüngliche Reihenfolge wiederhergestellt');
+});
+
+test('resetStartedWithoutSets heilt begonnene Übungen ohne Sätze, lässt solche mit Sätzen unberührt', async () => {
+  const a = await createExercise('A');
+  const b = await createExercise('B');
+  const workout = await getOrCreateWorkoutForDate('2026-10-24');
+  await addExercisesToWorkout(workout.id, [a.id, b.id]);
+  await markWorkoutExerciseStarted(workout.id, a.id); // Altlast: begonnen, aber ohne Satz
+  await addSet(workout.id, b.id, 40, 12);
+  await markWorkoutExerciseStarted(workout.id, b.id);
+
+  await resetStartedWithoutSets(workout.id);
+  const entries = await getWorkoutExercises(workout.id);
+  assert.equal(entries.find((e) => e.exerciseId === a.id).startedAt, null);
+  assert.notEqual(entries.find((e) => e.exerciseId === b.id).startedAt, null);
 });

@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Übung nach Satz-Löschen wieder unbegonnen)
+
+### Fixed
+- Wurde der letzte Satz einer Übung gelöscht, blieb sie dauerhaft „begonnen“ (`startedAt` nie zurückgesetzt): kein „⋮“-Menü, feste Position vorn, nicht umsortierbar, anderes Layout. `deleteSet()` (`js/db.js`) setzt `startedAt` jetzt auf `null`, sobald kein Satz der Übung im Workout mehr übrig ist; sie kehrt an ihre ursprüngliche Stelle (`order`) zurück. Neu: `resetStartedWithoutSets()` heilt bereits hängende Altlasten beim Laden des Workout-Tabs. Tests in `tests/db.test.js`. `CACHE_NAME` auf `fitlog-v219`
+
 ## 2026-10-24 (Scrollen im Container)
 
 ### Changed
