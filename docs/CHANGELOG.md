@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Statusleisten-Scrim)
+
+### Added
+- Blur-Streifen unter der iOS-Statusleiste (`.top-scrim` in `index.html`/`css/styles.css`): Beim Runterscrollen lief Inhalt direkt unter Uhr/Akku durch, weil das `safe-top`-Padding mit dem Inhalt wegscrollt. Fester Streifen in Höhe von `env(safe-area-inset-top)` mit Blur, leichter Abdunklung und weich ausgeblendeter Unterkante, analog zu `.nav-scrim` unten. `CACHE_NAME` auf `fitlog-v215`
+
 ## 2026-10-24 (Übungs-Sheet: Plus-Button & Scroll-Sperre)
 
 ### Fixed
