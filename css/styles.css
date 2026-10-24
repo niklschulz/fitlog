@@ -4,6 +4,21 @@
   padding-top: env(safe-area-inset-top);
 }
 
+/* Scrollen passiert im Inhalts-Container, nicht im Dokument: #app ist genau
+   Viewport-hoch, `#view-container` (flex-1) scrollt selbst. Dadurch wirkt das
+   iOS-Gummiband-Überscrollen nur auf den Inhalt - fest positionierte
+   Elemente (Top-Scrim, Bottom-Nav) bleiben dabei stehen, statt mit dem
+   Dokument nach oben geschoben zu werden. `min-height: 0` nötig, damit das
+   Flex-Kind schrumpft statt mit dem Inhalt zu wachsen. */
+#app {
+  height: 100vh;
+  height: 100dvh;
+}
+
+#view-container {
+  min-height: 0;
+}
+
 /* Pinch- und Doppeltipp-Zoom deaktivieren, Scrollen bleibt erlaubt.
    Das viewport-Meta-Tag allein reicht nicht mehr (moderne Safari-Versionen
    ignorieren user-scalable=no aus Barrierefreiheits-Gründen bewusst) -
@@ -12,9 +27,6 @@
 html,
 body {
   touch-action: manipulation;
-  /* Kein Gummiband-Überscrollen: schob sonst fest positionierte Elemente
-     (Top-Scrim) am Seitenende nach oben weg. */
-  overscroll-behavior-y: none;
 }
 
 /* iOS zoomt automatisch hinein, sobald ein Input mit Schriftgröße < 16px
@@ -67,9 +79,9 @@ input[type="number"]::-webkit-outer-spin-button {
    kein Blur (Nutzer-Vorgabe): ein abdunkelnder Verlauf wie beim Nav-Scrim,
    oben gleichmäßig, die untersten 32px laufen in Transparenz aus. Reicht
    20px unter die Safe-Area, damit die Abdunklung nicht schon an der Unterkante
-   der Dynamic Island endet. Ragt 120px über den oberen Rand hinaus - zusammen
-   mit `overscroll-behavior-y: none` auf html/body (s. oben; das Gummiband
-   schob das Fixed-Layer sonst am Seitenende nach oben weg). Unter den
+   der Dynamic Island endet. Ragt 120px über den oberen Rand hinaus (Reserve).
+   Das Gummiband wirkt nur auf `#view-container` (s. oben), das Fixed-Layer
+   bleibt dadurch stehen. Unter den
    Sheets (z-index 50+) und der Nav; auf Geräten ohne Safe-Area (Desktop)
    nur der Überstand außerhalb des Bildschirms, nichts Sichtbares außer dem
    20px-Verlauf am oberen Rand. */

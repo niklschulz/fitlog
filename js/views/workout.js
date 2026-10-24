@@ -2507,8 +2507,8 @@ function wireEvents() {
   });
 
   // Umsortieren der noch unbegonnenen Übungen per Gedrückthalten und
-  // Verschieben (s. renderExerciseRoster). Seite scrollt als Ganzes
-  // (document.scrollingElement), unten schwebt die Bottom-Nav - der
+  // Verschieben (s. renderExerciseRoster). Der Inhalt scrollt im
+  // Container `#view-container` (s. css/styles.css, `#app`), unten schwebt die Bottom-Nav - der
   // Auto-Scroll-Randbereich rückt deshalb entsprechend nach innen. Die Zeile
   // ist bereits deckend (`bg-surface`), daher kein eigener Hintergrund beim
   // Anheben. Der DOM-Umbau passiert synchron VOR dem asynchronen Speichern,
@@ -2518,7 +2518,7 @@ function wireEvents() {
     listEl: currentContainer.querySelector('#roster-unstarted-list'),
     itemSelector: 'li',
     ignoreSelector: '.exercise-roster-menu-btn, .exercise-roster-menu-popup, #exercise-roster-menu-backdrop',
-    scrollEl: document.scrollingElement,
+    scrollEl: document.getElementById('view-container'),
     edgeInsets: { bottom: 96 },
     liftedBackground: null,
     onReorder: async (from, to) => {

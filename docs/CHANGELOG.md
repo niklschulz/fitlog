@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Scrollen im Container)
+
+### Changed
+- Gescrollt wird jetzt in `#view-container` statt im Dokument (`#app` ist Viewport-hoch, s. `css/styles.css`). Das Gummiband-Überscrollen bleibt erhalten, wirkt aber nur auf den Inhalt - Top-Scrim und Bottom-Nav bleiben dabei stehen (vorher schob das Dokument-Gummiband den Scrim am Seitenende nach oben weg). `overscroll-behavior-y: none` wieder entfernt. `lockBodyScroll()` sperrt zusätzlich `#view-container`, Reorder-Auto-Scroll nutzt ihn statt `document.scrollingElement`. `CACHE_NAME` auf `fitlog-v218`
+
 ## 2026-10-24 (Statusleisten-Scrim, zweite Nachbesserung)
 
 ### Changed

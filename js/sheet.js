@@ -34,7 +34,9 @@ export function lockBodyScroll() {
   bodyScrollLockCount += 1;
   if (bodyScrollLockCount > 1) return;
 
+  // Gescrollt wird in #view-container (s. css/styles.css, `#app`) - dort ebenfalls sperren.
   document.body.style.overflow = 'hidden';
+  document.getElementById('view-container')?.style.setProperty('overflow-y', 'hidden');
   sheetTouchBlocker = (e) => {
     if (e.target.closest('.bottom-sheet-scroll')) return;
     e.preventDefault();
@@ -47,6 +49,7 @@ export function unlockBodyScroll() {
   if (bodyScrollLockCount > 0) return;
 
   document.body.style.overflow = '';
+  document.getElementById('view-container')?.style.removeProperty('overflow-y');
   if (sheetTouchBlocker) {
     document.removeEventListener('touchmove', sheetTouchBlocker);
     sheetTouchBlocker = null;
