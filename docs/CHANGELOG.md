@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Scroll-Position im Statistik-Tab)
+
+### Changed
+- Statistik-Tab: Nach dem Öffnen einer Übungs-Seite und der Rückkehr steht der Übungen-Reiter wieder an derselben Scroll-Position (analog zum Workout-Tab). `CACHE_NAME` auf `fitlog-v227`
+
 ## 2026-10-24 (Scroll-Position der Übungsliste)
 
 ### Changed

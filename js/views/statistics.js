@@ -37,9 +37,16 @@ const initialState = () => ({
 });
 let state = initialState();
 
+// Scroll-Position des Übungen-Reiters, gemerkt beim Öffnen einer Übungs-Seite
+// und nach der Rückkehr wiederhergestellt (der Container scrollt selbst, die
+// Übungs-Seite ersetzt seinen Inhalt und klemmt die Position dabei auf 0).
+// null = nichts zu restaurieren.
+let listScrollTop = null;
+
 export function render(container) {
   currentContainer = container;
   state = initialState();
+  listScrollTop = null;
   paint();
 }
 
@@ -103,6 +110,10 @@ async function paint({ pageFromRect = null, volumeFromRect = null } = {}) {
   positionSegmentedIndicator(currentContainer.querySelector('#page-tabs'), { fromRect: pageFromRect });
   positionSegmentedIndicator(currentContainer.querySelector('#volume-range-control'), { fromRect: volumeFromRect });
   wireEvents();
+  if (listScrollTop !== null) {
+    currentContainer.scrollTop = listScrollTop;
+    listScrollTop = null;
+  }
 }
 
 // --- Übersicht-Reiter: "Workouts pro Woche" ---
@@ -1162,6 +1173,7 @@ function toggleFavorite(id) {
 // Übungs-Seite übernimmt den Container komplett (wie die Workout-
 // Übungsseite im Workout-Tab); Zurück zeichnet den Übungen-Reiter neu.
 function openExerciseDetail(exerciseId) {
+  listScrollTop = currentContainer.scrollTop;
   exerciseDetail.render(currentContainer, {
     exerciseId,
     onBack: () => {
