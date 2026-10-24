@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Dexie 4.4.7)
+
+### Changed
+- Dexie von 4.0.8 auf 4.4.7 aktualisiert (Dependabot-PR #1 plus manuelles Ersetzen von `js/vendor/dexie.min.js`, s. [ADR 0033](decisions/0033-dependabot-abhaengigkeiten.md)). `CACHE_NAME` auf `fitlog-v212`
+
 ## 2026-10-24 (Dependabot)
 
 ### Added

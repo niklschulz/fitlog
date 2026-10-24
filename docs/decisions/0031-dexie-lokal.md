@@ -6,7 +6,7 @@ Dexie wurde per `<script src="https://cdn.jsdelivr.net/...">` im `<head>` gelade
 
 ## Entscheidung
 
-`dexie.min.js` (4.0.8, identisch zur devDependency für die Tests) liegt in `js/vendor/dexie.min.js` (ohne Source-Map-Verweis) und wird per `<script src="js/vendor/dexie.min.js">` eingebunden. Sie gehört zur normalen App-Shell des Service Workers. `CDN_SHELL`, `no-cors`-Precache und die zugehörige Sonderlogik im `fetch`-Handler sind entfernt.
+`dexie.min.js` (zur Entscheidung 4.0.8, seit 2026-10-24 4.4.7, identisch zur devDependency für die Tests) liegt in `js/vendor/dexie.min.js` (ohne Source-Map-Verweis) und wird per `<script src="js/vendor/dexie.min.js">` eingebunden. Sie gehört zur normalen App-Shell des Service Workers. `CDN_SHELL`, `no-cors`-Precache und die zugehörige Sonderlogik im `fetch`-Handler sind entfernt.
 
 ## Konsequenzen
 
