@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Scroll-Position der Übungsliste)
+
+### Changed
+- Workout-Tab: Nach dem Öffnen einer Übung und der Rückkehr zur Tagesübersicht steht die Liste wieder an derselben Scroll-Position (`state.listScrollTop`, gesichert beim Öffnen der Detailseite, wiederhergestellt in `paint()`). Außerdem scrollt der Wochen-Kalender (`scrollIntoView` nach jedem Paint) die Seite nicht mehr vertikal zurück nach oben. `CACHE_NAME` auf `fitlog-v226`
+
 ## 2026-10-24 (Stepper-Buttons grau hinterlegt)
 
 ### Changed

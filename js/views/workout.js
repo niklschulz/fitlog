@@ -51,6 +51,8 @@ let currentContainer = null;
 let state = {
   selectedDate: todayISODate(),
   detailEntryId: null, // workoutExercises.id der geöffneten Übungs-Detailseite (Abschnitt 12), oder null für die Tagesübersicht
+  // Scroll-Position der Tagesübersicht, gemerkt beim Öffnen einer Übungs-Detailseite und nach der Rückkehr wiederhergestellt (der Container scrollt selbst, s. `#view-container`); null = nichts zu restaurieren.
+  listScrollTop: null,
   routinePickerOpen: false,
   routinePickerClosing: false,
   // "Routinen"-Sheet: erreichbar über "Alle Routinen anzeigen" im
@@ -126,6 +128,7 @@ export async function render(container) {
   renderEpoch++;
   currentContainer = container;
   state.detailEntryId = null;
+  state.listScrollTop = null;
   state.routinePickerOpen = false;
   state.routinePickerClosing = false;
   state.routinesSheetOpen = false;
@@ -450,11 +453,24 @@ async function paint() {
   currentContainer.innerHTML = html;
   wireEvents();
 
+  // Rückkehr von einer Übungs-Detailseite: vorherige vertikale Position
+  // wiederherstellen (beim Ersetzen des Inhalts durch die Detailseite wurde
+  // sie auf 0 geklemmt).
+  if (state.listScrollTop !== null) {
+    currentContainer.scrollTop = state.listScrollTop;
+    state.listScrollTop = null;
+  }
+
   // Erst im nächsten Frame scrollen - direkt nach dem innerHTML-Update hat
   // der Browser das Layout des Scroll-Containers noch nicht fertig berechnet.
+  // Nur horizontal zur aktuellen Woche: `scrollIntoView` darf die vertikale
+  // Position des Containers nicht verändern (sonst springt eine
+  // heruntergescrollte Liste wieder nach oben zum Kalender).
   requestAnimationFrame(() => {
     const weekBlock = currentContainer.querySelector('.calendar-week[data-week-start="' + currentMonday + '"]');
+    const top = currentContainer.scrollTop;
     weekBlock?.scrollIntoView({ block: 'nearest', inline: 'start' });
+    currentContainer.scrollTop = top;
   });
 }
 
@@ -2475,6 +2491,7 @@ function wireEvents() {
   // expandieren.
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
+      state.listScrollTop = currentContainer.scrollTop;
       withViewTransition(() => {
         state.detailEntryId = btn.dataset.entry;
         paint();
