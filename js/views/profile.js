@@ -2,6 +2,8 @@ import { getProfile, saveProfile, clearProfile } from '../profile.js';
 import { getSettings, saveSettings } from '../settings.js';
 import { showActionSheet } from '../actionSheet.js';
 import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js';
+import { db, toISODate } from '../db.js';
+import { buildBackup, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../backup.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 // TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für renderTestModeToggle()/
 // deren Klick-Handler weiter unten nötig - zum Entfernen diese Zeile sowie
@@ -15,6 +17,7 @@ let state = {
   linkSheetClosing: false,
   linkSheetEditing: false,
   linkSheetProfile: null,
+  dataStatus: null,
 };
 
 export function render(container) {
@@ -26,6 +29,7 @@ export function render(container) {
     linkSheetClosing: false,
     linkSheetEditing: false,
     linkSheetProfile: null,
+    dataStatus: null,
   };
   paint();
 }
@@ -54,6 +58,7 @@ function paint() {
       <h1 class="text-screen-title">Profil</h1>
       ${body}
       ${renderSettings(getSettings())}
+      ${renderDataSection()}
       ${renderTestModeToggle()}
     </div>
 
@@ -99,6 +104,90 @@ function renderSettings(settings) {
       </div>
     </div>
   `;
+}
+
+// Export/Import als JSON-Backup, s. ADR 0034/js/backup.js. Im Testmodus
+// wirkt beides auf die Test-Datenbank (die gerade aktive DB).
+function renderDataSection() {
+  return `
+    <div class="flex flex-col gap-2">
+      <p class="text-label-large text-muted">Daten</p>
+      <div class="${CARD} flex flex-col gap-3">
+        <p class="text-body text-muted">Sichere alle Trainingsdaten, dein Profil und die Einstellungen als Datei oder spiele ein Backup wieder ein. Ein Import ersetzt alle aktuellen Daten.</p>
+        <button id="export-btn" type="button" class="tap-feedback ${BTN_SECONDARY} py-3 min-h-[44px]">Daten exportieren</button>
+        <button id="import-btn" type="button" class="tap-feedback ${BTN_SECONDARY} py-3 min-h-[44px]">Daten importieren</button>
+        <input id="import-file-input" type="file" accept=".json,application/json" hidden />
+        <p id="data-status" class="text-body text-muted" role="status" ${state.dataStatus ? '' : 'hidden'}>${escapeHtml(state.dataStatus ?? '')}</p>
+      </div>
+    </div>
+  `;
+}
+
+function formatDateDE(isoDate) {
+  const [y, m, d] = isoDate.slice(0, 10).split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function setDataStatus(message) {
+  state.dataStatus = message;
+  const el = currentContainer?.querySelector('#data-status');
+  if (!el) return;
+  el.textContent = message ?? '';
+  el.hidden = !message;
+}
+
+// Web Share API (iPhone: Dateien, AirDrop, iCloud), sonst klassischer
+// Download. Abbruch im Share-Dialog (AbortError) ist kein Fehler.
+async function exportData() {
+  try {
+    const backup = await buildBackup(db, { profile: getProfile(), settings: getSettings() });
+    const day = toISODate(new Date());
+    const name = `fitlog-backup-${day}${isTestModeEnabled() ? '-testdaten' : ''}.json`;
+    const file = new File([JSON.stringify(backup)], name, { type: 'application/json' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        setDataStatus('Backup exportiert.');
+      } catch (err) {
+        if (err.name !== 'AbortError') throw err;
+      }
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setDataStatus('Backup exportiert.');
+  } catch (err) {
+    setDataStatus(`Export fehlgeschlagen: ${err.message}`);
+  }
+}
+
+async function importData(file) {
+  setDataStatus(null);
+  try {
+    const backup = parseBackup(await file.text(), db);
+    const s = summarizeBackup(backup);
+    const range = s.firstDate ? `, ${formatDateDE(s.firstDate)} – ${formatDateDE(s.lastDate)}` : '';
+    const when = s.exportedAt ? ` vom ${formatDateDE(s.exportedAt)}` : '';
+    const confirmed = await showActionSheet({
+      message: `Backup${when}: ${s.workoutCount} Workouts, ${s.setCount} Sätze, ${s.exerciseCount} Übungen, ${s.routineCount} Routinen${range}. Alle aktuellen Daten${isTestModeEnabled() ? ' (Testdaten)' : ''} werden ersetzt.`,
+      actionLabel: 'Daten ersetzen',
+    });
+    if (!confirmed) return;
+    await replaceAllData(db, backup);
+    if (backup.profile && backup.profile.username && backup.profile.token) saveProfile(backup.profile);
+    else clearProfile();
+    if (backup.settings) saveSettings({ ...getSettings(), ...backup.settings });
+    // Alle Views halten Daten im Speicher - Neuladen ist der sicherste Weg.
+    window.location.reload();
+  } catch (err) {
+    setDataStatus(err instanceof BackupError ? err.message : `Import fehlgeschlagen: ${err.message}`);
+  }
 }
 
 // ============================================================================
@@ -374,6 +463,15 @@ function wireEvents() {
       return;
     }
     saveSettings({ ...settings, weeklyGoal: value });
+  });
+
+  currentContainer.querySelector('#export-btn')?.addEventListener('click', exportData);
+  const importInput = currentContainer.querySelector('#import-file-input');
+  currentContainer.querySelector('#import-btn')?.addEventListener('click', () => importInput.click());
+  importInput?.addEventListener('change', () => {
+    const file = importInput.files[0];
+    importInput.value = '';
+    if (file) importData(file);
   });
 
   // TESTMODUS (temporär, s. ADR 0024/js/testmode.js) - zum Entfernen diesen

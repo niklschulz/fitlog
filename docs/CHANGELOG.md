@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Export/Import)
+
+### Added
+- Profil-Tab: Abschnitt „Daten“ mit **Daten exportieren** (JSON-Backup aller Trainingsdaten, Profil und Einstellungen; Teilen-Dialog bzw. Download) und **Daten importieren** (Vorschau im Action Sheet, ersetzt den kompletten Bestand atomar, danach Neuladen). Neu: `js/backup.js`, `tests/backup.test.js`, s. [ADR 0034](decisions/0034-export-import-json-backup.md). `CACHE_NAME` auf `fitlog-v213`
+
 ## 2026-10-24 (Dexie 4.4.7)
 
 ### Changed

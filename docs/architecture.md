@@ -29,6 +29,7 @@ fitlog/
 │   ├── muscleStats.js     Reine Berechnung Frequenz/Sätze pro Muskel (getStatsRange,
 │                           computeMuscleStats), ohne DOM/Dexie, s. ADR 0027
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
+│   ├── backup.js          Export/Import als JSON-Backup (ADR 0034)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
 │   └── views/              Ein Modul pro Tab (workout.js, statistics.js, profile.js),
