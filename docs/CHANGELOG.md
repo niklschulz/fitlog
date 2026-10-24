@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Statusleisten-Scrim, Nachbesserung)
+
+### Fixed
+- `.top-scrim` war zu deckend (0.55 → 0.2, Blur 20 → 12px), reichte nicht ganz bis zum Bildschirmrand und wanderte beim Gummiband-Überscrollen am Seitenende mit nach oben. Jetzt 120px Überstand nach oben (`top: -120px`), Maske nur auf den letzten 16px. `CACHE_NAME` auf `fitlog-v216`
+
 ## 2026-10-24 (Statusleisten-Scrim)
 
 ### Added
