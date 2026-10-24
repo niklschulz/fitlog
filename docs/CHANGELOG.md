@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ## 2026-10-24 (Übungs-Detailseite: Titel zentriert)
 
 ### Changed
-- Titel der Übungs-Detailseite (Workout-Tab) jetzt zentriert und kleiner: `text-card-title` (16px/600) statt `text-screen-title` (21px/700), Kopfzeile als `grid grid-cols-[44px_1fr_44px]` mit leerer rechter Spalte - dasselbe Muster wie die Sheet-Kopfzeilen. `CACHE_NAME` auf `fitlog-v221`
+- Titel der Übungs-Detailseite (Workout-Tab) jetzt zentriert und kleiner: `text-card-title` (16px/600) statt `text-screen-title` (21px/700), Kopfzeile als `grid grid-cols-[44px_1fr_44px]` mit leerer rechter Spalte - dasselbe Muster wie die Sheet-Kopfzeilen. Gleiches gilt für die Statistik-Übungsseite (`js/views/statistics-exercise-detail.js`). `CACHE_NAME` auf `fitlog-v222`
 
 ## 2026-10-24 (Scroll-Leiste ausgeblendet)
 
