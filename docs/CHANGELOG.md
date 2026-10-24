@@ -5,7 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ## 2026-10-24 (Stepper-Buttons grau hinterlegt)
 
 ### Changed
-- Die −/+-Stepper-Buttons der Übungs-Detailseite (Gewicht/Reps) sind jetzt grau hinterlegt (`bg-raised` statt `bg-base`, dieselbe Farbe wie der sekundäre Button "Speichern") und wirken dadurch wie echte Buttons statt wie reine Symbole; Form eckig (`rounded-btn`, wie "Speichern") statt rund. `CACHE_NAME` auf `fitlog-v224`
+- Die −/+-Stepper-Buttons der Übungs-Detailseite (Gewicht/Reps) sind jetzt grau hinterlegt (`bg-raised` statt `bg-base`, dieselbe Farbe wie der sekundäre Button "Speichern") und wirken dadurch wie echte Buttons statt wie reine Symbole; Form eckig mit leichter Rundung (`rounded-lg`, 8px), sichtbar 32px (`w-8 h-8`) mit per `::after` auf 44px erweiterter Trefferfläche (`.stepper-btn` in `css/styles.css`). `CACHE_NAME` auf `fitlog-v225`
 
 ## 2026-10-24 (Übungs-Detailseite: Titel zentriert)
 

@@ -30,6 +30,19 @@
   display: none;
 }
 
+/* −/+-Stepper der Übungs-Detailseite: sichtbar nur 32px groß, die
+   Trefferfläche wird per unsichtbarem Pseudoelement auf 44px erweitert
+   (Touch-Ziel-Standard, s. design-system.md). */
+.stepper-btn {
+  position: relative;
+}
+
+.stepper-btn::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
 /* Pinch- und Doppeltipp-Zoom deaktivieren, Scrollen bleibt erlaubt.
    Das viewport-Meta-Tag allein reicht nicht mehr (moderne Safari-Versionen
    ignorieren user-scalable=no aus Barrierefreiheits-Gründen bewusst) -
