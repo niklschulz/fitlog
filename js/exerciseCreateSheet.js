@@ -146,8 +146,8 @@ function renderExerciseCreateSheet() {
   const z = s.z;
 
   return `
-    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 z-[${z.bg}] bg-black/50"></div>
-    <div class="bottom-sheet fixed left-0 right-0 bottom-0 z-[${z.panel}] bg-surface rounded-sheet flex flex-col">
+    <div id="exercise-create-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 bg-black/50" style="z-index: ${z.bg};"></div>
+    <div class="bottom-sheet fixed left-0 right-0 bottom-0 bg-surface rounded-sheet flex flex-col" style="z-index: ${z.panel};">
       <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="exercise-create-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">

@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-10-24 (Übungs-Sheet: Plus-Button & Scroll-Sperre)
+
+### Fixed
+- Plus-Button im Übungs-Sheet öffnete das „Neue Übung“-Sheet unsichtbar hinter dem Übungs-Sheet, und danach blieb der Workout-Tab nicht mehr scrollbar (Body-Scroll-Sperre nie aufgehoben, Plus danach dauerhaft wirkungslos). Ursache: die z-index-Klassen der Stapel-Sheets wurden per Template-String (`z-[${z.bg}]`) gebaut und fehlten deshalb im vorkompilierten `css/tailwind.css` (nur `z-[51]` existierte zufällig). Jetzt als Inline-Style gesetzt (`js/exerciseCreateSheet.js`, `js/views/workout.js`), unabhängig vom CSS-Build. `CACHE_NAME` auf `fitlog-v214`
+
 ## 2026-10-24 (Export/Import)
 
 ### Added
