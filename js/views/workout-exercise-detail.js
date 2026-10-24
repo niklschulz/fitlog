@@ -133,13 +133,13 @@ async function paint(indicatorFromRect = null) {
 
 function renderHeader(exerciseName) {
   return `
-    <div class="flex items-center gap-3">
-      <button id="detail-back-btn" type="button" class="icon-btn-glass tap-feedback text-ink" aria-label="Zurück">
+    <div class="grid grid-cols-[44px_1fr_44px] items-center gap-3">
+      <button id="detail-back-btn" type="button" class="icon-btn-glass tap-feedback text-ink justify-self-start" aria-label="Zurück">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
           <path d="M15 5l-7 7 7 7" />
         </svg>
       </button>
-      <h1 class="text-screen-title truncate">${escapeHtml(exerciseName)}</h1>
+      <h1 class="text-card-title text-center truncate">${escapeHtml(exerciseName)}</h1>
     </div>
   `;
 }
