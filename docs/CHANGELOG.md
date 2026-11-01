@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-01 (Notiz-Sheet: Tastatur öffnet wieder)
+
+### Fixed
+- Notiz-Sheet: Die Tastatur ging nicht mehr automatisch auf. Ursache: `openNoteSheet()` las Übung/Workout/Eintrag per `await` aus der DB, bevor `focus()` lief - iOS öffnet die Tastatur nur, wenn `focus()` noch in der Tipp-Geste läuft. Das Sheet öffnet jetzt synchron, Name, Datum und Notiz kommen aus dem Seiten-State der Detailseite. `CACHE_NAME` auf `fitlog-v233`
+
 ## 2026-11-01 (Notiz-Icon)
 
 ### Changed

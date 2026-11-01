@@ -1,4 +1,4 @@
-import { db, setWorkoutExerciseNote, toISODate } from './db.js';
+import { setWorkoutExerciseNote, toISODate } from './db.js';
 import { escapeHtml } from './utils.js';
 import { lockBodyScroll, unlockBodyScroll, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from './sheet.js';
 
@@ -109,13 +109,13 @@ function renderSheet({ exerciseName, dateISO, initialNote }) {
   `;
 }
 
-export async function openNoteSheet({ container: containerEl, entryId, onSaved = null }) {
+// Bewusst synchron (kein await vor dem focus()-Aufruf unten): iOS öffnet die
+// Tastatur nur, wenn focus() noch innerhalb der Tipp-Geste läuft - ein
+// DB-Zugriff davor hätte die Geste "verbraucht" und die Tastatur blieb zu.
+// Name, Datum und bisherige Notiz liefert deshalb der Aufrufer, der sie
+// beim Zeichnen der Seite ohnehin schon geladen hat.
+export function openNoteSheet({ container: containerEl, entryId, exerciseName, dateISO, initialNote = '', onSaved = null }) {
   if (open) return;
-  const entry = await db.workoutExercises.get(entryId);
-  if (!entry) return;
-  const exercise = await db.exercises.get(entry.exerciseId);
-  const workout = await db.workouts.get(entry.workoutId);
-
   container = containerEl;
   onSavedCallback = onSaved;
   saved = false;
@@ -125,9 +125,9 @@ export async function openNoteSheet({ container: containerEl, entryId, onSaved =
   container.insertAdjacentHTML(
     'beforeend',
     renderSheet({
-      exerciseName: exercise?.name ?? 'Gelöschte Übung',
-      dateISO: workout?.date ?? toISODate(new Date()),
-      initialNote: entry.note ?? '',
+      exerciseName,
+      dateISO: dateISO ?? toISODate(new Date()),
+      initialNote,
     })
   );
 

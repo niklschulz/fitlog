@@ -27,6 +27,9 @@ let state = {
   entryId: null,
   activeTab: 'today', // 'today' | 'history' | 'stats'
   selectedSetId: null,
+  // Für das Notiz-Sheet, bei jedem paint() aktualisiert (das Sheet muss
+  // synchron öffnen können, s. js/noteSheet.js).
+  noteContext: { exerciseName: '', dateISO: null, note: '' },
 };
 
 // Analog zu workout.js's eigenem renderEpoch (s. dort für die ausführliche
@@ -84,6 +87,8 @@ async function paint(indicatorFromRect = null) {
   const routineLabel = entry.sourceRoutineId
     ? ((await db.routines.get(entry.sourceRoutineId))?.name ?? 'Gelöschte Routine')
     : null;
+
+  state.noteContext = { exerciseName, dateISO: workout?.date ?? null, note: entry.note ?? '' };
 
   const todaySets = await db.sets.where({ workoutId: entry.workoutId, exerciseId: entry.exerciseId }).toArray();
   todaySets.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
@@ -324,6 +329,9 @@ function wireEvents() {
     openNoteSheet({
       container: currentContainer,
       entryId: state.entryId,
+      exerciseName: state.noteContext.exerciseName,
+      dateISO: state.noteContext.dateISO,
+      initialNote: state.noteContext.note,
       onSaved: () => paint(),
     });
   });
