@@ -28,13 +28,16 @@ export const LIST_ROW = 'bg-surface rounded-btn px-4 py-3';
 
 export const TEXTLINK_ACTION = 'text-accent text-body font-medium';
 
-// Notiz-Icon (Dokument mit Textzeilen) - geteilt zwischen dem Notiz-Button auf
-// der Detailseite und der Notiz-Anzeige (s. docs/notizen-spec.md).
+// Notiz-Icon (Quadrat mit Stift, "square.and.pencil"-Form) - geteilt zwischen
+// dem Notiz-Button auf der Detailseite und der Notiz-Anzeige (s.
+// docs/notizen-spec.md).
 export function renderNoteIcon(sizeClass = 'w-5 h-5') {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="${sizeClass}" aria-hidden="true">
-    <path d="M6 3h9l4 4v14H6z" />
-    <path d="M15 3v4h4" />
-    <path d="M9 12h7M9 16h7" />
+    <path d="M10.5 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3.5" />
+    <g transform="translate(-1.8 .4)">
+      <path d="M9.4 16.4l.6-2.9 5.9-5.9 2.3 2.3-5.9 5.9z" fill="currentColor" stroke-width="1" />
+      <rect x="-1.9" y="-1.1" width="3.8" height="2.2" rx=".6" transform="translate(18.7 6.1) rotate(45)" fill="currentColor" stroke="none" />
+    </g>
   </svg>`;
 }
 

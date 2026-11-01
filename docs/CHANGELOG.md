@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-01 (Notiz-Icon)
+
+### Changed
+- Notiz-Icon (`renderNoteIcon()` in `js/utils.js`) ist jetzt ein Quadrat mit Stift ("square.and.pencil"-Form) statt eines Dokuments. Stift mittiger in der Öffnung des Quadrats. `CACHE_NAME` auf `fitlog-v232`
+
+## 2026-11-01 (Notiz-Sheet: Textmarkierung)
+
+### Fixed
+- Notiz-Sheet: Die iOS-Markierungsgriffe ließen sich nicht über mehrere Wörter ziehen. Ursache: `lockBodyScroll()` (`js/sheet.js`) verhindert per `preventDefault` jedes `touchmove` außerhalb von `.bottom-sheet-scroll`, das Eingabefeld lag außerhalb. Das Feld trägt jetzt die Klasse `bottom-sheet-scroll`. `CACHE_NAME` auf `fitlog-v230`
+
 ## 2026-11-01 (Notiz-Sheet: Tastatur)
 
 ### Changed

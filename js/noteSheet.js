@@ -13,6 +13,10 @@ import { lockBodyScroll, unlockBodyScroll, wireSheetDrag, SHEET_CLOSE_ANIMATION_
 // Animation entfernen. Aufrufer müssen in ihrem unmount()
 // `unmountNoteSheet()` aufrufen.
 //
+// `bottom-sheet-scroll` am Eingabefeld ist Pflicht: lockBodyScroll() blockt
+// per preventDefault jedes touchmove außerhalb dieser Klasse - das schloss
+// auch das Ziehen der blauen iOS-Markierungsgriffe über mehrere Wörter aus.
+//
 // Das Eingabefeld ist bewusst ein `contenteditable`-Element statt eines
 // `<textarea>`: iOS blendet über der Tastatur sonst die Formular-Leiste mit
 // Pfeilen und Haken ein, die sich per Web-API nicht abschalten lässt.
@@ -97,7 +101,7 @@ function renderSheet({ exerciseName, dateISO, initialNote }) {
           aria-multiline="true"
           aria-label="Notiz"
           data-placeholder="Notiz zu dieser Übung…"
-          class="note-sheet-input flex-1 min-h-0 w-full overflow-y-auto text-ink outline-none pt-5 pb-4 whitespace-pre-wrap break-words"
+          class="note-sheet-input bottom-sheet-scroll flex-1 min-h-0 w-full overflow-y-auto text-ink outline-none pt-5 pb-4 whitespace-pre-wrap break-words"
           style="font-size: 16px; line-height: 1.4; -webkit-user-select: text; user-select: text;"
         >${escapeHtml(initialNote)}</div>
       </div>
