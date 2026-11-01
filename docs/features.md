@@ -33,6 +33,9 @@ Persönliche Rekorde werden direkt am Satz markiert, in allen drei Satz-Listen (
 #### Übungs-Detailseite — Reiter "aktueller Tag"
 Gewicht (kg, 1-kg-Stepper, direkte Dezimaleingabe im Feld möglich) und Wiederholungen (Feld-Label "Reps", 1er-Stepper, nur ganze Zahlen) über Minus-/Plus-Buttons oder direkte Eingabe. Vorbelegung beim Öffnen mit dem zuletzt erfassten Wert dieser Übung, egal aus welchem Workout-Tag (**Progressive-Overload-Hilfe**). Tap auf einen bereits ausgefüllten Satz lädt dessen Werte zur Bearbeitung ("Ändern"-Button, "Löschen" wird aktiv); ohne Auswahl bzw. bei Tap auf eine noch leere Platzhalter-Zeile zeigt das Formular die Vorbelegung, Button heißt "Speichern", "Löschen" bleibt deaktiviert. Anzahl der standardmäßig gezeigten leeren Platzhalter-Zeilen kommt aus `getSettings().defaultSetCount` (Default 3, s. "Einstellungen" im Profil-Tab unten) statt fest im Rendering verankert zu sein. Stammt die Übung aus einer Routine, erscheint darunter "ROUTINE: `<Name>`".
 
+#### Notizen pro Übung und Tag
+Rechts neben Speichern/Löschen sitzt ein Icon-Button (Löschen ist dafür 25 % schmaler), der ein Bottom-Sheet mit einem Textfeld öffnet (max. 500 Zeichen; ✓ speichert, ✕/Wegziehen verwirft ohne Rückfrage; leer speichern entfernt die Notiz). Die Notiz gehört zu Übung **und** Tag (`workoutExercises.note`) und wird nur lesbar gezeigt: vollständig unter den Satz-Zeilen der Detailseite, auf 3 Zeilen gekürzt am Ende der Roster-Karte und im Verlauf-Reiter, nicht in der Statistik. Eine Notiz schützt den Eintrag vor Routine-Wechsel/-Löschen und Übung-Löschen (wie Sätze), der "⋮"-Button entfällt dann; der Haken im Übungs-Sheet fragt per Action Sheet nach. Details: [notizen-spec.md](notizen-spec.md), [ADR 0035](decisions/0035-notizen-pro-uebung-und-tag.md).
+
 #### Übungs-Detailseite — Reiter "Verlauf"
 Alle Workout-Tage, an denen diese Übung erfasst wurde, gruppiert nach Datum, neueste zuerst — **einschließlich** des gerade betrachteten Tages (bis 2026-09-29 wurde dieser noch ausgeschlossen, s. [ADR 0010](decisions/0010-uebungs-detailseite.md), Nachtrag). Rein informativ, keine Aktionen.
 
@@ -98,7 +101,7 @@ Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007]
 
 ## Vorgemerkte, noch nicht spezifizierte Erweiterungen
 
-- Zusätzliche Satz-Felder: RPE/Anstrengungsgrad pro Satz auf der Übungs-Detailseite, Notizen, Pausenzeiten
+- Zusätzliche Satz-Felder: RPE/Anstrengungsgrad pro Satz auf der Übungs-Detailseite, Pausenzeiten
 - Übungs-Demo-Video (Kamera-Icon im Kopfbereich der Übungs-Detailseite)
 - Auswertungen auf Basis der Routine-Verknüpfung (z. B. Trainingshäufigkeit pro Routine); Statistik-Reiter auf der Übungs-Detailseite ist dafür bereits als Platzhalter vorhanden
 - Weitere Inhalte des Übungs-Detail-Sheets (geöffnet per Tap auf eine Übung im Übungs-Sheet, [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md)) — aktuell Muskelgruppen und das "⋮"-Menü (Bearbeiten/Löschen), weitere Details folgen

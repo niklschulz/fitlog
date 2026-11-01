@@ -28,7 +28,7 @@ import {
   daysBetween,
   mondayOf,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -1346,16 +1346,23 @@ function renderExerciseRow(entry, name, sets, prs) {
       renderSetTimelineRow(i + 1, renderSetValues(s.weight, s.reps) + renderPRBadge(prs.get(s.id)), { isLast: i === sets.length - 1 })
     )
     .join('');
-  const canRemove = entry.startedAt === null;
+  const isUnstarted = entry.startedAt === null;
+  // Eine Notiz schützt den Eintrag wie erfasste Sätze vor dem Entfernen
+  // (s. docs/notizen-spec.md) - der "⋮"-Button entfällt, wer die Übung
+  // entfernen will, leert zuerst die Notiz. Umsortierbar bleibt sie, solange
+  // sie unbegonnen ist.
+  const canRemove = isUnstarted && !entry.note;
   const menuOpen = state.exerciseRosterMenuEntryId === entry.id;
   const titleClasses = `text-card-title truncate ${name ? '' : 'italic text-muted'}`;
+  const noteHtml = renderNote(entry.note, { extraClasses: sets.length > 0 ? 'mt-3' : '' });
 
-  if (!canRemove) {
+  if (!isUnstarted) {
     return `
       <li class="relative">
         <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1 bg-surface rounded-card overflow-hidden">
           <span class="${titleClasses}">${escapeHtml(label)}</span>
           ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
+          ${entry.note ? renderNote(entry.note, { extraClasses: 'mt-3' }) : ''}
         </button>
       </li>
     `;
@@ -1368,7 +1375,9 @@ function renderExerciseRow(entry, name, sets, prs) {
           <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
             <span class="${titleClasses}">${escapeHtml(label)}</span>
           </button>
-          <button
+          ${
+            canRemove
+              ? `<button
             type="button"
             data-entry="${entry.id}"
             class="exercise-roster-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
@@ -1381,17 +1390,20 @@ function renderExerciseRow(entry, name, sets, prs) {
               <circle cx="12" cy="12" r="1.75" />
               <circle cx="12" cy="19" r="1.75" />
             </svg>
-          </button>
+          </button>`
+              : ''
+          }
         </div>
         ${
-          sets.length > 0
-            ? `<button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left block px-4 pb-3 -mt-2">
-                <ul class="flex flex-col">${setRows}</ul>
+          sets.length > 0 || entry.note
+            ? `<button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left block px-4 pb-3 ${sets.length > 0 ? '-mt-2' : '-mt-1'}">
+                ${sets.length > 0 ? `<ul class="flex flex-col">${setRows}</ul>` : ''}
+                ${noteHtml}
               </button>`
             : ''
         }
       </div>
-      ${menuOpen ? renderExerciseRosterMenu(entry) : ''}
+      ${menuOpen && canRemove ? renderExerciseRosterMenu(entry) : ''}
     </li>
   `;
 }
@@ -2076,7 +2088,8 @@ function wireExerciseSheetContentEvents() {
 // optimistisch um (vor dem DB-Zugriff, verhindert auch Doppel-Taps).
 // Entfernen ohne erfasste Sätze geht direkt (wie beim "⋮"-Kontextmenü, s.
 // removeExerciseFromWorkout); mit erfassten Sätzen fragt ein Action Sheet
-// (js/actionSheet.js, "Sätze und Übung entfernen" / "Abbrechen") nach, bei
+// (js/actionSheet.js, "Sätze und Übung entfernen" / "Abbrechen"; auch bei einer
+// reinen Notiz, s. docs/notizen-spec.md) nach, bei
 // Abbrechen bleibt die Zeile abgehakt (s. ADR 0029). Im Routinen-Kontext ist
 // nur der lokale Entwurf betroffen (s. renderRoutinesSheetEditContent), das
 // Routinen-Sheet darunter wird direkt aktualisiert. Der Roster hinter dem Sheet wird beim Schließen per paint()
@@ -2112,11 +2125,18 @@ async function toggleExerciseFromSheet(id) {
     const workout = await getWorkoutByDate(state.selectedDate);
     const entry = workout ? (await getWorkoutExercises(workout.id)).find((e) => e.exerciseId === id) : null;
     const setCount = workout ? await db.sets.where('workoutId').equals(workout.id).and((x) => x.exerciseId === id).count() : 0;
-    if (entry && (entry.startedAt !== null || setCount > 0)) {
+    if (entry && (entry.startedAt !== null || setCount > 0 || entry.note)) {
       const name = exerciseSheetCache.allExercises.find((x) => x.id === id)?.name ?? 'Diese Übung';
+      // Text nennt, was verloren geht: nur Notiz, nur Sätze oder beides
+      // (Notiz schützt den Eintrag wie Sätze, s. docs/notizen-spec.md).
+      const hasSets = entry.startedAt !== null || setCount > 0;
       const confirmed = await showActionSheet({
-        message: `Für ${name} sind in diesem Workout bereits Sätze gespeichert.`,
-        actionLabel: 'Sätze und Übung entfernen',
+        message: hasSets
+          ? `Für ${name} sind in diesem Workout bereits Sätze${entry.note ? ' und eine Notiz' : ''} gespeichert.`
+          : `Für ${name} ist in diesem Workout bereits eine Notiz gespeichert.`,
+        actionLabel: hasSets
+          ? `Sätze${entry.note ? ', Notiz' : ''} und Übung entfernen`
+          : 'Notiz und Übung entfernen',
       });
       if (!confirmed) return;
       await removeExerciseWithSetsFromWorkout(workout.id, id);

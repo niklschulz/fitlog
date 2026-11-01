@@ -19,3 +19,5 @@ Alle Kaskaden sind in `db.js` implementiert (`deleteExercise`, `deleteRoutine`, 
 - Kein zusätzliches Schema-Feld nötig, Datenmodell bleibt schlank
 - Views müssen defensiv mit möglichen "verwaisten" Referenzen umgehen (z. B. `exerciseNameById[id] ?? 'Gelöschte Übung'`) — an mehreren Stellen im Code wiederkehrendes Muster
 - Löschen ist echt destruktiv (kein Undo, kein Papierkorb) — bewusst in Kauf genommen, dafür gibt es den Bestätigungsdialog vor jedem Löschen
+
+**Nachtrag (2026-11-01):** `deleteExercise`/`deleteRoutine` behalten auch unbegonnene `workoutExercises`-Einträge mit Notiz, s. [ADR 0035](0035-notizen-pro-uebung-und-tag.md).

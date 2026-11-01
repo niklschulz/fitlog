@@ -30,6 +30,7 @@ import {
   addSet,
   deleteSet,
   resetStartedWithoutSets,
+  setWorkoutExerciseNote,
 } from '../js/db.js';
 
 await db.open();
@@ -352,4 +353,109 @@ test('resetStartedWithoutSets heilt begonnene Übungen ohne Sätze, lässt solch
   const entries = await getWorkoutExercises(workout.id);
   assert.equal(entries.find((e) => e.exerciseId === a.id).startedAt, null);
   assert.notEqual(entries.find((e) => e.exerciseId === b.id).startedAt, null);
+});
+
+// --- Notizen pro Übung und Tag (docs/notizen-spec.md) ---
+
+test('setWorkoutExerciseNote setzt, überschreibt und trimmt; Leertext entfernt die Notiz, startedAt bleibt', async () => {
+  const a = await createExercise('A');
+  const workout = await getOrCreateWorkoutForDate('2026-11-01');
+  await addExercisesToWorkout(workout.id, [a.id]);
+  const [entry] = await getWorkoutExercises(workout.id);
+
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await setWorkoutExerciseNote(entry.id, '  Griff enger  ');
+  let after = await db.workoutExercises.get(entry.id);
+  assert.equal(after.note, 'Griff enger');
+  assert.equal(after.startedAt, null, 'eine Notiz macht die Übung nicht begonnen');
+  assert.notEqual(after.updatedAt, entry.updatedAt);
+
+  await setWorkoutExerciseNote(entry.id, 'Schulter zwickt');
+  assert.equal((await db.workoutExercises.get(entry.id)).note, 'Schulter zwickt');
+
+  await setWorkoutExerciseNote(entry.id, '   \n ');
+  after = await db.workoutExercises.get(entry.id);
+  assert.equal(after.note, undefined);
+});
+
+test('Notiz überlebt das Löschen aller Sätze der Übung an diesem Tag', async () => {
+  const a = await createExercise('A');
+  const workout = await getOrCreateWorkoutForDate('2026-11-01');
+  await addExercisesToWorkout(workout.id, [a.id]);
+  const [entry] = await getWorkoutExercises(workout.id);
+  await setWorkoutExerciseNote(entry.id, 'bleibt');
+  const set = await addSet(workout.id, a.id, 50, 8);
+  await markWorkoutExerciseStarted(workout.id, a.id);
+
+  await deleteSet(set.id);
+
+  assert.equal((await db.workoutExercises.get(entry.id)).note, 'bleibt');
+});
+
+test('deleteExercise behält unbegonnene Einträge mit Notiz, entfernt solche ohne', async () => {
+  const a = await createExercise('A');
+  const withNote = await getOrCreateWorkoutForDate('2026-11-01');
+  const without = await getOrCreateWorkoutForDate('2026-11-02');
+  await addExercisesToWorkout(withNote.id, [a.id]);
+  await addExercisesToWorkout(without.id, [a.id]);
+  const [entry] = await getWorkoutExercises(withNote.id);
+  await setWorkoutExerciseNote(entry.id, 'Verlauf');
+
+  await deleteExercise(a.id);
+
+  assert.equal((await getWorkoutExercises(withNote.id)).length, 1);
+  assert.equal((await getWorkoutExercises(without.id)).length, 0);
+});
+
+test('deleteRoutine behält unbegonnene, routinen-stammende Einträge mit Notiz', async () => {
+  const a = await createExercise('A');
+  const b = await createExercise('B');
+  const routine = await createRoutine('Push');
+  await appendExerciseToRoutine(routine.id, a.id);
+  await appendExerciseToRoutine(routine.id, b.id);
+  const workout = await getOrCreateWorkoutForDate('2026-11-01');
+  await applyRoutineToWorkout(workout.id, routine.id);
+  const entryA = (await getWorkoutExercises(workout.id)).find((e) => e.exerciseId === a.id);
+  await setWorkoutExerciseNote(entryA.id, 'bleibt');
+
+  await deleteRoutine(routine.id);
+
+  assert.deepEqual((await getWorkoutExercises(workout.id)).map((e) => e.exerciseId), [a.id]);
+});
+
+test('applyRoutineToWorkout und removeRoutineFromWorkout behalten Einträge mit Notiz, auch wenn sie nicht in der neuen Routine stehen', async () => {
+  const a = await createExercise('A');
+  const b = await createExercise('B');
+  const c = await createExercise('C');
+  const first = await createRoutine('Erste');
+  await appendExerciseToRoutine(first.id, a.id);
+  await appendExerciseToRoutine(first.id, b.id);
+  const second = await createRoutine('Zweite');
+  await appendExerciseToRoutine(second.id, c.id);
+  const workout = await getOrCreateWorkoutForDate('2026-11-01');
+  await applyRoutineToWorkout(workout.id, first.id);
+  const entryA = (await getWorkoutExercises(workout.id)).find((e) => e.exerciseId === a.id);
+  await setWorkoutExerciseNote(entryA.id, 'bleibt');
+
+  await applyRoutineToWorkout(workout.id, second.id);
+  assert.deepEqual(
+    (await getWorkoutExercises(workout.id)).map((e) => e.exerciseId).sort(),
+    [a.id, c.id].sort(),
+    'A (Notiz) bleibt, B (ohne Notiz) wird entfernt, C kommt neu dazu'
+  );
+
+  await removeRoutineFromWorkout(workout.id);
+  assert.deepEqual((await getWorkoutExercises(workout.id)).map((e) => e.exerciseId), [a.id]);
+});
+
+test('removeExerciseWithSetsFromWorkout entfernt den Eintrag samt Notiz', async () => {
+  const a = await createExercise('A');
+  const workout = await getOrCreateWorkoutForDate('2026-11-01');
+  await addExercisesToWorkout(workout.id, [a.id]);
+  const [entry] = await getWorkoutExercises(workout.id);
+  await setWorkoutExerciseNote(entry.id, 'weg');
+
+  await removeExerciseWithSetsFromWorkout(workout.id, a.id);
+
+  assert.equal(await db.workoutExercises.get(entry.id), undefined);
 });

@@ -28,6 +28,30 @@ export const LIST_ROW = 'bg-surface rounded-btn px-4 py-3';
 
 export const TEXTLINK_ACTION = 'text-accent text-body font-medium';
 
+// Notiz-Icon (Dokument mit Textzeilen) - geteilt zwischen dem Notiz-Button auf
+// der Detailseite und der Notiz-Anzeige (s. docs/notizen-spec.md).
+export function renderNoteIcon(sizeClass = 'w-5 h-5') {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="${sizeClass}" aria-hidden="true">
+    <path d="M6 3h9l4 4v14H6z" />
+    <path d="M15 3v4h4" />
+    <path d="M9 12h7M9 16h7" />
+  </svg>`;
+}
+
+// Nur lesbare Notiz-Anzeige (Icon + Text) am unteren Ende einer Roster-/
+// Verlauf-Karte (`clamp: true`, auf 3 Zeilen gekürzt) bzw. unter den
+// Satz-Zeilen der Detailseite (`clamp: false`, vollständig). Ohne Notiz
+// leerer String - Aufrufer können sie unbedingt interpolieren.
+export function renderNote(note, { clamp = true, extraClasses = '' } = {}) {
+  if (!note) return '';
+  return `
+    <div class="note-display flex items-start gap-2 text-muted ${extraClasses}">
+      <span class="flex-shrink-0 mt-px">${renderNoteIcon('w-4 h-4')}</span>
+      <p class="text-body min-w-0 whitespace-pre-line break-words ${clamp ? 'line-clamp-3' : ''}">${escapeHtml(note)}</p>
+    </div>
+  `;
+}
+
 // Liquid-Glass-Navigationsgefühl (Übungs-Detailseite im Workout-Tab): Ein "Reingehen" (neue, tiefere
 // Ebene öffnen, z. B. Übung antippen) bekommt Skalierung+Fade, ein
 // "Zurückgehen" ein Slide-nach-unten+Fade - Richtung wird kurz vor dem

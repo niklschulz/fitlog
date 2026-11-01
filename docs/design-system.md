@@ -655,6 +655,8 @@ Nachtrag: Trennlinie (`border-b border-divider`) unter der Kopfzeile der Tabelle
 - Stepper-Label auf der Übungs-Detailseite von "Wdh." auf "Reps" geändert (Nutzer-Vorgabe)
 - Die Roster-Zeile im Workout-Tab (`renderExerciseRow`, `workout.js`) zeigt jetzt zusätzlich zur Satz-Anzahl rechts oben eine Zeile mit den tatsächlichen Satz-Werten unter dem Titel (`50 kg × 10`, mehrere Sätze durch " · " getrennt) — vorher war dort nur die Anzahl sichtbar, die konkreten Werte erst nach Öffnen der Detailseite. Zeile bleibt leer/entfällt ganz, solange noch keine Sätze erfasst sind
 
+**Notizen pro Übung und Tag (2026-11-01):** Button-Zeile der Detailseite: Speichern `flex-[4]`, Löschen `flex-[3]`, Notiz-Button `flex-1 min-w-[44px]` (nur Icon, `BTN_SECONDARY`, `renderNoteIcon()`). Notiz-Sheet (`js/noteSheet.js`): `.bottom-sheet` mit `bg-base`, Glass-Buttons ✕/✓ (`icon-btn-glass`, ✓ mit `icon-btn-glass-accent`), Titel `text-screen-title`, Übungsname `text-card-title`, Datum `text-label uppercase text-muted`, dünne Trennlinie `bg-white/10`, Textfeld randlos mit `font-size: 16px` (verhindert iOS-Zoom), Sheet richtet sich per `visualViewport` an der Tastatur aus. Notiz-Anzeige (`renderNote()`): Icon `w-4 h-4` plus `text-body text-muted`, `whitespace-pre-line`, in Karten auf `line-clamp-3` gekürzt, auf der Detailseite ungekürzt.
+
 ## Bewusst nicht umgesetzt
 
 Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme") wurden folgende in der Spezifikation beschriebene Komponenten **nicht** gebaut, weil es im aktuellen Fitlog-Funktionsumfang keine Entsprechung gibt:

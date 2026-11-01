@@ -262,7 +262,8 @@ export async function updateExercise(id, name, muscleAssignment) {
 // Löschen einer Übung entfernt sie aus allen Routinen und aus allen
 // Workout-Rostern, in denen noch keine Sätze für sie erfasst wurden.
 // Bereits erfasste Sätze (und die zugehörigen workoutExercises-Einträge
-// mit gesetztem startedAt) bleiben zur Wahrung des Verlaufs erhalten.
+// mit gesetztem startedAt oder einer Notiz) bleiben zur Wahrung des Verlaufs
+// erhalten.
 // Lehnt Standard-Übungen ab (s. ADR 0021) - gleicher Grund/dieselbe
 // defense-in-depth-Überlegung wie bei updateExercise().
 export async function deleteExercise(id) {
@@ -273,7 +274,7 @@ export async function deleteExercise(id) {
   await db.transaction('rw', db.exercises, db.routineExercises, db.workoutExercises, async () => {
     await db.routineExercises.where('exerciseId').equals(id).delete();
     const entries = await db.workoutExercises.where('exerciseId').equals(id).toArray();
-    const removable = entries.filter((e) => e.startedAt === null);
+    const removable = entries.filter((e) => e.startedAt === null && !e.note);
     await db.workoutExercises.bulkDelete(removable.map((e) => e.id));
     await db.exercises.delete(id);
   });
@@ -409,7 +410,7 @@ export async function deleteRoutine(id) {
       const affectedWorkouts = await db.workouts.where('routineId').equals(id).toArray();
       for (const workout of affectedWorkouts) {
         const entries = await db.workoutExercises.where('workoutId').equals(workout.id).toArray();
-        const removable = entries.filter((e) => e.sourceRoutineId === id && e.startedAt === null);
+        const removable = entries.filter((e) => e.sourceRoutineId === id && e.startedAt === null && !e.note);
         await db.workoutExercises.bulkDelete(removable.map((e) => e.id));
       }
 
@@ -471,7 +472,7 @@ export async function getWorkoutExercises(workoutId) {
 }
 
 // Übernimmt eine Routine in ein Workout (Erstauswahl oder Wechsel):
-// - noch nicht begonnene, routinen-stammende Einträge werden entfernt
+// - noch nicht begonnene, routinen-stammende Einträge ohne Notiz werden entfernt
 // - bereits begonnene Einträge bleiben erhalten; ist ihre Übung auch in der
 //   neuen Routine enthalten, übernehmen sie deren order, sonst werden sie
 //   hinter die neue Routine einsortiert (wirkt sich laut Sortierregel oben
@@ -481,7 +482,7 @@ export async function getWorkoutExercises(workoutId) {
 export async function applyRoutineToWorkout(workoutId, routineId) {
   await db.transaction('rw', db.workouts, db.workoutExercises, db.routineExercises, async () => {
     const current = await db.workoutExercises.where('workoutId').equals(workoutId).toArray();
-    const removable = current.filter((e) => e.sourceRoutineId !== null && e.startedAt === null);
+    const removable = current.filter((e) => e.sourceRoutineId !== null && e.startedAt === null && !e.note);
     await db.workoutExercises.bulkDelete(removable.map((e) => e.id));
 
     const remainingByExerciseId = new Map(
@@ -525,9 +526,22 @@ export async function applyRoutineToWorkout(workoutId, routineId) {
 export async function removeRoutineFromWorkout(workoutId) {
   await db.transaction('rw', db.workouts, db.workoutExercises, async () => {
     const current = await db.workoutExercises.where('workoutId').equals(workoutId).toArray();
-    const removable = current.filter((e) => e.sourceRoutineId !== null && e.startedAt === null);
+    const removable = current.filter((e) => e.sourceRoutineId !== null && e.startedAt === null && !e.note);
     await db.workoutExercises.bulkDelete(removable.map((e) => e.id));
     await db.workouts.update(workoutId, { routineId: null, updatedAt: nowISO() });
+  });
+}
+
+// Notiz für eine Übung an einem Workout-Tag setzen (optionales Feld `note` am
+// workoutExercises-Eintrag, s. docs/notizen-spec.md). Leerer/nur aus
+// Whitespace bestehender Text entfernt sie. Eine Notiz schützt den Eintrag
+// vor den Aufräum-Kaskaden (wie ein erfasster Satz), macht die Übung aber
+// nicht "begonnen" - startedAt bleibt unberührt.
+export async function setWorkoutExerciseNote(entryId, text) {
+  const note = (text ?? '').trim();
+  await db.workoutExercises.update(entryId, {
+    note: note === '' ? undefined : note,
+    updatedAt: nowISO(),
   });
 }
 
@@ -720,10 +734,20 @@ export async function getExerciseSetHistory(exerciseId) {
     (setsByDate[date] ??= []).push(s);
   }
 
+  // Notiz dieser Übung pro Tag (workoutExercises.note, s. docs/notizen-spec.md)
+  const entries = await db.workoutExercises.where('exerciseId').equals(exerciseId).toArray();
+  const noteByWorkoutId = Object.fromEntries(entries.filter((e) => e.note).map((e) => [e.workoutId, e.note]));
+  const noteByDate = {};
+  for (const id of workoutIds) {
+    const date = dateByWorkoutId[id];
+    if (date && noteByWorkoutId[id]) noteByDate[date] = noteByWorkoutId[id];
+  }
+
   return Object.entries(setsByDate)
     .map(([date, daySets]) => ({
       date,
       sets: daySets.sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
+      note: noteByDate[date] ?? null,
     }))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 }

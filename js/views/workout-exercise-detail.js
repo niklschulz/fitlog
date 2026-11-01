@@ -13,9 +13,12 @@ import {
   renderSegmentedControl,
   positionSegmentedIndicator,
   measureSegmentedIndicatorRect,
+  renderNote,
+  renderNoteIcon,
   BTN_SECONDARY,
   CARD,
 } from '../utils.js';
+import { openNoteSheet, unmountNoteSheet } from '../noteSheet.js';
 import { getSettings } from '../settings.js';
 
 let currentContainer = null;
@@ -59,6 +62,7 @@ export async function render(container, { entryId, onBack: onBackCallback }) {
 // (s. workout.js's eigenes unmount()).
 export function unmount() {
   renderEpoch++;
+  unmountNoteSheet();
 }
 
 // `indicatorFromRect` s. Kommentar bei statistics.js's paint() - dieselbe
@@ -118,7 +122,7 @@ async function paint(indicatorFromRect = null) {
         ],
         state.activeTab
       )}
-      ${state.activeTab === 'today' ? renderTodayTab(todaySets, formWeight, formReps, routineLabel) : ''}
+      ${state.activeTab === 'today' ? renderTodayTab(todaySets, formWeight, formReps, routineLabel, entry.note) : ''}
       ${state.activeTab === 'history' ? renderHistoryTab(history) : ''}
       ${state.activeTab === 'stats' ? renderStatsTab() : ''}
     </div>
@@ -184,7 +188,7 @@ function renderSetContent(set, { badgeInset = false, prsMap = prs } = {}) {
   return renderSetValues(set.weight, set.reps) + renderPRBadge(prsMap.get(set.id), { extraClasses: badgeInset ? 'mr-4' : '' });
 }
 
-function renderTodayTab(sets, formWeight, formReps, routineLabel) {
+function renderTodayTab(sets, formWeight, formReps, routineLabel, note) {
   const rowCount = Math.max(sets.length, getSettings().defaultSetCount);
   const rows = Array.from({ length: rowCount }, (_, i) => sets[i] ?? null);
   const editing = !!state.selectedSetId;
@@ -197,8 +201,9 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
           ${renderStepperRow('reps', 'Reps', formReps)}
         </div>
         <div class="flex gap-3">
-          <button id="detail-save-btn" type="button" class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Ändern' : 'Speichern'}</button>
-          <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-1 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Löschen</button>
+          <button id="detail-save-btn" type="button" class="tap-feedback flex-[4] min-w-0 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Ändern' : 'Speichern'}</button>
+          <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-[3] min-w-0 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Löschen</button>
+          <button id="detail-note-btn" type="button" class="tap-feedback flex-1 min-w-[44px] ${BTN_SECONDARY} py-3 min-h-[44px] flex items-center justify-center" aria-label="Notiz">${renderNoteIcon('w-5 h-5')}</button>
         </div>
         ${routineLabel ? `<p class="text-label text-muted uppercase">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
       </div>
@@ -221,6 +226,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel) {
           })
           .join('')}
       </ul>
+      ${renderNote(note, { clamp: false })}
     </div>
   `;
 }
@@ -234,10 +240,12 @@ function formatHistoryDate(dateStr) {
 // unverändert genutzt: `history` = getExerciseSetHistory(), `prsMap` =
 // getPRsForExercises()-Map der Übung.
 export function renderExerciseHistory(history, prsMap) {
-  return renderHistoryTab(history, prsMap);
+  return renderHistoryTab(history, prsMap, false);
 }
 
-function renderHistoryTab(history, prsMap = prs) {
+// `showNotes`: Die Statistik-Übungsseite zeigt bewusst keine Notizen
+// (s. docs/notizen-spec.md).
+function renderHistoryTab(history, prsMap = prs, showNotes = true) {
   if (history.length === 0) {
     return `<p class="text-body text-muted text-center py-6">Noch kein Verlauf für diese Übung.</p>`;
   }
@@ -256,6 +264,7 @@ function renderHistoryTab(history, prsMap = prs) {
               )
               .join('')}
           </ul>
+          ${showNotes ? renderNote(day.note, { extraClasses: 'mt-4' }) : ''}
         </div>
       `
         )
@@ -308,6 +317,14 @@ function wireEvents() {
     row.addEventListener('click', () => {
       state.selectedSetId = null;
       paint();
+    });
+  });
+
+  currentContainer.querySelector('#detail-note-btn')?.addEventListener('click', () => {
+    openNoteSheet({
+      container: currentContainer,
+      entryId: state.entryId,
+      onSaved: () => paint(),
     });
   });
 

@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-01 (Notizen pro Übung und Tag)
+
+### Added
+- Notizen pro Übung und Workout-Tag (Spec: [notizen-spec.md](notizen-spec.md), [ADR 0035](decisions/0035-notizen-pro-uebung-und-tag.md)): neues Feld `note` an `workoutExercises`, `setWorkoutExerciseNote()` in `js/db.js`. Erfassen über einen Notiz-Icon-Button in der Button-Zeile der Übungs-Detailseite und ein Bottom-Sheet (`js/noteSheet.js`, ✓ speichert, ✕ verwirft). Anzeige nur lesbar auf der Roster-Karte und im Verlauf-Reiter (auf 3 Zeilen gekürzt) sowie vollständig unter den Satz-Zeilen der Detailseite (`renderNote()`/`renderNoteIcon()` in `js/utils.js`)
+- Tests für Notiz und Schutzregel in `tests/db.test.js`
+
+### Changed
+- "Löschen"-Button der Detailseite 25 % schmaler (Speichern : Löschen : Notiz = 4 : 3 : 1)
+- Einträge mit Notiz werden von Routine-Wechsel/-Entfernen/-Löschen und Übung-Löschen wie begonnene Übungen behalten; kein "⋮"-Button mehr an Einträgen mit Notiz; Haken-Rücknahme im Übungs-Sheet fragt auch bei reiner Notiz per Action Sheet nach. `getExerciseSetHistory()` liefert zusätzlich `note` je Tag. `CACHE_NAME` auf `fitlog-v228`, `js/noteSheet.js` in der App-Shell
+
 ## 2026-10-24 (Scroll-Position im Statistik-Tab)
 
 ### Changed
