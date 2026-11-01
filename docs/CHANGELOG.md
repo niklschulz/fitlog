@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-01 (Notiz-Sheet: Seite springt nicht mehr hoch)
+
+### Fixed
+- Notiz-Sheet: Beim Öffnen der Tastatur scrollte iOS die ganze Seite samt Sheet nach oben (Kopfzeile außer Sicht, Textfeld zu groß). Ursache: `focus()` startete, während das Sheet per Slide-Animation noch unterhalb des Bildschirms lag, und iOS scrollte dorthin. Jetzt `focus({ preventScroll: true })` plus ein Sicherheitsnetz (`window.scrollTo(0, 0)` bei Viewport-Scroll). `CACHE_NAME` auf `fitlog-v234`
+
 ## 2026-11-01 (Notiz-Sheet: Tastatur öffnet wieder)
 
 ### Fixed

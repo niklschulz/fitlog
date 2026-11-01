@@ -144,11 +144,17 @@ export function openNoteSheet({ container: containerEl, entryId, exerciseName, d
     const update = () => {
       panel.style.paddingBottom = `${Math.max(0, window.innerHeight - vv.height - vv.offsetTop)}px`;
     };
+    // Verschiebt iOS die Seite trotzdem (Tastatur schiebt den Viewport),
+    // wird sie zurückgesetzt, damit die Kopfzeile des Sheets sichtbar bleibt.
+    const onViewportScroll = () => {
+      if (window.scrollY !== 0 || vv.pageTop !== 0) window.scrollTo(0, 0);
+      update();
+    };
     vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    vv.addEventListener('scroll', onViewportScroll);
     removeViewportListener = () => {
       vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      vv.removeEventListener('scroll', onViewportScroll);
     };
   }
 
@@ -171,7 +177,11 @@ export function openNoteSheet({ container: containerEl, entryId, exerciseName, d
   wireDrag();
 
   // Fokus nach dem Einfügen, Cursor ans Textende.
-  input?.focus();
+  // preventScroll: Das Sheet startet per Slide-Animation unterhalb des
+  // Bildschirms - ohne diese Option scrollt iOS beim Fokussieren dorthin und
+  // schiebt dabei die ganze Seite (samt Sheet) nach oben, sodass die
+  // Kopfzeile außer Sicht gerät.
+  input?.focus({ preventScroll: true });
   placeCaretAtEnd(input);
 }
 
