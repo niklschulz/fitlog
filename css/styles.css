@@ -520,3 +520,11 @@ html[data-transition-direction='back']::view-transition-old(root) {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* Eingabefeld des Notiz-Sheets (js/noteSheet.js): contenteditable statt
+   <textarea>, Platzhalter deshalb per CSS. */
+.note-sheet-input:empty::before {
+  content: attr(data-placeholder);
+  color: #9B9BA1; /* muted */
+  pointer-events: none;
+}

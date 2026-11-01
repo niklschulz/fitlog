@@ -2,7 +2,7 @@ import { db, setWorkoutExerciseNote, toISODate } from './db.js';
 import { escapeHtml } from './utils.js';
 import { lockBodyScroll, unlockBodyScroll, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from './sheet.js';
 
-// Notiz-Sheet (s. docs/notizen-spec.md): Bottom-Sheet mit einem Textfeld für
+// Notiz-Sheet (s. docs/notizen-spec.md): Bottom-Sheet mit einem Eingabefeld für
 // die Notiz zu einer Übung an einem Workout-Tag. ✓ speichert und schließt,
 // ✕/Wegziehen/Tap auf den Hintergrund schließt ohne Rückfrage und verwirft
 // ungespeicherten Text. Eigener State statt View-State (wie
@@ -13,6 +13,10 @@ import { lockBodyScroll, unlockBodyScroll, wireSheetDrag, SHEET_CLOSE_ANIMATION_
 // Animation entfernen. Aufrufer müssen in ihrem unmount()
 // `unmountNoteSheet()` aufrufen.
 //
+// Das Eingabefeld ist bewusst ein `contenteditable`-Element statt eines
+// `<textarea>`: iOS blendet über der Tastatur sonst die Formular-Leiste mit
+// Pfeilen und Haken ein, die sich per Web-API nicht abschalten lässt.
+//
 // Bewusst ohne raiseNavAboveSheet(): Bei offener Tastatur wäre die Nav
 // darüber nur im Weg (Referenz-Screenshot zeigt sie ebenfalls nicht).
 let container = null;
@@ -22,6 +26,18 @@ let pendingCloseTimeout = null;
 let removeViewportListener = null;
 let onSavedCallback = null;
 let saved = false;
+
+const NOTE_MAX_LENGTH = 500;
+
+function placeCaretAtEnd(el) {
+  if (!el) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
 
 export function unmountNoteSheet() {
   if (pendingCloseTimeout) {
@@ -74,13 +90,16 @@ function renderSheet({ exerciseName, dateISO, initialNote }) {
       </div>
       <div class="px-4 flex-1 min-h-0 flex flex-col">
         <div class="h-px bg-white/10 flex-shrink-0"></div>
-        <textarea
-          id="note-sheet-textarea"
-          maxlength="500"
-          placeholder="Notiz zu dieser Übung…"
-          class="flex-1 min-h-0 w-full resize-none bg-transparent text-ink placeholder:text-muted outline-none pt-5 pb-4"
-          style="font-size: 16px; line-height: 1.4;"
-        >${escapeHtml(initialNote)}</textarea>
+        <div
+          id="note-sheet-input"
+          contenteditable="plaintext-only"
+          role="textbox"
+          aria-multiline="true"
+          aria-label="Notiz"
+          data-placeholder="Notiz zu dieser Übung…"
+          class="note-sheet-input flex-1 min-h-0 w-full overflow-y-auto text-ink outline-none pt-5 pb-4 whitespace-pre-wrap break-words"
+          style="font-size: 16px; line-height: 1.4; -webkit-user-select: text; user-select: text;"
+        >${escapeHtml(initialNote)}</div>
       </div>
     </div>
   `;
@@ -108,18 +127,18 @@ export async function openNoteSheet({ container: containerEl, entryId, onSaved =
     })
   );
 
-  const textarea = container.querySelector('#note-sheet-textarea');
+  const input = container.querySelector('#note-sheet-input');
   const panel = container.querySelector('#note-sheet-panel');
 
   // iOS lässt das Layout-Viewport bei offener Tastatur unverändert und
-  // überdeckt nur den unteren Teil - ohne Anpassung bliebe der untere Teil
-  // des Textfelds (und damit der Cursor bei längerem Text) hinter der
-  // Tastatur. Das Sheet wird deshalb an der Oberkante der Tastatur
-  // ausgerichtet.
+  // überdeckt nur den unteren Teil. Das Sheet selbst bleibt deshalb bis zum
+  // unteren Bildschirmrand gezogen (Hintergrund hinter der Tastatur), nur
+  // sein Innenabstand unten wächst um die Tastaturhöhe - dadurch endet das
+  // Textfeld an der Oberkante der Tastatur, der Cursor bleibt sichtbar.
   const vv = window.visualViewport;
   if (vv && panel) {
     const update = () => {
-      panel.style.bottom = `${Math.max(0, window.innerHeight - vv.height - vv.offsetTop)}px`;
+      panel.style.paddingBottom = `${Math.max(0, window.innerHeight - vv.height - vv.offsetTop)}px`;
     };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
@@ -129,19 +148,27 @@ export async function openNoteSheet({ container: containerEl, entryId, onSaved =
     };
   }
 
+  // contenteditable kennt kein `maxlength` - Limit von Hand durchsetzen.
+  input?.addEventListener('input', () => {
+    if (input.innerText.length > NOTE_MAX_LENGTH) {
+      input.innerText = input.innerText.slice(0, NOTE_MAX_LENGTH);
+      placeCaretAtEnd(input);
+    }
+  });
+
   container.querySelector('#note-sheet-backdrop')?.addEventListener('click', closeSheet);
   container.querySelector('#note-sheet-close-btn')?.addEventListener('click', closeSheet);
   container.querySelector('#note-sheet-save-btn')?.addEventListener('click', async () => {
     if (closing) return;
-    await setWorkoutExerciseNote(entryId, textarea.value);
+    await setWorkoutExerciseNote(entryId, input.innerText);
     saved = true;
     closeSheet();
   });
   wireDrag();
 
   // Fokus nach dem Einfügen, Cursor ans Textende.
-  textarea?.focus();
-  textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
+  input?.focus();
+  placeCaretAtEnd(input);
 }
 
 function finalizeClose() {

@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-01 (Notiz-Sheet: Tastatur)
+
+### Changed
+- Notiz-Sheet: Eingabefeld ist jetzt ein `contenteditable="plaintext-only"`-Element statt eines `<textarea>`, damit iOS die Formular-Leiste (Pfeile/Haken) über der Tastatur nicht einblendet (Limit 500 Zeichen und Platzhalter per JS/CSS nachgebaut). Das Sheet reicht jetzt auch bei offener Tastatur bis zum unteren Bildschirmrand (Tastaturhöhe als `padding-bottom` statt verschobenem `bottom`). `CACHE_NAME` auf `fitlog-v229`
+
 ## 2026-11-01 (Notizen pro Übung und Tag)
 
 ### Added
