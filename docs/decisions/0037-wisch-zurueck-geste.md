@@ -7,7 +7,7 @@ Bottom-Sheets lassen sich per Wischen nach unten schließen. Der Nutzer wollte d
 ## Entscheidung
 
 - **Eigenes Modul `js/swipeBack.js`** (`wireSwipeBack()`/`unwireSwipeBack()`), von beiden Detail-Seiten in `render()`/`unmount()` eingebunden. Pointer Events, kein Framework (ADR 0001/0002).
-- **Start nur am linken Rand** (22 px breiter, fixer Streifen außerhalb des Seiteninhalts, `touch-action: pan-y`). So stören Reiter, Zahlenfelder und Umsortieren nicht, und der Streifen überlebt jedes Repaint. Offene Sheets (höherer z-index) blockieren die Geste von selbst.
+- **Start nur am linken Rand** (22 px breiter, fixer Streifen außerhalb des Seiteninhalts, `touch-action: none` - mit `pan-y` scrollte/gummibandete iOS bei schrägen Wischbewegungen parallel und die Seite ruckelte). So stören Reiter, Zahlenfelder und Umsortieren nicht, und der Streifen überlebt jedes Repaint. Offene Sheets (höherer z-index) blockieren die Geste von selbst.
 - **Verhalten wie iOS:** Die Seite folgt dem Finger mit Schatten. Zurück bei Weg > 40 % der Breite oder schnellem Wisch, sonst Federn zurück.
 - **Zurück-Animation mit Abbild:** `onBack()` füllt den Container sofort neu. Deshalb schiebt die Geste einen Klon der Seite nach rechts hinaus, darunter läuft die neue Übersicht mit Parallax (-30 % → 0) ein. Der echte Container bleibt bis zum Neuzeichnen unsichtbar (MutationObserver, Fallback 600 ms).
 - `onBack({ swipe: true })`: der Aufrufer lässt seine eigene Zurück-Animation weg (`withViewTransition(..., 'none')`).
