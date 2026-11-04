@@ -65,6 +65,10 @@ export function wireSwipeBack({ container, onBack }) {
   let revealTimeout = null;
   let observer = null;
   let frame = null;
+  // Zurück-Animation läuft (Abbild gleitet hinaus, Übersicht läuft ein). onBack()
+  // ruft über unmount() `unwireSwipeBack()` auf - das darf diese Animation nicht
+  // abbrechen, sie räumt sich selbst auf.
+  let committing = false;
 
   const background = () => getComputedStyle(document.body).backgroundColor;
   const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -184,6 +188,7 @@ export function wireSwipeBack({ container, onBack }) {
       return;
     }
     busy = true;
+    committing = true;
     snapshot = makeSnapshot(width);
     clearContainerStyles();
     // Echter Container bleibt unsichtbar, bis onBack() die Übersicht
@@ -191,34 +196,41 @@ export function wireSwipeBack({ container, onBack }) {
     // alte Seite links neben dem Abbild auf.
     container.style.visibility = 'hidden';
 
+    const snap = snapshot;
+    // Beide Animationen starten erst, wenn onBack() die Übersicht fertig in den
+    // Container gezeichnet hat: Deren Aufbau und Layout ist die schwerste Arbeit
+    // des Ganzen und würde sonst genau die ersten Bilder der Animation
+    // blockieren (sichtbares Ruckeln). Das Abbild steht in der Zwischenzeit auf
+    // der Loslass-Position still - nur die Dauer des Zeichnens.
     const reveal = () => {
       observer?.disconnect();
       observer = null;
       clearTimeout(revealTimeout);
       revealTimeout = null;
       container.style.visibility = '';
+      // Layout jetzt erzwingen (nicht erst im ersten Animations-Bild).
+      void container.offsetHeight;
       container.animate(
         [{ transform: `translateX(${-width * PARALLAX}px)` }, { transform: 'translateX(0)' }],
         { duration: 320, easing: EASE }
       );
+      const remaining = Math.max(0, width - dx) / width;
+      snap
+        .animate(
+          [{ transform: `translateX(${dx}px)` }, { transform: `translateX(${width}px)` }],
+          { duration: 120 + remaining * 260, easing: EASE, fill: 'forwards' }
+        )
+        .finished.finally(() => {
+          snap.remove();
+          if (snapshot === snap) snapshot = null;
+          busy = false;
+          committing = false;
+        });
     };
     // Vor onBack() anhängen, falls das Neuzeichnen synchron läuft.
     observer = new MutationObserver(reveal);
     observer.observe(container, { childList: true });
     revealTimeout = setTimeout(reveal, REVEAL_FALLBACK_MS);
-
-    const snap = snapshot;
-    const remaining = Math.max(0, width - dx) / width;
-    snap
-      .animate(
-        [{ transform: `translateX(${dx}px)` }, { transform: `translateX(${width}px)` }],
-        { duration: 120 + remaining * 260, easing: EASE, fill: 'forwards' }
-      )
-      .finished.finally(() => {
-        snap.remove();
-        if (snapshot === snap) snapshot = null;
-        busy = false;
-      });
 
     onBack({ swipe: true });
   }
@@ -233,12 +245,15 @@ export function wireSwipeBack({ container, onBack }) {
   strip.addEventListener('pointercancel', onUp);
 
   teardown = () => {
+    strip.remove();
+    // Läuft gerade die Zurück-Animation, bleibt alles stehen - Abbild,
+    // Beobachter und Einlauf-Animation räumen sich selbst auf.
+    if (committing) return;
     observer?.disconnect();
     clearTimeout(revealTimeout);
     snapshot?.remove();
     snapshot = null;
     container.style.visibility = '';
     clearContainerStyles();
-    strip.remove();
   };
 }
