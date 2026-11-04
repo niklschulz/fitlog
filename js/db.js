@@ -259,6 +259,22 @@ export async function updateExercise(id, name, muscleAssignment) {
   await db.exercises.update(id, changes);
 }
 
+// Dauerhafte Notiz zu einer Übung selbst (optionales Feld `note` am
+// `exercises`-Eintrag, s. ADR 0036) - NICHT zu verwechseln mit der Notiz zu
+// einer Übung an einem Workout-Tag (`setWorkoutExerciseNote()`, s.
+// notizen-spec.md). Funktioniert bewusst auch für Standard-Übungen
+// (`isBuiltin`): updateExercise() sperrt deren Name/Muskeln, die Notiz ist
+// aber eine reine Nutzer-Anmerkung. seedBuiltinExercises() schreibt nur
+// Name/Muskeln/isBuiltin zurück und lässt `note` unangetastet. Leerer oder
+// nur aus Whitespace bestehender Text entfernt die Notiz.
+export async function setExerciseNote(exerciseId, text) {
+  const note = (text ?? '').trim();
+  await db.exercises.update(exerciseId, {
+    note: note === '' ? undefined : note,
+    updatedAt: nowISO(),
+  });
+}
+
 // Löschen einer Übung entfernt sie aus allen Routinen und aus allen
 // Workout-Rostern, in denen noch keine Sätze für sie erfasst wurden.
 // Bereits erfasste Sätze (und die zugehörigen workoutExercises-Einträge

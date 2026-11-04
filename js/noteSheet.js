@@ -69,11 +69,11 @@ function formatSheetDate(dateISO) {
   return `${date.toLocaleDateString('de-DE', { weekday: 'long' })}, ${dayMonth}`;
 }
 
-function renderSheet({ exerciseName, dateISO, initialNote }) {
+function renderSheet({ exerciseName, dateISO, initialNote, z }) {
   const title = initialNote ? 'Notiz bearbeiten' : 'Notiz hinzufügen';
   return `
-    <div id="note-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 bg-black/50" style="z-index: 52;"></div>
-    <div id="note-sheet-panel" class="bottom-sheet fixed left-0 right-0 bottom-0 bg-base rounded-sheet flex flex-col" style="z-index: 53;">
+    <div id="note-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 bg-black/50" style="z-index: ${z.bg};"></div>
+    <div id="note-sheet-panel" class="bottom-sheet fixed left-0 right-0 bottom-0 bg-base rounded-sheet flex flex-col" style="z-index: ${z.panel};">
       <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-5 flex-shrink-0">
         <button id="note-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -90,7 +90,7 @@ function renderSheet({ exerciseName, dateISO, initialNote }) {
       <div class="px-4 pb-4 flex-shrink-0 flex flex-col gap-2">
         <h2 class="text-screen-title">${title}</h2>
         <p class="text-card-title mt-3 truncate">${escapeHtml(exerciseName)}</p>
-        <p class="text-label uppercase text-muted">${escapeHtml(formatSheetDate(dateISO))}</p>
+        ${dateISO ? `<p class="text-label uppercase text-muted">${escapeHtml(formatSheetDate(dateISO))}</p>` : ''}
       </div>
       <div class="px-4 flex-1 min-h-0 flex flex-col">
         <div class="h-px bg-white/10 flex-shrink-0"></div>
@@ -114,7 +114,21 @@ function renderSheet({ exerciseName, dateISO, initialNote }) {
 // DB-Zugriff davor hätte die Geste "verbraucht" und die Tastatur blieb zu.
 // Name, Datum und bisherige Notiz liefert deshalb der Aufrufer, der sie
 // beim Zeichnen der Seite ohnehin schon geladen hat.
-export function openNoteSheet({ container: containerEl, entryId, exerciseName, dateISO, initialNote = '', onSaved = null }) {
+//
+// Zwei Verwendungen (s. ADR 0036): Notiz zu einer Übung an einem Workout-Tag
+// (`entryId` + `dateISO`, Standard) oder dauerhafte Notiz zur Übung selbst
+// (`saveNote`: eigene Speicher-Funktion, `dateISO: null` blendet die
+// Datumszeile aus). `z` hebt das Sheet über andere Stapel-Sheets.
+export function openNoteSheet({
+  container: containerEl,
+  entryId,
+  exerciseName,
+  dateISO,
+  initialNote = '',
+  onSaved = null,
+  saveNote = null,
+  z = { bg: 52, panel: 53 },
+}) {
   if (open) return;
   container = containerEl;
   onSavedCallback = onSaved;
@@ -126,8 +140,9 @@ export function openNoteSheet({ container: containerEl, entryId, exerciseName, d
     'beforeend',
     renderSheet({
       exerciseName,
-      dateISO: dateISO ?? toISODate(new Date()),
+      dateISO: saveNote ? (dateISO ?? null) : (dateISO ?? toISODate(new Date())),
       initialNote,
+      z,
     })
   );
 
@@ -170,7 +185,7 @@ export function openNoteSheet({ container: containerEl, entryId, exerciseName, d
   container.querySelector('#note-sheet-close-btn')?.addEventListener('click', closeSheet);
   container.querySelector('#note-sheet-save-btn')?.addEventListener('click', async () => {
     if (closing) return;
-    await setWorkoutExerciseNote(entryId, input.innerText);
+    await (saveNote ? saveNote(input.innerText) : setWorkoutExerciseNote(entryId, input.innerText));
     saved = true;
     closeSheet();
   });

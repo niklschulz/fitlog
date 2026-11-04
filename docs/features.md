@@ -30,6 +30,10 @@ Jede Roster-Zeile zeigt unter dem Übungstitel bereits die vollständige, nummer
 #### PR-Markierungen
 Persönliche Rekorde werden direkt am Satz markiert, in allen drei Satz-Listen (Roster-Zeile im Workout-Tab, Tages- und Verlauf-Reiter der Übungs-Detailseite): **GEWICHT** (neues Höchstgewicht dieser Übung, jede Steigerung auch innerhalb eines Workouts) oder **REPS** (mehr Wiederholungen als je zuvor bei exakt diesem Gewicht, sofern das Gewicht schon in einem früheren Workout genutzt wurde). Höchstens ein Badge pro Satz, Gleichstand zählt nicht, Badges bleiben auch nach späterem Übertreffen stehen. Werden bei jedem Anzeigen neu berechnet (nicht gespeichert), Bearbeiten/Löschen früherer Sätze wirkt dadurch sofort auf spätere Badges. Regeln und Abweichungen von der Ursprungs-Spezifikation: [ADR 0025](decisions/0025-pr-markierungen.md).
 
+#### Übungs-Detail-Sheet — Notiz zur Übung
+
+Zusätzlich zur Notiz pro Übung **und Tag** (s. u.) kann jede Übung **eine dauerhafte Notiz** tragen, z. B. "Sitzhöhe 4, Griff eng". Erfassen über das "⋮"-Menü des Übungs-Detail-Sheets (Eintrag "Notiz hinzufügen" bzw. "Notiz bearbeiten"), das öffnet das bestehende Notiz-Sheet (`js/noteSheet.js`, ohne Datumszeile). Gespeichert als Feld `note` an `exercises` (`setExerciseNote()`, `js/db.js`, [ADR 0036](decisions/0036-notiz-zur-uebung.md)). Angezeigt wird sie ganz unten im Detail-Sheet unter "Notiz" (nur wenn vorhanden), ebenso im Info-Reiter der Statistik-Übungsseite (nur lesbar, dort nicht bearbeitbar). Leer speichern entfernt die Notiz. Funktioniert auch bei Standard-Übungen: deren Menü enthält dann nur den Notiz-Eintrag (Bearbeiten/Löschen bleiben gesperrt). Die Notiz wird mit der Übung gelöscht.
+
 #### Übungs-Detailseite — Reiter "aktueller Tag"
 Gewicht (kg, 1-kg-Stepper, direkte Dezimaleingabe im Feld möglich) und Wiederholungen (Feld-Label "Reps", 1er-Stepper, nur ganze Zahlen) über Minus-/Plus-Buttons oder direkte Eingabe. Vorbelegung beim Öffnen mit dem zuletzt erfassten Wert dieser Übung, egal aus welchem Workout-Tag (**Progressive-Overload-Hilfe**). Tap auf einen bereits ausgefüllten Satz lädt dessen Werte zur Bearbeitung ("Ändern"-Button, "Löschen" wird aktiv); ohne Auswahl bzw. bei Tap auf eine noch leere Platzhalter-Zeile zeigt das Formular die Vorbelegung, Button heißt "Speichern", "Löschen" bleibt deaktiviert. Anzahl der standardmäßig gezeigten leeren Platzhalter-Zeilen kommt aus `getSettings().defaultSetCount` (Default 3, s. "Einstellungen" im Profil-Tab unten) statt fest im Rendering verankert zu sein. Stammt die Übung aus einer Routine, erscheint darunter "ROUTINE: `<Name>`".
 
@@ -104,7 +108,7 @@ Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007]
 - Zusätzliche Satz-Felder: RPE/Anstrengungsgrad pro Satz auf der Übungs-Detailseite, Pausenzeiten
 - Übungs-Demo-Video (Kamera-Icon im Kopfbereich der Übungs-Detailseite)
 - Auswertungen auf Basis der Routine-Verknüpfung (z. B. Trainingshäufigkeit pro Routine); Statistik-Reiter auf der Übungs-Detailseite ist dafür bereits als Platzhalter vorhanden
-- Weitere Inhalte des Übungs-Detail-Sheets (geöffnet per Tap auf eine Übung im Übungs-Sheet, [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md)) — aktuell Muskelgruppen und das "⋮"-Menü (Bearbeiten/Löschen), weitere Details folgen
+- Weitere Inhalte des Übungs-Detail-Sheets (geöffnet per Tap auf eine Übung im Übungs-Sheet, [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md)) — aktuell Muskelgruppen, die dauerhafte **Notiz zur Übung** (ganz unten, s. u.) und das "⋮"-Menü (Bearbeiten/Notiz/Löschen), weitere Details folgen
 
 ## Explizit dauerhaft nicht vorgesehen (keine spätere Erweiterung geplant)
 

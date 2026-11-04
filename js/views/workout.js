@@ -14,6 +14,7 @@ import {
   createExercise,
   updateExercise,
   deleteExercise,
+  setExerciseNote,
   createRoutine,
   updateRoutine,
   deleteRoutine,
@@ -40,6 +41,7 @@ import {
 import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
+import { openNoteSheet } from '../noteSheet.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 // TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für die dynamische
@@ -2208,22 +2210,32 @@ function openExerciseCreateSheet(editExerciseId = null) {
 // Überlagert das Übungs-Sheet (Stapel-Sheet, höhere z-Ebene) statt es zu
 // ersetzen - Tap auf eine Übungszeile öffnet dieses zweite Sheet obendrauf,
 // das darunterliegende bleibt offen/sichtbar. Inhalt: primärer und sekundäre
-// Muskeln der Übung; die Kopfzeile trägt statt eines Löschen-Buttons einen
-// "⋮"-Glass-Button mit Kontextmenü (Bearbeiten öffnet das Neue-Übung-Sheet
-// im Bearbeiten-Modus darüber, Löschen mit Bestätigungsdialog) - bei einer
-// Standard-Übung (`isBuiltin`, s. ADR 0021) fehlt dieser Button komplett
-// (statt nur deaktiviert zu sein), die dritte Grid-Spalte bleibt dafür leer.
+// Muskeln der Übung plus - falls vorhanden - die dauerhafte Notiz zur Übung
+// (ganz unten, s. ADR 0036); die Kopfzeile trägt statt eines Löschen-Buttons
+// einen "⋮"-Glass-Button mit Kontextmenü (Bearbeiten öffnet das
+// Neue-Übung-Sheet im Bearbeiten-Modus darüber, Notiz hinzufügen/bearbeiten
+// öffnet das Notiz-Sheet darüber, Löschen mit Bestätigungsdialog). Bei einer
+// Standard-Übung (`isBuiltin`, s. ADR 0021) enthält das Menü nur den
+// Notiz-Eintrag - Bearbeiten/Löschen sind für sie gesperrt.
 // Kopfzeile ohne `closing`-Fallunterscheidung, aus demselben Grund wie beim
 // Neue-Übung-Sheet (s. renderExerciseCreateSheet): diese Funktion wird nur
 // noch genau einmal beim Öffnen aufgerufen, die closing-Animation läuft über
 // direktes `classList.add()` auf den bestehenden Elementen, s.
 // closeExerciseDetailSheet().
+// Zustand des offenen Detail-Sheets, den das (synchron aufgebaute) Kontextmenü
+// braucht: ob die Übung eine Standard-Übung ist und ihre aktuelle Notiz.
+let exerciseDetailSheetIsBuiltin = false;
+let exerciseDetailSheetNote = '';
+
 async function renderExerciseDetailSheet() {
   const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
   const name = exercise?.name ?? 'Gelöschte Übung';
   const z = exerciseSubSheetZ();
 
-  const menuBtnHtml = exercise?.isBuiltin
+  exerciseDetailSheetIsBuiltin = !!exercise?.isBuiltin;
+  exerciseDetailSheetNote = exercise?.note ?? '';
+
+  const menuBtnHtml = !exercise
     ? '<div></div>'
     : `
         <div id="exercise-detail-menu-anchor" class="relative justify-self-end">
@@ -2273,6 +2285,7 @@ async function renderExerciseDetailSheet() {
 async function refreshExerciseDetailSheet() {
   if (!state.exerciseDetailSheetOpen) return;
   const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
+  exerciseDetailSheetNote = exercise?.note ?? '';
   const title = currentContainer?.querySelector('#exercise-detail-sheet-title');
   if (title) title.textContent = exercise?.name ?? 'Gelöschte Übung';
   const content = currentContainer?.querySelector('#exercise-detail-sheet-content');
@@ -2287,15 +2300,19 @@ async function refreshExerciseDetailSheet() {
 // eingefügt), Popup und Backdrop werden deshalb direkt in den Anker-Container
 // der Kopfzeile eingefügt bzw. wieder entfernt.
 function renderExerciseDetailMenu() {
+  const builtin = exerciseDetailSheetIsBuiltin;
   return `
     <div id="exercise-detail-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div id="exercise-detail-menu-popup" class="routine-picker-popup popup-glass absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" id="exercise-detail-menu-edit-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+      ${builtin ? '' : `<button type="button" id="exercise-detail-menu-edit-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
         Bearbeiten
+      </button>`}
+      <button type="button" id="exercise-detail-menu-note-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+        ${exerciseDetailSheetNote ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
       </button>
-      <button type="button" id="exercise-detail-menu-delete-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      ${builtin ? '' : `<button type="button" id="exercise-detail-menu-delete-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Löschen
-      </button>
+      </button>`}
     </div>
   `;
 }
@@ -2316,6 +2333,24 @@ function openExerciseDetailMenu() {
   currentContainer.querySelector('#exercise-detail-menu-edit-btn')?.addEventListener('click', () => {
     closeExerciseDetailMenu();
     openExerciseCreateSheet(state.exerciseDetailSheetExerciseId);
+  });
+
+  // Dauerhafte Notiz zur Übung (ADR 0036) im bestehenden Notiz-Sheet, eine
+  // Ebene über dem Detail-Sheet. Nach dem Speichern (läuft erst nach der
+  // Schließen-Animation des Notiz-Sheets) wird der Inhalt des Detail-Sheets
+  // direkt am bestehenden DOM aktualisiert.
+  currentContainer.querySelector('#exercise-detail-menu-note-btn')?.addEventListener('click', () => {
+    closeExerciseDetailMenu();
+    const exerciseId = state.exerciseDetailSheetExerciseId;
+    openNoteSheet({
+      container: currentContainer,
+      exerciseName: currentContainer.querySelector('#exercise-detail-sheet-title')?.textContent ?? '',
+      dateISO: null,
+      initialNote: exerciseDetailSheetNote,
+      saveNote: (text) => setExerciseNote(exerciseId, text),
+      z: exerciseEditSheetZ(),
+      onSaved: () => refreshExerciseDetailSheet(),
+    });
   });
 
   // Löschen mit Bestätigungsdialog (CLAUDE.md-Konvention für jedes Löschen
