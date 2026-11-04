@@ -41,6 +41,7 @@ import {
 import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
+import { pushPage } from '../swipeBack.js';
 import { openNoteSheet } from '../noteSheet.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
@@ -360,30 +361,45 @@ function allowedSheetMonths() {
 
 // --- Paint ---
 
+// Übungs-Detailseite (Abschnitt 12) ersetzt die Tagesübersicht komplett,
+// solange sie offen ist - eigenständiges Sub-View-Modul, verwaltet sich
+// ab hier vollständig selbst (eigenes render()/paint()/wireEvents()).
+// onBack räumt nur den State hier auf und rendert die Tagesübersicht neu.
+// Eigene Funktion (statt Inline-Aufruf in paint()), weil auch die abgebrochene
+// Wisch-Zurück-Geste die Seite wieder aufbauen muss (`restore`, s.
+// js/swipeBack.js): onBack() hat zu diesem Zeitpunkt die Übersicht schon
+// darunter gezeichnet.
+function showDetailPage(entryId, { restore = false } = {}) {
+  return exerciseDetail.render(currentContainer, {
+    entryId,
+    restore,
+    onOpenInfo: (exerciseId) => openExerciseDetailSheet(exerciseId),
+    onRestore: () => {
+      state.detailEntryId = entryId;
+      return showDetailPage(entryId, { restore: true });
+    },
+    onBack: ({ swipe = false } = {}) => {
+      // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
+      // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
+      // paint()-Aufruf der Detailseite (z. B. durch einen vorherigen
+      // Reiter-Wechsel dort ausgelöst) darf den Container nicht mehr
+      // überschreiben, sobald er fertig wird (s. exerciseDetail.unmount()).
+      exerciseDetail.unmount();
+      // Zurück-Pfeil und Wisch-Geste animieren selbst (js/swipeBack.js),
+      // `swipe: true` heißt hier: keine eigene Übergangs-Animation.
+      withViewTransition(() => {
+        state.detailEntryId = null;
+        paint();
+      }, swipe ? 'none' : 'back');
+    },
+  });
+}
+
 async function paint() {
   const myEpoch = renderEpoch;
 
-  // Übungs-Detailseite (Abschnitt 12) ersetzt die Tagesübersicht komplett,
-  // solange sie offen ist - eigenständiges Sub-View-Modul, verwaltet sich
-  // ab hier vollständig selbst (eigenes render()/paint()/wireEvents()).
-  // onBack räumt nur den State hier auf und rendert die Tagesübersicht neu.
   if (state.detailEntryId) {
-    await exerciseDetail.render(currentContainer, {
-      entryId: state.detailEntryId,
-      onOpenInfo: (exerciseId) => openExerciseDetailSheet(exerciseId),
-      onBack: ({ swipe = false } = {}) => {
-        // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
-        // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
-        // paint()-Aufruf der Detailseite (z. B. durch einen vorherigen
-        // Reiter-Wechsel dort ausgelöst) darf den Container nicht mehr
-        // überschreiben, sobald er fertig wird (s. exerciseDetail.unmount()).
-        exerciseDetail.unmount();
-        withViewTransition(() => {
-          state.detailEntryId = null;
-          paint();
-        }, swipe ? 'none' : 'back');
-      },
-    });
+    await showDetailPage(state.detailEntryId);
     return;
   }
 
@@ -2571,10 +2587,11 @@ function wireEvents() {
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.listScrollTop = currentContainer.scrollTop;
-      withViewTransition(() => {
+      // iOS-Schiebe-Animation (js/swipeBack.js) statt Skalieren+Ausblenden.
+      pushPage(currentContainer, () => {
         state.detailEntryId = btn.dataset.entry;
         paint();
-      }, 'forward');
+      });
     });
   });
 

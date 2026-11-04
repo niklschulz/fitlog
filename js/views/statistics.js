@@ -11,6 +11,7 @@ import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
+import { pushPage } from '../swipeBack.js';
 import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
@@ -1172,14 +1173,24 @@ function toggleFavorite(id) {
 
 // Übungs-Seite übernimmt den Container komplett (wie die Workout-
 // Übungsseite im Workout-Tab); Zurück zeichnet den Übungen-Reiter neu.
-function openExerciseDetail(exerciseId) {
-  listScrollTop = currentContainer.scrollTop;
-  exerciseDetail.render(currentContainer, {
+function showExerciseDetail(exerciseId, { restore = false } = {}) {
+  return exerciseDetail.render(currentContainer, {
     exerciseId,
+    restore,
     onBack: () => {
       exerciseDetail.unmount();
       paint();
     },
+    // Wisch-Zurück abgebrochen: Seite mit erhaltenem Zustand wieder aufbauen.
+    onRestore: () => showExerciseDetail(exerciseId, { restore: true }),
+  });
+}
+
+// Öffnen mit der iOS-Schiebe-Animation (js/swipeBack.js).
+function openExerciseDetail(exerciseId) {
+  pushPage(currentContainer, () => {
+    listScrollTop = currentContainer.scrollTop;
+    showExerciseDetail(exerciseId);
   });
 }
 

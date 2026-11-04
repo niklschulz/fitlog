@@ -1,49 +1,222 @@
-// Wisch-Geste "Zurück" wie in iOS (s. ADR 0036/0037): Ein Wisch vom linken
-// Bildschirmrand nach rechts führt von einer Unterseite mit Zurück-Pfeil
-// (Übungs-Detailseite im Workout-Tab, Statistik-Übungsseite) zurück.
+// Seiten-Übergänge wie in iOS (s. ADR 0037/0038): Zurück per Wisch vom linken
+// Rand, per Zurück-Pfeil und das Öffnen einer Unterseite nutzen dieselbe
+// Schiebe-Bewegung. Betroffen: Übungs-Detailseite im Workout-Tab und
+// Statistik-Übungsseite.
 //
-// Ablauf wie bei iOS:
-//  - Start nur in einem schmalen Streifen am linken Rand (EDGE_WIDTH_PX) -
-//    ein eigenes, fixes Element außerhalb des Seiteninhalts, das daher bei
-//    jedem Repaint der Seite bestehen bleibt und keinen Seiteninhalt (Reiter,
-//    Zahlenfelder, Umsortieren per Gedrückthalten) stört. `touch-action: none`
-//    (nicht `pan-y`): Sonst darf iOS bei schrägen Wischbewegungen parallel
-//    vertikal scrollen bzw. das Gummiband auslösen - die Seite ruckelte dann
-//    beim Ziehen auf und ab. Der Streifen ist nur 22 px breit, der Verlust des
-//    Scrollens genau dort fällt nicht auf. Offene Sheets
-//    liegen darüber (höherer z-index) und blockieren die Geste automatisch.
-//  - Die Seite (`container`) folgt dem Finger 1:1 und wirft einen Schatten
-//    auf den Hintergrund.
-//  - Beim Loslassen entscheidet Weg (> 40 % der Breite) oder Geschwindigkeit,
-//    ob sie zurückgeht oder federnd zurückspringt.
-//  - Beim Zurückgehen wird ein Abbild der Seite (Klon) über den Rest geschoben
-//    und gleitet nach rechts hinaus, während darunter die echte Übersicht neu
-//    gezeichnet wird und mit leichtem Parallax-Versatz von links einläuft.
-//    Ein Abbild statt der echten Seite, weil `onBack()` den Container
-//    ohnehin neu befüllt.
+// Ablauf der Zurück-Geste:
+//  - Start nur in einem schmalen Streifen am linken Rand (EDGE_WIDTH_PX) - ein
+//    eigenes, fixes Element außerhalb des Seiteninhalts, das jeden Repaint
+//    überlebt und keinen Seiteninhalt stört. `touch-action: none` (nicht
+//    `pan-y`): Sonst darf iOS bei schrägen Wischbewegungen parallel vertikal
+//    scrollen bzw. das Gummiband auslösen - die Seite ruckelte dann.
+//    Offene Sheets liegen darüber und blockieren die Geste von selbst.
+//  - Sobald der Finger wandert, wird die Detailseite als Abbild (Klon) über
+//    den Container gelegt und `onBack()` zeichnet die ECHTE Übersicht darunter
+//    (bei iOS liegt sie ebenfalls schon da). Das Abbild folgt dem Finger, die
+//    Übersicht darunter läuft mit Versatz (-1/3 der Breite) nach, eine
+//    abdunkelnde Ebene dazwischen blendet mit dem Weg aus.
+//  - Beim Loslassen entscheiden, wie bei iOS, vor allem die Geschwindigkeit
+//    (Fling nach rechts = zurück, nach links = bleiben), sonst die Hälfte des
+//    Wegs. Das Ausgleiten ist eine gedämpfte Feder, die mit der
+//    Fingergeschwindigkeit startet (kein Knick zwischen Finger und Animation).
+//  - Bleibt die Seite stehen, ruft die Geste `onRestore()` auf, das die
+//    Detailseite wieder aufbaut (Reiter/Auswahl bleiben erhalten), und legt
+//    das Abbild erst dann wieder weg.
+//
+// Zurück-Pfeil (`triggerBack()`) und Öffnen (`pushPage()`) laufen über
+// dieselbe Mechanik, nur ohne Finger.
+//
+// Layer-Reihenfolge (alles unterhalb der Scrims z-10, Bottom-Nav z-20 und der
+// Sheets ab z-50): Container (statisch) < Abdunklung (6) < Abbild (7). Beim
+// Öffnen: Abbild der alten Seite (6) < Abdunklung (7) < Container (8).
 //
 // Nur ein Streifen gleichzeitig (Modul-Singleton, wie die Notiz-/Action-
 // Sheets): Aufrufer rufen `wireSwipeBack()` in ihrem render() und
-// `unwireSwipeBack()` in ihrem unmount() auf. `onBack({ swipe: true })` -
-// der Aufrufer darf dann seine eigene Zurück-Animation weglassen.
+// `unwireSwipeBack()` in ihrem unmount() auf. `unwireSwipeBack()` bricht eine
+// laufende Geste/Animation nicht ab (onBack() ruft es selbst auf), sie räumt
+// sich danach selbst auf.
 const EDGE_WIDTH_PX = 22;
 const START_SLOP_PX = 8;
-const COMMIT_RATIO = 0.4;
-const COMMIT_MIN_VELOCITY = 0.5; // px/ms
-const COMMIT_MIN_DISTANCE_PX = 40;
-const PARALLAX = 0.3;
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
-const SHADOW = '-10px 0 30px rgba(0, 0, 0, 0.45)';
-const REVEAL_FALLBACK_MS = 600;
+const COMMIT_RATIO = 0.5;
+const FLING_COMMIT = 1.0; // Bildschirmbreiten pro Sekunde, nach rechts
+const FLING_CANCEL = 0.5; // Bildschirmbreiten pro Sekunde, nach links
+const VELOCITY_WINDOW_MS = 100;
+const PARALLAX = 1 / 3;
+const DIM_MAX = 0.2;
+const SPRING_OMEGA = 12; // gedämpft ohne Nachschwingen, ca. 0,35 s bis zur Ruhe
+const SPRING_MAX_S = 0.7;
+const SHADOW = '-2px 0 10px rgba(0, 0, 0, 0.3)';
+const READY_FALLBACK_MS = 600;
+const Z = { under: 6, dim: 7, top: 8, popDim: 6, popSnap: 7 };
 
 let teardown = null;
+let current = null;
+let transitioning = false;
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pageBackground = () => getComputedStyle(document.body).backgroundColor;
 
 export function unwireSwipeBack() {
+  current = null;
   teardown?.();
   teardown = null;
 }
 
-export function wireSwipeBack({ container, onBack }) {
+// Zurück-Pfeil: dieselbe Animation wie die Geste, ohne Finger. Ohne aktive
+// Verdrahtung (oder bei "Bewegung reduzieren") direkt `fallback()`.
+export function triggerBack(fallback) {
+  if (current && !reduceMotion()) current.pop();
+  else fallback?.();
+}
+
+// Gedämpfte Feder ohne Nachschwingen (kritisch gedämpft), startet mit der
+// Geschwindigkeit `velocity` (px/s) - so geht die Animation ohne Knick aus
+// der Fingerbewegung hervor. x(t) = to + (d0 + (v0 + ω·d0)·t)·e^(-ω·t)
+function springRun({ from, to, velocity = 0, onFrame }) {
+  return new Promise((resolve) => {
+    const d0 = from - to;
+    const b = velocity + SPRING_OMEGA * d0;
+    const t0 = performance.now();
+    const step = (now) => {
+      const t = clamp((now - t0) / 1000, 0, SPRING_MAX_S);
+      const e = Math.exp(-SPRING_OMEGA * t);
+      const x = to + (d0 + b * t) * e;
+      const v = (b - SPRING_OMEGA * (d0 + b * t)) * e;
+      const done = t >= SPRING_MAX_S || (Math.abs(x - to) < 0.5 && Math.abs(v) < 30);
+      onFrame(done ? to : x);
+      if (done) resolve();
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+// Abbild (Klon) des Containers an seiner aktuellen Position.
+function makeSnapshot(container, rect, z) {
+  const snap = document.createElement('div');
+  snap.setAttribute('aria-hidden', 'true');
+  snap.style.cssText =
+    `position:fixed;left:0;top:${rect.top}px;width:${window.innerWidth}px;height:${rect.height}px;` +
+    `overflow:hidden;z-index:${z};pointer-events:none;background:${pageBackground()};` +
+    `box-shadow:${SHADOW};will-change:transform;`;
+  const clone = container.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.style.cssText =
+    'width:100%;height:100%;transform:none;box-shadow:none;background:transparent;visibility:visible;';
+  snap.appendChild(clone);
+  document.body.appendChild(snap);
+  // Klone verlieren Scroll-Positionen (auch innerer Bereiche, z. B. des
+  // Kalender-Streifens) und getippte Eingabewerte - elementweise übernehmen.
+  const sources = [container, ...container.querySelectorAll('*')];
+  const copies = [clone, ...clone.querySelectorAll('*')];
+  sources.forEach((src, i) => {
+    const dst = copies[i];
+    if (!dst) return;
+    if (src.scrollTop || src.scrollLeft) {
+      dst.scrollTop = src.scrollTop;
+      dst.scrollLeft = src.scrollLeft;
+    }
+    if (src.tagName === 'INPUT') dst.value = src.value;
+  });
+  return snap;
+}
+
+function makeDim(rect, z, opacity) {
+  const dim = document.createElement('div');
+  dim.setAttribute('aria-hidden', 'true');
+  dim.style.cssText =
+    `position:fixed;left:0;top:${rect.top}px;width:100%;height:${rect.height}px;background:#000;` +
+    `pointer-events:none;z-index:${z};opacity:${opacity};will-change:opacity;`;
+  document.body.appendChild(dim);
+  return dim;
+}
+
+// Wartet, bis `container` neuen Inhalt bekommen hat (die Aufrufer zeichnen
+// asynchron, z. B. nach Datenbank-Abfragen), spätestens nach dem Fallback.
+function whenContainerPainted(container) {
+  let observer = null;
+  let timeout = null;
+  let resolveFn;
+  const promise = new Promise((resolve) => {
+    resolveFn = resolve;
+  });
+  const done = () => {
+    observer?.disconnect();
+    clearTimeout(timeout);
+    resolveFn();
+  };
+  observer = new MutationObserver(done);
+  observer.observe(container, { childList: true });
+  timeout = setTimeout(done, READY_FALLBACK_MS);
+  return { promise, cancel: done };
+}
+
+function resetContainerStyles(container) {
+  container.style.transform = '';
+  container.style.visibility = '';
+  container.style.willChange = '';
+  container.style.pointerEvents = '';
+  container.style.position = '';
+  container.style.zIndex = '';
+  container.style.background = '';
+  container.style.boxShadow = '';
+}
+
+// Öffnen einer Unterseite: Die alte Seite (Abbild) rückt mit Versatz nach links
+// und wird abgedunkelt, die neue schiebt sich von rechts darüber - das
+// Gegenstück zur Zurück-Geste. `renderFn()` zeichnet die neue Seite in
+// `container`.
+export function pushPage(container, renderFn) {
+  if (transitioning) return;
+  if (reduceMotion()) {
+    renderFn();
+    return;
+  }
+  transitioning = true;
+  const width = window.innerWidth;
+  const rect = container.getBoundingClientRect();
+  const under = makeSnapshot(container, rect, Z.under);
+  under.style.boxShadow = 'none';
+  const dim = makeDim(rect, Z.dim, 0);
+
+  container.style.visibility = 'hidden';
+  container.style.pointerEvents = 'none';
+  container.style.position = 'relative';
+  container.style.zIndex = String(Z.top);
+  container.style.background = pageBackground();
+  container.style.boxShadow = SHADOW;
+
+  const painted = whenContainerPainted(container);
+  renderFn();
+
+  painted.promise
+    .then(() => {
+      container.style.transform = `translateX(${width}px)`;
+      container.style.willChange = 'transform';
+      container.style.visibility = '';
+      // Layout jetzt erzwingen, nicht erst im ersten Animations-Bild.
+      void container.offsetHeight;
+      return springRun({
+        from: width,
+        to: 0,
+        onFrame: (x) => {
+          const p = 1 - x / width;
+          container.style.transform = `translateX(${x}px)`;
+          under.style.transform = `translateX(${-width * PARALLAX * p}px)`;
+          dim.style.opacity = String(DIM_MAX * p);
+        },
+      });
+    })
+    .finally(() => {
+      under.remove();
+      dim.remove();
+      resetContainerStyles(container);
+      transitioning = false;
+    });
+}
+
+export function wireSwipeBack({ container, onBack, onRestore = null }) {
   unwireSwipeBack();
   if (!container) return;
 
@@ -55,184 +228,195 @@ export function wireSwipeBack({ container, onBack }) {
 
   let pointerId = null;
   let startX = 0;
-  let dx = 0;
-  let active = false;
-  let lastX = 0;
-  let lastT = 0;
-  let velocity = 0;
-  let busy = false;
-  let snapshot = null;
-  let revealTimeout = null;
-  let observer = null;
+  let x = 0; // aktuelle Position der Seite (px)
+  let active = false; // Seite wird gerade gezogen
+  let reduced = false; // "Bewegung reduzieren": keine Visualisierung
+  let busy = false; // Geste oder Zurück-Animation läuft
+  let pendingTeardown = false;
+  let samples = [];
   let frame = null;
-  // Zurück-Animation läuft (Abbild gleitet hinaus, Übersicht läuft ein). onBack()
-  // ruft über unmount() `unwireSwipeBack()` auf - das darf diese Animation nicht
-  // abbrechen, sie räumt sich selbst auf.
-  let committing = false;
+  let width = 0;
+  let scrollTop = 0;
+  let snapshot = null;
+  let dim = null;
+  let ready = false; // Übersicht unter dem Abbild ist gezeichnet
+  let painted = null;
+  let prepared = null; // vorab gebautes Abbild (s. onDown)
 
-  const background = () => getComputedStyle(document.body).backgroundColor;
-  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function applyProgress(pos) {
+    const p = clamp(pos / width, 0, 1);
+    snapshot.style.transform = `translateX(${pos}px)`;
+    dim.style.opacity = String(DIM_MAX * (1 - p));
+    if (ready) container.style.transform = `translateX(${-width * PARALLAX * (1 - p)}px)`;
+  }
 
-  // Position wird höchstens einmal pro Frame geschrieben (pointermove kann
-  // öfter feuern als das Display aktualisiert) - gleichmäßigeres Mitziehen.
-  function scheduleTransform() {
+  function scheduleApply() {
     if (frame !== null) return;
     frame = requestAnimationFrame(() => {
       frame = null;
-      container.style.transform = `translateX(${dx}px)`;
+      if (snapshot) applyProgress(x);
     });
   }
 
-  function cancelScheduledTransform() {
+  function cancelScheduled() {
     if (frame !== null) cancelAnimationFrame(frame);
     frame = null;
   }
 
-  function clearContainerStyles() {
-    cancelScheduledTransform();
-    container.style.overflow = '';
-    container.style.transform = '';
-    container.style.boxShadow = '';
-    container.style.background = '';
-    container.style.willChange = '';
+  // Baut das Abbild schon beim Auflegen des Fingers (Klonen + Layout kosten
+  // etwas, das soll nicht das erste Zieh-Bild verzögern). Unsichtbar, bis die
+  // Geste beginnt.
+  function prepare() {
+    discardPrepared();
+    width = window.innerWidth;
+    const rect = container.getBoundingClientRect();
+    const snap = makeSnapshot(container, rect, Z.popSnap);
+    snap.style.visibility = 'hidden';
+    prepared = { snap, rect, scrollTop: container.scrollTop };
+  }
+
+  function discardPrepared() {
+    prepared?.snap.remove();
+    prepared = null;
+  }
+
+  function begin(startPos) {
+    busy = true;
+    transitioning = true;
+    if (!prepared) prepare();
+    snapshot = prepared.snap;
+    scrollTop = prepared.scrollTop;
+    snapshot.style.visibility = '';
+    dim = makeDim(prepared.rect, Z.popDim, DIM_MAX);
+    prepared = null;
+    x = startPos;
+    ready = false;
+    container.style.visibility = 'hidden';
+    container.style.pointerEvents = 'none';
+    applyProgress(x);
+
+    painted = whenContainerPainted(container);
+    painted.promise.then(() => {
+      ready = true;
+      container.style.willChange = 'transform';
+      container.style.visibility = '';
+      if (snapshot) applyProgress(x);
+    });
+    // Echte Übersicht darunter zeichnen (ruft über unmount() auch
+    // unwireSwipeBack() auf - `busy` hält den Streifen am Leben).
+    onBack({ swipe: true });
+  }
+
+  function cleanupVisuals() {
+    snapshot?.remove();
+    dim?.remove();
+    snapshot = null;
+    dim = null;
+    resetContainerStyles(container);
+  }
+
+  function endSession() {
+    busy = false;
+    transitioning = false;
+    if (pendingTeardown) fullTeardown();
+  }
+
+  async function finish(commit, velocity) {
+    const target = commit ? width : 0;
+    await springRun({
+      from: x,
+      to: target,
+      velocity,
+      onFrame: (pos) => {
+        x = clamp(pos, 0, width);
+        applyProgress(x);
+      },
+    });
+    // Übersicht muss gezeichnet sein, bevor das Abbild verschwindet.
+    await painted.promise;
+    if (!commit) {
+      // Seite bleibt: Detailseite wieder aufbauen (Zustand bleibt erhalten),
+      // erst dann das Abbild wegnehmen.
+      try {
+        await onRestore?.();
+      } catch {
+        /* Abbild trotzdem wegnehmen */
+      }
+      container.scrollTop = scrollTop;
+    }
+    cleanupVisuals();
+    endSession();
+  }
+
+  // Geschwindigkeit der letzten VELOCITY_WINDOW_MS vor dem Loslassen. Steht der
+  // Finger davor kurz still, zählt das als 0 (kein Fling).
+  function velocityPxPerS(releaseTime) {
+    const recent = samples.filter((s) => releaseTime - s.t <= VELOCITY_WINDOW_MS);
+    if (recent.length < 2) return 0;
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+    const dt = last.t - first.t;
+    return dt > 0 ? ((last.x - first.x) / dt) * 1000 : 0;
   }
 
   function onDown(e) {
-    if (busy || pointerId !== null) return;
+    if (busy || transitioning || pointerId !== null) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     pointerId = e.pointerId;
-    startX = lastX = e.clientX;
-    lastT = e.timeStamp;
-    dx = 0;
-    velocity = 0;
+    startX = e.clientX;
+    x = 0;
     active = false;
-    // Seite schon jetzt auf eine eigene Ebene legen, damit das erste Bewegungs-
-    // Bild nicht durch deren Anlegen stockt.
-    container.style.willChange = 'transform';
+    reduced = false;
+    samples = [{ t: e.timeStamp, x: 0 }];
+    if (!reduceMotion()) prepare();
     strip.setPointerCapture(pointerId);
   }
 
   function onMove(e) {
     if (e.pointerId !== pointerId) return;
-    dx = Math.max(0, e.clientX - startX);
+    const pos = Math.max(0, e.clientX - startX);
     if (!active) {
-      if (dx < START_SLOP_PX) return;
+      if (pos < START_SLOP_PX) return;
       active = true;
-      // Scrollen der Seite während der Geste sperren (Position bleibt erhalten).
-      container.style.overflow = 'hidden';
-      container.style.background = background();
-      container.style.boxShadow = SHADOW;
+      if (reduceMotion()) reduced = true;
+      else begin(pos);
     }
-    const dt = e.timeStamp - lastT;
-    if (dt > 0) velocity = (e.clientX - lastX) / dt;
-    lastX = e.clientX;
-    lastT = e.timeStamp;
-    scheduleTransform();
+    x = pos;
+    samples.push({ t: e.timeStamp, x: pos });
+    if (samples.length > 12) samples.shift();
+    if (!reduced) scheduleApply();
   }
 
   function onUp(e) {
     if (e.pointerId !== pointerId) return;
     pointerId = null;
     if (!active) {
-      container.style.willChange = '';
+      discardPrepared();
       return;
     }
     active = false;
-    cancelScheduledTransform();
-    container.style.transform = `translateX(${dx}px)`;
-    const width = window.innerWidth;
-    const cancelled = e.type === 'pointercancel';
-    const commit =
-      !cancelled && (dx > width * COMMIT_RATIO || (velocity > COMMIT_MIN_VELOCITY && dx > COMMIT_MIN_DISTANCE_PX));
-    if (commit) doCommit(width);
-    else springBack();
-  }
-
-  function springBack() {
-    if (reduceMotion()) {
-      clearContainerStyles();
+    if (reduced) {
+      // Ohne Animation: nur der Weg entscheidet.
+      if (x > window.innerWidth * 0.4) onBack({ swipe: true });
       return;
     }
-    busy = true;
-    const anim = container.animate(
-      [{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }],
-      { duration: 220, easing: EASE }
-    );
-    anim.finished.finally(() => {
-      clearContainerStyles();
-      busy = false;
-    });
+    cancelScheduled();
+    const velocity = velocityPxPerS(e.timeStamp);
+    const widths = velocity / width;
+    let commit;
+    if (e.type === 'pointercancel') commit = false;
+    else if (widths <= -FLING_CANCEL) commit = false;
+    else if (widths >= FLING_COMMIT) commit = true;
+    else commit = x > width * COMMIT_RATIO;
+    finish(commit, velocity);
   }
 
-  function makeSnapshot(width) {
-    const rect = container.getBoundingClientRect();
-    const snap = document.createElement('div');
-    snap.setAttribute('aria-hidden', 'true');
-    snap.style.cssText =
-      `position:fixed;left:0;top:${rect.top}px;width:${width}px;height:${rect.height}px;` +
-      `overflow:hidden;z-index:15;pointer-events:none;background:${background()};` +
-      `box-shadow:${SHADOW};transform:translateX(${dx}px);`;
-    const clone = container.cloneNode(true);
-    clone.removeAttribute('id');
-    clone.style.cssText = 'width:100%;height:100%;transform:none;box-shadow:none;background:transparent;';
-    snap.appendChild(clone);
-    document.body.appendChild(snap);
-    clone.scrollTop = container.scrollTop;
-    return snap;
-  }
-
-  function doCommit(width) {
-    if (reduceMotion()) {
-      clearContainerStyles();
-      onBack({ swipe: true });
-      return;
-    }
-    busy = true;
-    committing = true;
-    snapshot = makeSnapshot(width);
-    clearContainerStyles();
-    // Echter Container bleibt unsichtbar, bis onBack() die Übersicht
-    // hineingezeichnet hat (paint() ist asynchron) - sonst blitzt kurz die
-    // alte Seite links neben dem Abbild auf.
-    container.style.visibility = 'hidden';
-
-    const snap = snapshot;
-    // Beide Animationen starten erst, wenn onBack() die Übersicht fertig in den
-    // Container gezeichnet hat: Deren Aufbau und Layout ist die schwerste Arbeit
-    // des Ganzen und würde sonst genau die ersten Bilder der Animation
-    // blockieren (sichtbares Ruckeln). Das Abbild steht in der Zwischenzeit auf
-    // der Loslass-Position still - nur die Dauer des Zeichnens.
-    const reveal = () => {
-      observer?.disconnect();
-      observer = null;
-      clearTimeout(revealTimeout);
-      revealTimeout = null;
-      container.style.visibility = '';
-      // Layout jetzt erzwingen (nicht erst im ersten Animations-Bild).
-      void container.offsetHeight;
-      container.animate(
-        [{ transform: `translateX(${-width * PARALLAX}px)` }, { transform: 'translateX(0)' }],
-        { duration: 320, easing: EASE }
-      );
-      const remaining = Math.max(0, width - dx) / width;
-      snap
-        .animate(
-          [{ transform: `translateX(${dx}px)` }, { transform: `translateX(${width}px)` }],
-          { duration: 120 + remaining * 260, easing: EASE, fill: 'forwards' }
-        )
-        .finished.finally(() => {
-          snap.remove();
-          if (snapshot === snap) snapshot = null;
-          busy = false;
-          committing = false;
-        });
-    };
-    // Vor onBack() anhängen, falls das Neuzeichnen synchron läuft.
-    observer = new MutationObserver(reveal);
-    observer.observe(container, { childList: true });
-    revealTimeout = setTimeout(reveal, REVEAL_FALLBACK_MS);
-
-    onBack({ swipe: true });
+  // Zurück-Pfeil: dieselbe Animation ohne Finger.
+  function pop() {
+    if (busy || transitioning || pointerId !== null) return;
+    prepare();
+    begin(0);
+    finish(true, 0);
   }
 
   // Zusätzlich zu `touch-action: none` (iOS wertet das nicht überall gleich
@@ -244,16 +428,23 @@ export function wireSwipeBack({ container, onBack }) {
   strip.addEventListener('pointerup', onUp);
   strip.addEventListener('pointercancel', onUp);
 
-  teardown = () => {
+  function fullTeardown() {
+    pendingTeardown = false;
+    cancelScheduled();
+    painted?.cancel();
+    discardPrepared();
+    if (snapshot || dim) cleanupVisuals();
     strip.remove();
-    // Läuft gerade die Zurück-Animation, bleibt alles stehen - Abbild,
-    // Beobachter und Einlauf-Animation räumen sich selbst auf.
-    if (committing) return;
-    observer?.disconnect();
-    clearTimeout(revealTimeout);
-    snapshot?.remove();
-    snapshot = null;
-    container.style.visibility = '';
-    clearContainerStyles();
+  }
+
+  current = { pop };
+  teardown = () => {
+    // Läuft gerade eine Geste/Animation (onBack() ruft unmount() und damit
+    // dies hier selbst auf), bleibt alles stehen - sie räumt sich selbst auf.
+    if (busy) {
+      pendingTeardown = true;
+      return;
+    }
+    fullTeardown();
   };
 }

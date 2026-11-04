@@ -1,5 +1,7 @@
 # 0037 – Wisch-Zurück-Geste wie in iOS
 
+> **Teilweise überholt durch [ADR 0038](0038-ios-seitenuebergaenge.md):** Abbild-Animation nach dem Loslassen, Schwellen und leerer Hintergrund beim Ziehen wurden dort ersetzt. Randstreifen, `touch-action: none` und die Einbindung in die Detailseiten gelten weiter.
+
 ## Kontext
 
 Bottom-Sheets lassen sich per Wischen nach unten schließen. Der Nutzer wollte dasselbe für Seiten mit Zurück-Pfeil: Wisch von links nach rechts geht zur vorherigen Seite, Start und Animation wie in iOS. Betroffen sind die Übungs-Detailseite im Workout-Tab und die Statistik-Übungsseite.
