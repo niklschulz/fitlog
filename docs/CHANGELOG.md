@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-04 (Routinen-Sheet: Inhalt von der Bottom-Nav verdeckt)
+
+### Fixed
+- Routinen-Sheet (Liste und "Routine bearbeiten"/"Neue Routine"): Unten abgeschnitten wurde der letzte Eintrag auch bei ganz nach unten gescrolltem Inhalt von der über das Sheet gehobenen Bottom-Nav verdeckt. Das Padding unten am scrollenden Container (`#routines-sheet-content`) ist jetzt `+112px` statt `+32px` (wie bei den Übungs-Sheets). Nicht im Browser verifiziert. `CACHE_NAME` auf `fitlog-v246`
+
 ## 2026-11-04 (Info-Sheet: Bearbeiten/Löschen wirkt auf die Detailseite)
 
 ### Fixed

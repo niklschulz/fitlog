@@ -764,7 +764,7 @@ async function renderRoutinesSheet() {
 async function renderRoutinesSheetPanelBody() {
   return `
     ${renderRoutinesSheetHeader()}
-    <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+32px)]">
+    <div id="routines-sheet-content" class="bottom-sheet-scroll flex-1 overflow-y-auto min-h-0 px-4 pb-[calc(env(safe-area-inset-bottom)+112px)]">
       ${await renderRoutinesSheetContent()}
     </div>
   `;
