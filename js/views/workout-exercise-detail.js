@@ -20,7 +20,7 @@ import {
 } from '../utils.js';
 import { openNoteSheet, unmountNoteSheet } from '../noteSheet.js';
 import { getSettings } from '../settings.js';
-import { wireSwipeBack, unwireSwipeBack } from '../swipeBack.js';
+import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
 
 let currentContainer = null;
 let onBack = null;
@@ -54,16 +54,21 @@ let renderEpoch = 0;
 // Parameter, da renderSetContent() von beiden Reitern aus aufgerufen wird.
 let prs = new Map();
 
-export async function render(container, { entryId, onBack: onBackCallback, onOpenInfo: onOpenInfoCallback }) {
+// `restore`: Die Seite wird nach einer abgebrochenen Wisch-Zurück-Geste wieder
+// aufgebaut (s. js/swipeBack.js) - Reiter und Satz-Auswahl bleiben dann erhalten.
+// `onRestore` ruft die Geste dafür auf, workout.js baut die Seite damit neu.
+export async function render(container, { entryId, onBack: onBackCallback, onOpenInfo: onOpenInfoCallback, onRestore = null, restore = false }) {
   renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
   onOpenInfo = onOpenInfoCallback;
   // Wisch vom linken Rand = Zurück-Pfeil (s. js/swipeBack.js).
-  wireSwipeBack({ container, onBack: (opts) => onBack(opts) });
+  wireSwipeBack({ container, onBack: (opts) => onBack(opts), onRestore });
   state.entryId = entryId;
-  state.activeTab = 'today';
-  state.selectedSetId = null;
+  if (!restore) {
+    state.activeTab = 'today';
+    state.selectedSetId = null;
+  }
   await paint();
 }
 
@@ -328,8 +333,9 @@ function renderStatsTab() {
 }
 
 function wireEvents() {
+  // Zurück-Pfeil mit derselben Schiebe-Animation wie die Wisch-Geste.
   currentContainer.querySelector('#detail-back-btn')?.addEventListener('click', () => {
-    onBack();
+    triggerBack(() => onBack());
   });
 
   currentContainer.querySelector('#detail-info-btn')?.addEventListener('click', () => {

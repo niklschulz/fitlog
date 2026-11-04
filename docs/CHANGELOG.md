@@ -12,6 +12,15 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Seiten-Übergänge wie in iOS)
+
+### Changed
+- Übungs-Detailseite (Workout-Tab) und Statistik-Übungsseite: Öffnen, Zurück-Pfeil und Wisch-Zurück nutzen dieselbe iOS-Schiebe-Bewegung (`js/swipeBack.js`, [ADR 0038](decisions/0038-ios-seitenuebergaenge.md)). Vorher: Skalieren+Ausblenden beim Öffnen, Abwärts-Gleiten beim Zurück-Pfeil.
+- Wisch-Zurück: Die echte Übersicht wird schon beim Ziehen darunter gezeichnet (Versatz um 1/3 der Breite, abdunkelnde Ebene, dezenter Kantenschatten) statt leerem Hintergrund. Die Entscheidung beim Loslassen folgt iOS: Fling nach rechts (≥ 1 Bildschirmbreite/s) = zurück, nach links = bleiben, sonst die Hälfte des Wegs. Das Ausgleiten ist eine gedämpfte Feder, die mit der Fingergeschwindigkeit startet.
+- Bleibt die Seite stehen, baut `onRestore()` die Detailseite mit erhaltenem Zustand (Reiter, Satz-Auswahl, Zeitraum, Scroll-Position) wieder auf.
+- Abbilder übernehmen innere Scroll-Positionen (z. B. Kalender-Streifen) und getippte Eingabewerte.
+- Bei "Bewegung reduzieren" gehen Pfeil und Wisch ohne Animation zurück. `CACHE_NAME` auf `fitlog-v243`
+
 ## 2026-11-04 (Wisch-Zurück: Zurück-Animation lief nicht)
 
 ### Fixed

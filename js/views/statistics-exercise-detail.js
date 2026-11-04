@@ -10,7 +10,7 @@ import { db, getExerciseSetHistory, getPRsForExercises, todayISODate } from '../
 import { escapeHtml, renderSegmentedControl, renderRangeControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, renderPRIcon, CARD } from '../utils.js';
 import { computePersonalBests } from '../exerciseStats.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
-import { wireSwipeBack, unwireSwipeBack } from '../swipeBack.js';
+import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 
 let currentContainer = null;
@@ -28,15 +28,18 @@ const state = {
 // überschreibt.
 let renderEpoch = 0;
 
-export async function render(container, { exerciseId, onBack: onBackCallback }) {
+// `restore`/`onRestore`: s. workout-exercise-detail.js render().
+export async function render(container, { exerciseId, onBack: onBackCallback, onRestore = null, restore = false }) {
   renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
   // Wisch vom linken Rand = Zurück-Pfeil (s. js/swipeBack.js).
-  wireSwipeBack({ container, onBack: (opts) => onBack(opts) });
+  wireSwipeBack({ container, onBack: (opts) => onBack(opts), onRestore });
   state.exerciseId = exerciseId;
-  state.activeTab = 'stats';
-  state.range = '3m';
+  if (!restore) {
+    state.activeTab = 'stats';
+    state.range = '3m';
+  }
   await paint();
 }
 
@@ -163,7 +166,7 @@ function renderPersonalBests(bests) {
 }
 
 function wireEvents() {
-  currentContainer.querySelector('#stat-detail-back-btn')?.addEventListener('click', () => onBack());
+  currentContainer.querySelector('#stat-detail-back-btn')?.addEventListener('click', () => triggerBack(() => onBack()));
   currentContainer.querySelectorAll('#stat-detail-tabs .segmented-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (state.activeTab === btn.dataset.tab) return;

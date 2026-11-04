@@ -665,6 +665,8 @@ Gemäß Briefing-Vorgabe ("nur bestehende Screens angleichen, keine Vorwegnahme"
 
 Ein echtes Bottom-Sheet ist inzwischen gebaut (großer Kalender im Workout-Tab, s. "Bottom-Sheet" oben und Siebte Iteration) — `rounded-sheet` ist damit nicht mehr nur vorbereitet, sondern im Einsatz. Ebenso die Segmented Control (s. "Komponenten-Muster" oben, Übungs-Detailseite). Diagramme und die große Kennzahl (`text-kpi`) sind seit der Siebenundsiebzigsten Iteration ebenfalls im Einsatz (Statistik-Tab, "Workouts pro Woche") — s. "Balkendiagramm" unter "Komponenten-Muster". Falls die übrigen Screens/Komponenten später tatsächlich gebaut werden, ist der zugehörige Token (`rounded-badge`) bereits vorbereitet.
 
+**Seiten-Übergänge (2026-11-04, [ADR 0038](decisions/0038-ios-seitenuebergaenge.md)):** Öffnen einer Unterseite, Zurück-Pfeil und Wisch-Zurück nutzen dieselbe iOS-Schiebe-Bewegung: Die obere Seite schiebt sich von rechts herein bzw. hinaus (dezenter Kantenschatten `-2px 0 10px rgba(0,0,0,0.3)`), die untere Seite rückt um 1/3 der Breite nach links und wird bis zu 20 % schwarz abgedunkelt. Die Bewegung ist eine gedämpfte Feder ohne Nachschwingen (ca. 0,35 s), die mit der Fingergeschwindigkeit startet. Bottom-Nav und Scrims bleiben unberührt stehen. Bei "Bewegung reduzieren" entfällt die Animation.
+
 ## Offene Punkte aus dem Design-System-Audit
 
 Bewusst zurückgestellt, noch keine Entscheidung — beim nächsten Aufräum-Durchgang gemeinsam klären:
