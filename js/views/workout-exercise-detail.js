@@ -73,6 +73,19 @@ export function unmount() {
   unmountNoteSheet();
 }
 
+// Von workout.js nach Bearbeiten/Löschen der Übung über das Info-Sheet
+// aufgerufen. `refreshTitle()` ändert nur die Überschrift direkt im DOM (ein
+// paint() würde das darüberliegende, offene Sheet mit wegräumen);
+// `refresh()` zeichnet komplett neu - erst aufrufen, wenn das Sheet weg ist.
+export function refreshTitle(name) {
+  const h1 = currentContainer?.querySelector('h1');
+  if (h1) h1.textContent = name;
+}
+
+export function refresh() {
+  return paint();
+}
+
 // `indicatorFromRect` s. Kommentar bei statistics.js's paint() - dieselbe
 // Begründung gilt hier für den Reiter-Wechsel Heute/Verlauf/Statistik.
 async function paint(indicatorFromRect = null) {
