@@ -12,6 +12,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Wisch-Zurück: Ruckeln behoben)
+
+### Fixed
+- Wisch-Zurück (`js/swipeBack.js`): Beim Ziehen ruckelte die Seite auf dem iPhone, weil iOS bei schrägen Wischbewegungen parallel vertikal scrollen bzw. das Gummiband auslösen durfte (Randstreifen hatte `touch-action: pan-y`). Der Streifen nutzt jetzt `touch-action: none` plus `touchmove`-`preventDefault`, die Seite ist während der Geste nicht scrollbar, die Position wird höchstens einmal pro Frame geschrieben (`requestAnimationFrame`) und die Ebene (`will-change`) schon beim Auflegen des Fingers angelegt. `CACHE_NAME` auf `fitlog-v241`
+
 ## 2026-11-04 (Wisch-Zurück wie in iOS)
 
 ### Added
