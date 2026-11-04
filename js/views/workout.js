@@ -368,6 +368,7 @@ async function paint() {
   if (state.detailEntryId) {
     await exerciseDetail.render(currentContainer, {
       entryId: state.detailEntryId,
+      onOpenInfo: (exerciseId) => openExerciseDetailSheet(exerciseId),
       onBack: () => {
         // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
         // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
