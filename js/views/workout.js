@@ -2226,6 +2226,9 @@ function openExerciseCreateSheet(editExerciseId = null) {
 // braucht: ob die Übung eine Standard-Übung ist und ihre aktuelle Notiz.
 let exerciseDetailSheetIsBuiltin = false;
 let exerciseDetailSheetNote = '';
+// Notiz beim Öffnen des Sheets - unterscheidet sie von der aktuellen, um die
+// Detailseite dahinter nur bei einer Änderung neu zu zeichnen.
+let exerciseDetailSheetInitialNote = '';
 
 async function renderExerciseDetailSheet() {
   const exercise = await db.exercises.get(state.exerciseDetailSheetExerciseId);
@@ -2234,6 +2237,7 @@ async function renderExerciseDetailSheet() {
 
   exerciseDetailSheetIsBuiltin = !!exercise?.isBuiltin;
   exerciseDetailSheetNote = exercise?.note ?? '';
+  exerciseDetailSheetInitialNote = exerciseDetailSheetNote;
 
   const menuBtnHtml = !exercise
     ? '<div></div>'
@@ -2433,6 +2437,13 @@ function finalizeExerciseDetailSheetClose() {
   const backdrop = currentContainer?.querySelector('#exercise-detail-sheet-backdrop');
   backdrop?.nextElementSibling?.remove();
   backdrop?.remove();
+  // Von der Übungs-Detailseite aus geöffnet und Notiz geändert: Infokasten
+  // dort erst jetzt aktualisieren - ein paint() früher würde das offene Sheet
+  // mit wegräumen.
+  if (state.detailEntryId && exerciseDetailSheetNote !== exerciseDetailSheetInitialNote) {
+    exerciseDetailSheetInitialNote = exerciseDetailSheetNote;
+    exerciseDetail.refresh();
+  }
 }
 
 let pendingExerciseDetailSheetCloseTimeout = null;
