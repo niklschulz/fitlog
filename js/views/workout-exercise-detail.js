@@ -23,8 +23,12 @@ import { getSettings } from '../settings.js';
 
 let currentContainer = null;
 let onBack = null;
+// Öffnet das Übungs-Detail-Sheet (Muskeln) - von workout.js übergeben, da das
+// Sheet dort lebt und nur eine Quelle haben soll.
+let onOpenInfo = null;
 let state = {
   entryId: null,
+  exerciseId: null,
   activeTab: 'today', // 'today' | 'history' | 'stats'
   selectedSetId: null,
   // Für das Notiz-Sheet, bei jedem paint() aktualisiert (das Sheet muss
@@ -49,10 +53,11 @@ let renderEpoch = 0;
 // Parameter, da renderSetContent() von beiden Reitern aus aufgerufen wird.
 let prs = new Map();
 
-export async function render(container, { entryId, onBack: onBackCallback }) {
+export async function render(container, { entryId, onBack: onBackCallback, onOpenInfo: onOpenInfoCallback }) {
   renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
+  onOpenInfo = onOpenInfoCallback;
   state.entryId = entryId;
   state.activeTab = 'today';
   state.selectedSetId = null;
@@ -68,6 +73,19 @@ export function unmount() {
   unmountNoteSheet();
 }
 
+// Von workout.js nach Bearbeiten/Löschen der Übung über das Info-Sheet
+// aufgerufen. `refreshTitle()` ändert nur die Überschrift direkt im DOM (ein
+// paint() würde das darüberliegende, offene Sheet mit wegräumen);
+// `refresh()` zeichnet komplett neu - erst aufrufen, wenn das Sheet weg ist.
+export function refreshTitle(name) {
+  const h1 = currentContainer?.querySelector('h1');
+  if (h1) h1.textContent = name;
+}
+
+export function refresh() {
+  return paint();
+}
+
 // `indicatorFromRect` s. Kommentar bei statistics.js's paint() - dieselbe
 // Begründung gilt hier für den Reiter-Wechsel Heute/Verlauf/Statistik.
 async function paint(indicatorFromRect = null) {
@@ -81,6 +99,7 @@ async function paint(indicatorFromRect = null) {
     return;
   }
 
+  state.exerciseId = entry.exerciseId;
   const exercise = await db.exercises.get(entry.exerciseId);
   const exerciseName = exercise?.name ?? 'Gelöschte Übung';
   const workout = await db.workouts.get(entry.workoutId);
@@ -149,6 +168,13 @@ function renderHeader(exerciseName) {
         </svg>
       </button>
       <h1 class="text-card-title text-center truncate">${escapeHtml(exerciseName)}</h1>
+      <button id="detail-info-btn" type="button" class="icon-btn-glass tap-feedback text-ink justify-self-end" aria-label="Übungsdetails">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v5" />
+          <circle cx="12" cy="7.75" r="0.5" fill="currentColor" />
+        </svg>
+      </button>
     </div>
   `;
 }
@@ -285,6 +311,10 @@ function renderStatsTab() {
 function wireEvents() {
   currentContainer.querySelector('#detail-back-btn')?.addEventListener('click', () => {
     onBack();
+  });
+
+  currentContainer.querySelector('#detail-info-btn')?.addEventListener('click', () => {
+    if (state.exerciseId) onOpenInfo?.(state.exerciseId);
   });
 
   currentContainer.querySelectorAll('.segmented-tab').forEach((btn) => {

@@ -368,6 +368,7 @@ async function paint() {
   if (state.detailEntryId) {
     await exerciseDetail.render(currentContainer, {
       entryId: state.detailEntryId,
+      onOpenInfo: (exerciseId) => openExerciseDetailSheet(exerciseId),
       onBack: () => {
         // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
         // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
@@ -2186,6 +2187,10 @@ function openExerciseCreateSheet(editExerciseId = null) {
         // Übungsnamen.
         repaintExerciseSheetContentInPlace();
         await refreshExerciseDetailSheet();
+        if (state.detailEntryId) {
+          const edited = await db.exercises.get(exercise.id);
+          exerciseDetail.refreshTitle(edited?.name ?? 'Gelöschte Übung');
+        }
         if (state.routinesSheetOpen && state.routinesSheetMode === 'edit') repaintRoutinesSheetContentInPlace();
         return;
       }
@@ -2331,6 +2336,14 @@ function openExerciseDetailMenu() {
     await loadExerciseSheetCache();
     closeExerciseDetailSheet();
     repaintExerciseSheetContentInPlace();
+    // Von der Übungs-Detailseite aus geöffnet: Seite nach dem Schließen des
+    // Sheets neu zeichnen (zurück zur Übersicht, falls der Eintrag weg ist,
+    // sonst "Gelöschte Übung" mit den erhaltenen Sätzen).
+    if (state.detailEntryId) {
+      setTimeout(() => {
+        if (state.detailEntryId) exerciseDetail.refresh();
+      }, SHEET_CLOSE_ANIMATION_MS + 50);
+    }
   });
 }
 
