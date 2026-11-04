@@ -146,7 +146,7 @@ async function paint(indicatorFromRect = null) {
         ],
         state.activeTab
       )}
-      ${state.activeTab === 'today' ? renderTodayTab(todaySets, formWeight, formReps, routineLabel, entry.note) : ''}
+      ${state.activeTab === 'today' ? renderTodayTab(todaySets, formWeight, formReps, routineLabel, entry.note, exercise?.note) : ''}
       ${state.activeTab === 'history' ? renderHistoryTab(history) : ''}
       ${state.activeTab === 'stats' ? renderStatsTab() : ''}
     </div>
@@ -219,7 +219,21 @@ function renderSetContent(set, { badgeInset = false, prsMap = prs } = {}) {
   return renderSetValues(set.weight, set.reps) + renderPRBadge(prsMap.get(set.id), { extraClasses: badgeInset ? 'mr-4' : '' });
 }
 
-function renderTodayTab(sets, formWeight, formReps, routineLabel, note) {
+// Infokasten mit der dauerhaften Notiz zur Übung (exercises.note, s. ADR 0036)
+// ganz unten auf der Seite - nur lesbar, bearbeitet wird sie im Übungs-Detail-
+// Sheet (Info-Button). Nicht zu verwechseln mit der Notiz zum Workout-Tag
+// (`note`, direkt unter den Satz-Zeilen). Ohne Notiz leerer String.
+function renderExerciseNoteBox(exerciseNote) {
+  if (!exerciseNote) return '';
+  return `
+    <div id="detail-exercise-note" class="${CARD} flex flex-col gap-2">
+      <span class="text-label uppercase text-muted">Notiz zur Übung</span>
+      <p class="text-body text-ink whitespace-pre-line break-words">${escapeHtml(exerciseNote)}</p>
+    </div>
+  `;
+}
+
+function renderTodayTab(sets, formWeight, formReps, routineLabel, note, exerciseNote) {
   const rowCount = Math.max(sets.length, getSettings().defaultSetCount);
   const rows = Array.from({ length: rowCount }, (_, i) => sets[i] ?? null);
   const editing = !!state.selectedSetId;
@@ -258,6 +272,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel, note) {
           .join('')}
       </ul>
       ${renderNote(note, { clamp: false })}
+      ${renderExerciseNoteBox(exerciseNote)}
     </div>
   `;
 }
