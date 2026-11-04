@@ -2304,12 +2304,12 @@ function renderExerciseDetailMenu() {
   return `
     <div id="exercise-detail-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div id="exercise-detail-menu-popup" class="routine-picker-popup popup-glass absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      ${builtin ? '' : `<button type="button" id="exercise-detail-menu-edit-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
-        Bearbeiten
-      </button>`}
       <button type="button" id="exercise-detail-menu-note-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
         ${exerciseDetailSheetNote ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
       </button>
+      ${builtin ? '' : `<button type="button" id="exercise-detail-menu-edit-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+        Bearbeiten
+      </button>`}
       ${builtin ? '' : `<button type="button" id="exercise-detail-menu-delete-btn" class="tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Löschen
       </button>`}
