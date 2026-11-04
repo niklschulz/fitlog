@@ -102,8 +102,12 @@ function makeSnapshot(container, rect, z) {
     `box-shadow:${SHADOW};will-change:transform;`;
   const clone = container.cloneNode(true);
   clone.removeAttribute('id');
-  clone.style.cssText =
-    'width:100%;height:100%;transform:none;box-shadow:none;background:transparent;visibility:visible;';
+  // Bewusst KEIN `visibility: visible` am Klon: Das vorab gebaute Abbild wird am
+  // Wrapper per `visibility: hidden` versteckt, ein sichtbarer Klon läge sonst
+  // schon beim Auflegen des Fingers über der echten Seite und zeichnete
+  // halbtransparente Elemente (z. B. den ausgegrauten "Löschen"-Button)
+  // doppelt - sie wirkten dann heller.
+  clone.style.cssText = 'width:100%;height:100%;transform:none;box-shadow:none;background:transparent;';
   snap.appendChild(clone);
   document.body.appendChild(snap);
   // Klone verlieren Scroll-Positionen (auch innerer Bereiche, z. B. des

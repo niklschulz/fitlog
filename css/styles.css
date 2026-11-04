@@ -512,6 +512,31 @@ html[data-transition-direction='back']::view-transition-old(root) {
   }
 }
 
+/* Kein Markieren von Text oder Elementen in der ganzen App (Nutzer-Wunsch):
+   Ein langes Auflegen des Fingers (z. B. im Rand-Streifen der Wisch-Zurück-
+   Geste, js/swipeBack.js) markierte auf iOS sonst die ganze Seite blau, zeigte
+   die Lupe und das Kopieren/Nachschlagen-Menü. `-webkit-touch-callout`
+   unterdrückt zusätzlich das Callout bei langem Drücken auf Links/Bildern.
+   Ausnahme: Eingabefelder und das contenteditable-Notizfeld - dort ist
+   Markieren/Cursor-Setzen nötig. iOS-Safari macht Felder unter
+   `user-select: none` sonst unbedienbar, deshalb hier ausdrücklich `text`. */
+html,
+body,
+body * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+[contenteditable],
+[contenteditable] * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 /* Zeilen, die per Gedrückthalten umsortiert werden (js/reorder.js): Ohne
    diese Regeln markiert iOS beim langen Drücken Text bzw. zeigt ein
    Callout, und die Geste würde abgebrochen, bevor das Ziehen startet. */

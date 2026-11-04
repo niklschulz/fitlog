@@ -12,6 +12,16 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Wisch-Zurück: Buttons wurden beim Auflegen des Fingers heller)
+
+### Fixed
+- Beim Auflegen des Fingers im linken Randstreifen wirkten Buttons heller bzw. grau (z. B. der ausgegraute "Löschen"-Button). Ursache: Das schon beim Auflegen vorab gebaute Abbild der Seite (`prepare()` in `js/swipeBack.js`) war am Wrapper per `visibility: hidden` versteckt, der Klon darin aber ausdrücklich `visibility: visible` und lag damit sichtbar über der echten Seite - halbtransparente Elemente wurden doppelt gezeichnet. Der Klon erbt die Sichtbarkeit jetzt vom Wrapper. Geprüft per Pixelvergleich der Button-Zeile vor/während/nach dem Auflegen (gleich). Das Markieren ist davon getrennt (nächster Eintrag). `CACHE_NAME` auf `fitlog-v245`
+
+## 2026-11-04 (Kein Markieren in der App)
+
+### Fixed
+- Wer den Finger länger im Randstreifen der Wisch-Zurück-Geste (oder irgendwo sonst) auflegte, markierte auf iOS die ganze Seite blau (Buttons wirkten dabei verändert) und bekam Lupe und "Kopieren/Nachschlagen"-Menü. Markieren und Callout sind jetzt app-weit abgeschaltet (`user-select: none`, `-webkit-touch-callout: none` in `css/styles.css`). Ausnahme: Eingabefelder und das contenteditable-Notizfeld, dort ausdrücklich `user-select: text`. `CACHE_NAME` auf `fitlog-v244`
+
 ## 2026-11-04 (Seiten-Übergänge wie in iOS)
 
 ### Changed
