@@ -12,6 +12,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Übungs-Detail-Menü: Reihenfolge)
+
+### Changed
+- "⋮"-Menü des Übungs-Detail-Sheets: "Notiz hinzufügen/bearbeiten" steht jetzt an erster Stelle, danach "Bearbeiten" und "Löschen". `CACHE_NAME` auf `fitlog-v238`
+
 ## 2026-11-04 (Notiz zur Übung im Übungs-Detail-Sheet)
 
 ### Added

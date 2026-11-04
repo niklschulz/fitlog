@@ -108,7 +108,7 @@ Siehe [ADR 0004](decisions/0004-loesch-kaskaden.md) (Grundregeln) und [ADR 0007]
 - Zusätzliche Satz-Felder: RPE/Anstrengungsgrad pro Satz auf der Übungs-Detailseite, Pausenzeiten
 - Übungs-Demo-Video (Kamera-Icon im Kopfbereich der Übungs-Detailseite)
 - Auswertungen auf Basis der Routine-Verknüpfung (z. B. Trainingshäufigkeit pro Routine); Statistik-Reiter auf der Übungs-Detailseite ist dafür bereits als Platzhalter vorhanden
-- Weitere Inhalte des Übungs-Detail-Sheets (geöffnet per Tap auf eine Übung im Übungs-Sheet, [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md)) — aktuell Muskelgruppen, die dauerhafte **Notiz zur Übung** (ganz unten, s. u.) und das "⋮"-Menü (Bearbeiten/Notiz/Löschen), weitere Details folgen
+- Weitere Inhalte des Übungs-Detail-Sheets (geöffnet per Tap auf eine Übung im Übungs-Sheet, [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md)) — aktuell Muskelgruppen, die dauerhafte **Notiz zur Übung** (ganz unten, s. u.) und das "⋮"-Menü (Notiz/Bearbeiten/Löschen), weitere Details folgen
 
 ## Explizit dauerhaft nicht vorgesehen (keine spätere Erweiterung geplant)
 
