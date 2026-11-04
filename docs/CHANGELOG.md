@@ -12,6 +12,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Kein Markieren in der App)
+
+### Fixed
+- Wer den Finger länger im Randstreifen der Wisch-Zurück-Geste (oder irgendwo sonst) auflegte, markierte auf iOS die ganze Seite blau (Buttons wirkten dabei verändert) und bekam Lupe und "Kopieren/Nachschlagen"-Menü. Markieren und Callout sind jetzt app-weit abgeschaltet (`user-select: none`, `-webkit-touch-callout: none` in `css/styles.css`). Ausnahme: Eingabefelder und das contenteditable-Notizfeld, dort ausdrücklich `user-select: text`. `CACHE_NAME` auf `fitlog-v244`
+
 ## 2026-11-04 (Seiten-Übergänge wie in iOS)
 
 ### Changed
