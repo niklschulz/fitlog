@@ -12,6 +12,12 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Wisch-Zurück: Zurück-Animation lief nicht)
+
+### Fixed
+- Wisch-Zurück: Beim Loslassen sprang die Übersicht hart herein, statt dass das Abbild der Seite hinausglitt und die Übersicht von links einlief. Ursache: `onBack()` ruft über `unmount()` `unwireSwipeBack()` auf, und das räumte Abbild, Beobachter und Einlauf-Animation sofort wieder ab. Eine laufende Zurück-Animation übersteht das Abräumen jetzt (`committing` in `js/swipeBack.js`).
+- Beide Animationen (Abbild hinaus, Übersicht herein) starten erst, wenn die Übersicht fertig gezeichnet und gelayoutet ist (`offsetHeight`-Layout vorab). Deren Aufbau blockierte sonst die ersten Animations-Bilder (Messung bei 4-fach gedrosselter CPU: Blockade vor dem Start statt mittendrin, danach gleichmäßige 16-ms-Bilder). `CACHE_NAME` auf `fitlog-v242`
+
 ## 2026-11-04 (Wisch-Zurück: Ruckeln behoben)
 
 ### Fixed
