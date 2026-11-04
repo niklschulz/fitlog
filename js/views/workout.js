@@ -371,7 +371,7 @@ async function paint() {
     await exerciseDetail.render(currentContainer, {
       entryId: state.detailEntryId,
       onOpenInfo: (exerciseId) => openExerciseDetailSheet(exerciseId),
-      onBack: () => {
+      onBack: ({ swipe = false } = {}) => {
         // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
         // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
         // paint()-Aufruf der Detailseite (z. B. durch einen vorherigen
@@ -381,7 +381,7 @@ async function paint() {
         withViewTransition(() => {
           state.detailEntryId = null;
           paint();
-        }, 'back');
+        }, swipe ? 'none' : 'back');
       },
     });
     return;

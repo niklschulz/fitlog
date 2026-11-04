@@ -20,6 +20,7 @@ import {
 } from '../utils.js';
 import { openNoteSheet, unmountNoteSheet } from '../noteSheet.js';
 import { getSettings } from '../settings.js';
+import { wireSwipeBack, unwireSwipeBack } from '../swipeBack.js';
 
 let currentContainer = null;
 let onBack = null;
@@ -58,6 +59,8 @@ export async function render(container, { entryId, onBack: onBackCallback, onOpe
   currentContainer = container;
   onBack = onBackCallback;
   onOpenInfo = onOpenInfoCallback;
+  // Wisch vom linken Rand = Zurück-Pfeil (s. js/swipeBack.js).
+  wireSwipeBack({ container, onBack: (opts) => onBack(opts) });
   state.entryId = entryId;
   state.activeTab = 'today';
   state.selectedSetId = null;
@@ -70,6 +73,7 @@ export async function render(container, { entryId, onBack: onBackCallback, onOpe
 // (s. workout.js's eigenes unmount()).
 export function unmount() {
   renderEpoch++;
+  unwireSwipeBack();
   unmountNoteSheet();
 }
 
