@@ -31,6 +31,7 @@ import {
   deleteSet,
   resetStartedWithoutSets,
   setWorkoutExerciseNote,
+  setExerciseNote,
 } from '../js/db.js';
 
 await db.open();
@@ -458,4 +459,43 @@ test('removeExerciseWithSetsFromWorkout entfernt den Eintrag samt Notiz', async 
   await removeExerciseWithSetsFromWorkout(workout.id, a.id);
 
   assert.equal(await db.workoutExercises.get(entry.id), undefined);
+});
+
+// --- Dauerhafte Notiz zur Übung (ADR 0036), nicht zu verwechseln mit der
+// Notiz pro Übung und Tag (workoutExercises.note) ---
+
+test('setExerciseNote setzt, trimmt und entfernt die Notiz an der Übung; Name/Muskeln bleiben', async () => {
+  const ex = await createExercise('Kniebeuge', { primaryMuscleIds: [MUSCLES[0].id], secondaryMuscleIds: [] });
+
+  await setExerciseNote(ex.id, '  Fersen unten lassen  ');
+  assert.equal((await db.exercises.get(ex.id)).note, 'Fersen unten lassen');
+
+  await updateExercise(ex.id, 'Kniebeuge tief');
+  const renamed = await db.exercises.get(ex.id);
+  assert.equal(renamed.note, 'Fersen unten lassen', 'Umbenennen darf die Notiz nicht löschen');
+  assert.deepEqual(renamed.primaryMuscleIds, [MUSCLES[0].id]);
+
+  await setExerciseNote(ex.id, '   ');
+  assert.equal((await db.exercises.get(ex.id)).note, undefined);
+});
+
+test('setExerciseNote funktioniert für Standard-Übungen und überlebt seedBuiltinExercises', async () => {
+  await seedBuiltinExercises();
+  const builtin = (await db.exercises.toArray()).find((e) => e.isBuiltin);
+  await setExerciseNote(builtin.id, 'Eigene Anmerkung');
+  await seedBuiltinExercises();
+  assert.equal((await db.exercises.get(builtin.id)).note, 'Eigene Anmerkung');
+});
+
+test('Exercise-Notiz und Workout-Tag-Notiz sind voneinander unabhängig', async () => {
+  const ex = await createExercise('Rudern');
+  const workout = await getOrCreateWorkoutForDate('2026-11-04');
+  await addExercisesToWorkout(workout.id, [ex.id]);
+  const [entry] = await getWorkoutExercises(workout.id);
+
+  await setExerciseNote(ex.id, 'Dauerhaft');
+  await setWorkoutExerciseNote(entry.id, 'Nur heute');
+
+  assert.equal((await db.exercises.get(ex.id)).note, 'Dauerhaft');
+  assert.equal((await db.workoutExercises.get(entry.id)).note, 'Nur heute');
 });

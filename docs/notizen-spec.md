@@ -10,6 +10,8 @@ Vorläufer: In [features.md](features.md) steht "Notizen" bisher nur als vorgeme
 
 ## 1. Ziel und Abgrenzung
 
+> **Nicht verwechseln:** Dieses Dokument beschreibt die Notiz pro Übung **und Workout-Tag** (`workoutExercises.note`). Die dauerhafte Notiz zur Übung selbst (`exercises.note`, im Übungs-Detail-Sheet) ist davon unabhängig, s. [ADR 0036](decisions/0036-notiz-zur-uebung.md). Beide nutzen dasselbe Notiz-Sheet.
+
 Zu einer Übung an einem Trainingstag eine kurze Freitext-Notiz festhalten, z. B. "Schulter zwickte", "Griff enger". Die Notiz wird per Button neben den Satz-Buttons in einem Bottom-Sheet geschrieben und ist danach **nur lesbar** an drei Stellen sichtbar: Roster-Karte, Detailseite unter den Sätzen, Verlauf.
 
 - **Pro Übung und Tag.** Keine dauerhafte Notiz pro Übung, keine Notiz pro Satz.

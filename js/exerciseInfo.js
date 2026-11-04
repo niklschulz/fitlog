@@ -22,6 +22,15 @@ export function renderExerciseInfo(exercise) {
   const primary = exercise.primaryMuscleIds ?? [];
   const secondary = exercise.secondaryMuscleIds ?? [];
 
+  // Dauerhafte Notiz zur Übung (ADR 0036) ganz unten, nur wenn vorhanden.
+  const noteHtml = exercise.note
+    ? `
+      <div class="flex flex-col gap-2">
+        <span class="text-label-large text-muted">Notiz</span>
+        <p class="text-body text-ink whitespace-pre-line break-words">${escapeHtml(exercise.note)}</p>
+      </div>`
+    : '';
+
   return `
     <div class="flex flex-col gap-6 py-1">
       <div class="flex flex-col gap-2">
@@ -31,7 +40,7 @@ export function renderExerciseInfo(exercise) {
       <div class="flex flex-col gap-2">
         <span class="text-label-large text-muted">Sekundäre Muskeln</span>
         <div class="flex flex-wrap gap-2">${secondary.length > 0 ? secondary.map(chip).join('') : none}</div>
-      </div>
+      </div>${noteHtml}
     </div>
   `;
 }

@@ -12,6 +12,15 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Notiz zur Übung im Übungs-Detail-Sheet)
+
+### Added
+- Übungs-Detail-Sheet: dauerhafte Notiz pro Übung (nicht zu verwechseln mit der Notiz pro Übung und Tag). Erfassen über das "⋮"-Menü ("Notiz hinzufügen/bearbeiten") im bestehenden Notiz-Sheet, Anzeige ganz unten im Sheet und im Info-Reiter der Statistik-Übungsseite. Neues optionales Feld `exercises.note`, `setExerciseNote()` in `js/db.js`, [ADR 0036](decisions/0036-notiz-zur-uebung.md). Tests ergänzt (`tests/db.test.js`)
+
+### Changed
+- `openNoteSheet()` (`js/noteSheet.js`) nimmt optional `saveNote`, `z` und `dateISO: null` (keine Datumszeile) entgegen
+- Standard-Übungen: Das "⋮"-Menü im Übungs-Detail-Sheet erscheint jetzt auch bei ihnen, mit dem Notiz-Eintrag als einzigem Eintrag. `CACHE_NAME` auf `fitlog-v237`
+
 ## 2026-11-01 (Notiz-Sheet: Seite springt nicht mehr hoch)
 
 ### Fixed
