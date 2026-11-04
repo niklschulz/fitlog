@@ -70,9 +70,12 @@ export function renderNote(note, { clamp = true, extraClasses = '' } = {}) {
 // ohne jeden Übergang - kein Bruch, nur kein Effekt (s. auch die
 // @media(prefers-reduced-motion)-Regel in styles.css für den Fall, dass die
 // Browser-Unterstützung zwar da ist, aber keine Animation gewünscht ist).
+//
+// `direction: 'none'` rendert immer ohne Übergang - für die Wisch-Zurück-Geste
+// (js/swipeBack.js), die ihre eigene Animation mitbringt.
 export function withViewTransition(renderFn, direction = 'forward') {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduceMotion || !document.startViewTransition) {
+  if (reduceMotion || direction === 'none' || !document.startViewTransition) {
     renderFn();
     return;
   }

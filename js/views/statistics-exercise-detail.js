@@ -10,6 +10,7 @@ import { db, getExerciseSetHistory, getPRsForExercises, todayISODate } from '../
 import { escapeHtml, renderSegmentedControl, renderRangeControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, renderPRIcon, CARD } from '../utils.js';
 import { computePersonalBests } from '../exerciseStats.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
+import { wireSwipeBack, unwireSwipeBack } from '../swipeBack.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 
 let currentContainer = null;
@@ -31,6 +32,8 @@ export async function render(container, { exerciseId, onBack: onBackCallback }) 
   renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
+  // Wisch vom linken Rand = Zurück-Pfeil (s. js/swipeBack.js).
+  wireSwipeBack({ container, onBack: (opts) => onBack(opts) });
   state.exerciseId = exerciseId;
   state.activeTab = 'stats';
   state.range = '3m';
@@ -39,6 +42,7 @@ export async function render(container, { exerciseId, onBack: onBackCallback }) 
 
 export function unmount() {
   renderEpoch++;
+  unwireSwipeBack();
 }
 
 // Zwei Segmented Controls auf der Seite (Reiter + Zeitraum), jede in einem

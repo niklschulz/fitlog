@@ -12,6 +12,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Added
 - Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
 
+## 2026-11-04 (Wisch-Zurück wie in iOS)
+
+### Added
+- Übungs-Detailseite (Workout-Tab) und Statistik-Übungsseite: Wisch vom linken Bildschirmrand nach rechts geht zurück, wie der Zurück-Pfeil. Die Seite folgt dem Finger (mit Schatten), beim Loslassen entscheidet Weg (> 40 % der Breite) oder Geschwindigkeit; sonst federt sie zurück. Beim Zurückgehen gleitet ein Abbild der Seite nach rechts hinaus, während die Übersicht mit leichtem Parallax-Versatz von links einläuft. Neues Modul `js/swipeBack.js`, [ADR 0037](decisions/0037-wisch-zurueck-geste.md). `withViewTransition()` kennt dafür `'none'`. `CACHE_NAME` auf `fitlog-v240`
+
 ## 2026-11-04 (Infokasten mit Notiz zur Übung auf der Detailseite)
 
 ### Added
