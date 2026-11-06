@@ -1,5 +1,7 @@
 # 0017 – Roster-Kontextmenü: Form/Material/Position nach iOS-Referenzbild, Swipe-Geste entfernt
 
+**Status:** Gültig
+
 ## Kontext
 
 Der Nutzer teilte einen Screenshot eines iOS-Liquid-Glass-Kontextmenüs (Beispiel "Bench Press: Dumbbell" mit den Einträgen "Replace"/"Remove") als Vorbild für das bestehende "⋮"-Kontextmenü der Roster-Karte (s. [ADR 0016](0016-swipe-to-delete-roster.md)). Auftrag in zwei Schritten:

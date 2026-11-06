@@ -1,5 +1,7 @@
 # 0032 – Zielarchitektur: App vom eigenen Server ausliefern
 
+**Status:** Gültig
+
 ## Kontext
 
 [ADR 0005](0005-github-pages-hosting.md) liefert die App über GitHub Pages aus. Für den geplanten Sync (Raspberry Pi, Tailscale) wäre die App dann eine fremde Origin gegenüber dem Server: Dafür braucht es CORS, und die Server-Adresse müsste irgendwo konfiguriert werden (nicht im öffentlichen Repo, s. ADR 0005).

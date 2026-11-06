@@ -1,5 +1,7 @@
 # 0001 – Vanilla JavaScript ohne Framework
 
+**Status:** Gültig
+
 ## Kontext
 
 Die App ist im Umfang überschaubar (vier Kern-Flows, Einzelnutzer, keine komplexe UI-Zustandsverwaltung). Der Code soll auch ohne tiefere Programmierkenntnisse grob nachvollziehbar bleiben.

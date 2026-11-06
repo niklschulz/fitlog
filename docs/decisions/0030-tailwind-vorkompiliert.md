@@ -1,5 +1,7 @@
 # 0030 – Tailwind vorkompiliert statt Play CDN
 
+**Status:** Gültig
+
 ## Kontext
 
 Die Play CDN ([ADR 0002](0002-tailwind-play-cdn.md)) führte zu einem Offline-Ausfall: Das CDN-Skript lief als Cross-Origin-Skript durch den Service Worker, dessen `fetch`-Handler die URL `https://cdn.tailwindcss.com` mit dem Rohstring verglich, während `event.request.url` normalisiert `https://cdn.tailwindcss.com/` lautet. Der Handler griff deshalb nie, der Start ohne Netz lud das Skript nicht und die App erschien komplett ungestylt (Serifenschrift, keine Utilities). Dazu kam, dass Precache-Fehler beim Install verschluckt wurden. Grundsätzlich bleibt die Play CDN ein Runtime-Compiler und Laufzeit-Abhängigkeit von Dritten.

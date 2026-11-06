@@ -1,5 +1,7 @@
 # 0018 – Eigenständiger Übungen-Tab entfernt, durch Statistik-Tab ersetzt
 
+**Status:** Gültig – abgeschlossen: Der Übungen-Tab ist entfernt (`js/views/exercises.js` gelöscht); Passagen älterer ADRs und Doku, die ihn nennen, beschreiben den damaligen Stand.
+
 ## Kontext
 
 Seit den Anfängen der App gab es einen eigenständigen "Übungen"-Tab (`js/views/exercises.js`, zweite Position in der Bottom-Nav) mit einer einfachen Liste aller Übungen und einem Anlegen-/Bearbeiten-Formular. Parallel dazu ist im Workout-Tab inzwischen ein vollständiger, eigener Weg entstanden, Übungen anzulegen (Neue-Übung-Sheet, [ADR 0014](0014-neue-uebung-sheet-gestapelt.md)) und zu löschen (Übungs-Detail-Sheet, s. CHANGELOG vom 2026-09-09) — mit Muskel-Zuordnung, die das alte `exercises.js`-Formular nie angeboten hatte ([ADR 0013](0013-uebung-muskel-verknuepfung.md)).

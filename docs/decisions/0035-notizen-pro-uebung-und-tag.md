@@ -1,8 +1,10 @@
 # 0035 – Notizen pro Übung und Tag, Schutz vor Aufräum-Kaskaden
 
+**Status:** Gültig
+
 ## Kontext
 
-Der Nutzer will zu einer Übung an einem Trainingstag eine kurze Freitext-Notiz festhalten (z. B. "Schulter zwickte"). Spezifikation: [notizen-spec.md](../notizen-spec.md).
+Der Nutzer will zu einer Übung an einem Trainingstag eine kurze Freitext-Notiz festhalten (z. B. "Schulter zwickte"). Spezifikation: [notizen-spec.md](../specs/notizen-spec.md).
 
 ## Entscheidung
 

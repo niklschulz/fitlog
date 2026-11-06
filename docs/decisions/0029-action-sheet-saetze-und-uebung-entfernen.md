@@ -1,5 +1,7 @@
 # 0029 – Action Sheet und "Sätze und Übung entfernen"
 
+**Status:** Gültig
+
 ## Kontext
 
 Im Übungs-Sheet des Workout-Tabs schaltet der Haken eine Übung im Tages-Workout um. Das Zurücknehmen war für Übungen mit erfassten Sätzen zunächst per `alert()` gesperrt (Schutzregel aus [ADR 0007](0007-workout-tab-tagesbasiertes-modell.md)). Nutzer-Vorgabe: stattdessen ein eigenes Action Sheet im Stil des SwiftUI-`confirmationDialog` mit den Optionen "Sätze und Übung entfernen" und "Abbrechen".

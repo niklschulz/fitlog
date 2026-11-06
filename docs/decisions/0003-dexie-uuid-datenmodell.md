@@ -1,5 +1,7 @@
 # 0003 – IndexedDB via Dexie, UUIDs statt Auto-Increment-IDs
 
+**Status:** Gültig
+
 ## Kontext
 
 Der MVP hat kein Backend, aber ein späterer Sync zu einem selbst gehosteten Backend (Raspberry Pi über Tailscale) ist explizit vorgesehen (s. [architecture.md](../architecture.md#sync--infrastruktur-geplant-noch-nicht-gebaut)). Das Datenmodell soll so gestaltet sein, dass dieser Sync später ohne Umbau ergänzt werden kann.

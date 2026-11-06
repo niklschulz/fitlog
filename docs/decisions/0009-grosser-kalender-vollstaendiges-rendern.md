@@ -1,5 +1,7 @@
 # 0009 – Großer Kalender: vollständiges Vorab-Rendern statt Lazy-Loading beim Scrollen
 
+**Status:** Gültig
+
 ## Kontext
 
 [ADR 0008](0008-grosser-kalender-lazy-loading.md) entschied sich für wachsendes Lazy-Loading: Beim Öffnen des großen Kalenders wurden nur wenige Monate um den Zielmonat gerendert, weitere Monate erst beim Erreichen des Scroll-Rands per asynchroner DB-Abfrage nachgeladen. In der Praxis (Nutzer-Feedback nach dem ersten echten Test) führte das zu spürbarem Ruckeln: Die erste Scroll-Geste nach dem Öffnen "hakte" bzw. stoppte vorzeitig, weil die IndexedDB-Abfrage für den nächsten Monat noch nicht abgeschlossen war, während der native Scroll bereits an den (noch unvollständigen) Rand des geladenen Inhalts lief. Erst nach dem ersten erfolgreichen Nachladen (Browser/Dexie-Caches warm) fühlte sich weiteres Scrollen flüssig an.

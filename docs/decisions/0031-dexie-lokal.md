@@ -1,5 +1,7 @@
 # 0031 – Dexie lokal ausliefern statt per CDN
 
+**Status:** Gültig
+
 ## Kontext
 
 Dexie wurde per `<script src="https://cdn.jsdelivr.net/...">` im `<head>` geladen (Folge der "kein Bundler"-Regel, [ADR 0001](0001-vanilla-js-ohne-framework.md)). Das Skript ist parser-blockierend: Fehlt es im Service-Worker-Cache (Erstinstallation, abgebrochener oder verzögerter Install bei schlechtem Netz), wartet der Browser auf den Drittserver, und der Start bleibt lange schwarz. Außerdem brauchte es im Service Worker einen Sonderweg (`no-cors`, opaque Responses), in dem bereits ein Fehler steckte ([ADR 0030](0030-tailwind-vorkompiliert.md)).

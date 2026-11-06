@@ -1,5 +1,7 @@
 # 0039 – Unterseiten in eigener Seiten-Ebene statt im Container der Übersicht
 
+**Status:** Gültig
+
 > Überholt den Aufbau aus [ADR 0038](0038-ios-seitenuebergaenge.md) ("Kein Umbau der Views auf Schichten"). Optik, Federn und Schwellen von 0037/0038 bleiben unverändert.
 
 ## Kontext

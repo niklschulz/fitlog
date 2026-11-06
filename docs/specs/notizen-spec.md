@@ -1,16 +1,16 @@
 # Übungs-Notizen — Spezifikation
 
-> Umgesetzt am 2026-11-01, s. [ADR 0035](decisions/0035-notizen-pro-uebung-und-tag.md) und [CHANGELOG](CHANGELOG.md).
+> Umgesetzt am 2026-11-01, s. [ADR 0035](../decisions/0035-notizen-pro-uebung-und-tag.md) und [CHANGELOG](../CHANGELOG.md).
 
 ## Status
 
 **Umgesetzt**, alle Schritte aus Abschnitt 9 inklusive Tests (`npm test`) und Verifikation im Browser (Mobile-Viewport). Abweichung vom Entwurf: keine.
 
-Vorläufer: In [features.md](features.md) steht "Notizen" bisher nur als vorgemerkte Erweiterung unter "Zusätzliche Satz-Felder". Diese Spec konkretisiert es als **Notiz pro Übung und Workout-Tag**, nicht pro Satz.
+Vorläufer: In [features.md](../features.md) steht "Notizen" bisher nur als vorgemerkte Erweiterung unter "Zusätzliche Satz-Felder". Diese Spec konkretisiert es als **Notiz pro Übung und Workout-Tag**, nicht pro Satz.
 
 ## 1. Ziel und Abgrenzung
 
-> **Nicht verwechseln:** Dieses Dokument beschreibt die Notiz pro Übung **und Workout-Tag** (`workoutExercises.note`). Die dauerhafte Notiz zur Übung selbst (`exercises.note`, im Übungs-Detail-Sheet) ist davon unabhängig, s. [ADR 0036](decisions/0036-notiz-zur-uebung.md). Beide nutzen dasselbe Notiz-Sheet.
+> **Nicht verwechseln:** Dieses Dokument beschreibt die Notiz pro Übung **und Workout-Tag** (`workoutExercises.note`). Die dauerhafte Notiz zur Übung selbst (`exercises.note`, im Übungs-Detail-Sheet) ist davon unabhängig, s. [ADR 0036](../decisions/0036-notiz-zur-uebung.md). Beide nutzen dasselbe Notiz-Sheet.
 
 Zu einer Übung an einem Trainingstag eine kurze Freitext-Notiz festhalten, z. B. "Schulter zwickte", "Griff enger". Die Notiz wird per Button neben den Satz-Buttons in einem Bottom-Sheet geschrieben und ist danach **nur lesbar** an drei Stellen sichtbar: Roster-Karte, Detailseite unter den Sätzen, Verlauf.
 
@@ -59,7 +59,7 @@ Die Aufräum-Kaskaden löschen bisher "unbegonnene" Einträge (`startedAt === nu
 
 **Einzel-Aktion "⋮ → Übung entfernen"** (`removeExerciseFromWorkout`, Roster): Der "⋮"-Button erscheint nur noch, wenn der Eintrag weder Sätze **noch** eine Notiz hat. Wer eine Übung mit Notiz entfernen will, leert zuerst die Notiz. `removeExerciseFromWorkout()` selbst bleibt unverändert, die UI schützt (wie bisher bei Sätzen).
 
-**Übungs-Sheet, Haken zurücknehmen:** Hat die Übung für den Tag Sätze **oder** eine Notiz, erscheint das Action Sheet (`showActionSheet()`, [ADR 0029](decisions/0029-action-sheet-saetze-und-uebung-entfernen.md)). Der Text nennt, was verloren geht ("Sätze und Notiz und Übung entfernen" bzw. passend zum Inhalt: nur Notiz, nur Sätze, beides). `removeExerciseWithSetsFromWorkout()` löscht den Eintrag samt Notiz bereits mit, dort ist nichts zu ändern.
+**Übungs-Sheet, Haken zurücknehmen:** Hat die Übung für den Tag Sätze **oder** eine Notiz, erscheint das Action Sheet (`showActionSheet()`, [ADR 0029](../decisions/0029-action-sheet-saetze-und-uebung-entfernen.md)). Der Text nennt, was verloren geht ("Sätze und Notiz und Übung entfernen" bzw. passend zum Inhalt: nur Notiz, nur Sätze, beides). `removeExerciseWithSetsFromWorkout()` löscht den Eintrag samt Notiz bereits mit, dort ist nichts zu ändern.
 
 **Satz löschen:** Notiz bleibt (der Eintrag bleibt).
 
@@ -132,7 +132,7 @@ Der "⋮"-Button der Karte wird bei Einträgen mit Notiz ausgeblendet (Schutzreg
 
 ## 6. UI — Verlauf (Detailseite, Reiter "Verlauf")
 
-In der Karte jedes Tages: Hat dieser Tag eine Notiz, steht sie am unteren Ende der Karte unter den Sätzen, gleiche Darstellung wie in der Roster-Karte (Icon, `text-muted`, auf 3 Zeilen gekürzt, nur lesbar). Der gerade betrachtete Tag wird im Verlauf mit angezeigt ([ADR 0010](decisions/0010-uebungs-detailseite.md), Nachtrag), dort steht dieselbe Notiz.
+In der Karte jedes Tages: Hat dieser Tag eine Notiz, steht sie am unteren Ende der Karte unter den Sätzen, gleiche Darstellung wie in der Roster-Karte (Icon, `text-muted`, auf 3 Zeilen gekürzt, nur lesbar). Der gerade betrachtete Tag wird im Verlauf mit angezeigt ([ADR 0010](../decisions/0010-uebungs-detailseite.md), Nachtrag), dort steht dieselbe Notiz.
 
 Die Darstellung (Icon plus gekürzter Text) kommt aus einer gemeinsamen kleinen Render-Funktion (z. B. `renderNote(note)` in `js/utils.js`), die Roster-Karte und Verlauf gemeinsam nutzen. Die Detailseite benutzt dieselbe Funktion ohne Kürzung (Parameter).
 
@@ -142,7 +142,7 @@ Nicht im Statistik-Tab (Statistik-Übungsseite zeigt keine Notizen).
 
 ## 7. Backup / Export
 
-[ADR 0034](decisions/0034-export-import-json-backup.md): Export und Import iterieren über `db.tables`, `note` ist als Feld der `workoutExercises`-Zeilen automatisch dabei. Beim Umsetzen prüfen, dass der Import keine Feld-Whitelist hat.
+[ADR 0034](../decisions/0034-export-import-json-backup.md): Export und Import iterieren über `db.tables`, `note` ist als Feld der `workoutExercises`-Zeilen automatisch dabei. Beim Umsetzen prüfen, dass der Import keine Feld-Whitelist hat.
 
 ## 8. Tests (`tests/`, `npm test`)
 
@@ -186,4 +186,4 @@ UI-Teil nur manuell (Abschnitt 9).
 | ✕ mit ungespeichertem Text | Sheet schließt, Text ist weg (bewusst, keine Rückfrage) |
 | Notiz an Übung mit `sourceRoutineId`, Routine wird gewechselt | Eintrag bleibt, unabhängig von der neuen Routine |
 | Notiz an Übung, Übung wird gelöscht (Übungs-Detail-Sheet) | Eintrag bleibt zur Wahrung des Verlaufs, wie bei Einträgen mit Sätzen |
-| Testmodus ([ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md)) | identisches Schema, Notizen gelten pro Datenbank |
+| Testmodus ([ADR 0024](../decisions/0024-testmodus-umschaltbare-datenbank.md)) | identisches Schema, Notizen gelten pro Datenbank |

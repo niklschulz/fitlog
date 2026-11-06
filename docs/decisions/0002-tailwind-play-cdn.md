@@ -1,5 +1,7 @@
 # 0002 – Tailwind CSS über Play CDN statt Build-Pipeline
 
+**Status:** Überholt durch [ADR 0030](0030-tailwind-vorkompiliert.md)
+
 > **Abgelöst durch [ADR 0030](0030-tailwind-vorkompiliert.md)** (2026-10-20): Die hier genannte "nächste Eskalationsstufe" (einmalig kompiliertes CSS) wurde umgesetzt.
 
 ## Kontext
@@ -15,3 +17,7 @@ Trotzdem die Play CDN nutzen, mit inline `tailwind.config` für Custom-Farben (`
 - Browser-Konsole zeigt bei jedem Laden eine Produktions-Warnung von Tailwind selbst — bewusst in Kauf genommen, kein funktionales Problem
 - **Wichtiger technischer Stolperstein**: `cache.addAll()` im Service Worker verwendet standardmäßig den `cors`-Fetch-Modus. `cdn.tailwindcss.com` liefert dafür keine passenden CORS-Header, wodurch `cache.addAll()` beim Versuch, die CDN-URL mitzucachen, komplett fehlschlägt — und zwar so, dass der gesamte Service-Worker-Install-Schritt scheitert, nicht nur die eine Datei. Lösung: CDN-Skripte einzeln mit `fetch(url, { mode: 'no-cors' })` holen und als opaque Response separat cachen (s. `sw.js`)
 - Bei spürbarem Bedarf (z. B. deutlich wachsender Umfang) wäre ein Wechsel auf eine einmalig kompilierte, lokal eingebundene Tailwind-CSS-Datei die nächste Eskalationsstufe — würde einen einmaligen `npx tailwindcss`-Lauf erfordern, aber weiterhin keinen laufenden Build-Prozess
+
+## Nachtrag (2026-11-06): Verweise auf das Konzept
+
+"Abschnitt N" und "Konzept" in diesem ADR beziehen sich auf das ursprüngliche Konzept-Dokument (nicht im Repo). Den heutigen Stand beschreiben [features.md](../features.md) und [architecture.md](../architecture.md).

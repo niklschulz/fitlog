@@ -1,5 +1,7 @@
 # 0007 – Workout-Tab: Tagesbasiertes Datenmodell statt aktiver Session
 
+**Status:** Teilweise überholt durch [ADR 0010](0010-uebungs-detailseite.md) (nachträgliches Bearbeiten von Sätzen mit `updateSet` ist wieder möglich)
+
 ## Kontext
 
 Der bisherige "Training"-Tab kannte genau einen Zustand: entweder kein Training aktiv, oder genau ein laufendes Training (`startedAt` gesetzt, `finishedAt` noch `null`), das über eine Kalenderzeile im neuen "Workout"-Tab (Abschnitt 10 der Konzept-Erweiterungen) durch die Möglichkeit ersetzt werden sollte, **für jeden beliebigen Kalendertag** – Vergangenheit, Gegenwart und Zukunft – Übungen und Sätze zu verwalten. Das bisherige Session-Modell (ein Training "startet" und "endet" in Echtzeit) passt nicht mehr zu "wähle einen Tag, verwalte dessen Workout".

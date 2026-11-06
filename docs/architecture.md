@@ -17,27 +17,46 @@ fitlog/
 ├── index.html            Einstiegspunkt, lädt Dexie (`js/vendor/`) und `css/tailwind.css`, registriert Service Worker
 ├── manifest.json          PWA-Manifest (Icons, Standalone-Modus, Theme-Farbe)
 ├── sw.js                  Service Worker: Cache-first App-Shell für Offline-Betrieb
+├── tailwind.config.js     Design-Tokens (Farben, Radien, Typografie) für den Tailwind-Build
+├── package.json           Nur Dev-seitig: `npm test`, `npm run build:css`
 ├── css/styles.css         Ergänzungen, die Tailwind nicht abdeckt (Safe-Area, Font-Faces)
+├── css/tailwind.input.css Quelle für den Tailwind-Build
 ├── css/tailwind.css       Generiert (`npm run build:css` aus tailwind.config.js + css/tailwind.input.css), eingecheckt
 ├── js/
 │   ├── db.js              Dexie-Schema + alle Datenbank-Operationen (CRUD, Kaskaden)
 │   ├── sheet.js           Geteilte Bottom-Sheet-Mechanik (Body-Scroll-Sperre, Nav-z-index,
-│                           Drag-to-Dismiss) - kein State/Inhalt, s. ADR 0011
+│   │                       Drag-to-Dismiss) - kein State/Inhalt, s. ADR 0011
+│   ├── actionSheet.js     Action Sheet (`showActionSheet()`): Bestätigungen statt `confirm()`, s. ADR 0029
+│   ├── exerciseCreateSheet.js  Neue-Übung-/Übung-bearbeiten-Sheet mit eigenem State, geteilt
+│   │                       zwischen Workout- und Statistik-Tab (s. unten)
+│   ├── noteSheet.js       Notiz-Sheet (Notiz pro Übung und Tag), s. ADR 0035
+│   ├── exerciseInfo.js    Übungs-Infos (primäre/sekundäre Muskeln), eine Quelle für Übungs-Detail-Sheet
+│   │                       und Info-Reiter der Statistik-Übungs-Seite
+│   ├── exerciseStats.js   Reine Berechnungen für eine Übung (Zeitraum, persönliche Bestwerte), ohne DOM/Dexie
+│   ├── swipeBack.js       Seiten-Ebene `#page-layer` und Wisch-Zurück-Geste für Unterseiten, s. ADR 0037-0039
 │   ├── reorder.js         Umsortieren per Gedrückthalten + Verschieben (Pointer Events,
-│                           Auto-Scroll) - kein State/Inhalt, meldet nur (von, nach)
+│   │                       Auto-Scroll) - kein State/Inhalt, meldet nur (von, nach)
 │   ├── pr.js              Reine PR-Berechnung (computePRs), ohne DOM/Dexie, s. ADR 0025
 │   ├── muscleStats.js     Reine Berechnung Frequenz/Sätze pro Muskel (getStatsRange,
-│                           computeMuscleStats), ohne DOM/Dexie, s. ADR 0027
+│   │                       computeMuscleStats), ohne DOM/Dexie, s. ADR 0027
 │   ├── profile.js         localStorage-Layer für Username/Token (Profil-Tab)
+│   ├── settings.js        Geräte-lokale Einstellungen in localStorage (Standardanzahl Sätze,
+│   │                       Wochenziel, Favoriten im Statistik-Tab)
 │   ├── backup.js          Export/Import als JSON-Backup (ADR 0034)
+│   ├── testmode.js        TEMPORÄR: umschaltbare Test-Datenbank mit synthetischen Daten (ADR 0024, s. unten)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
+│   ├── vendor/dexie.min.js  Lokal ausgelieferte Dexie-Bibliothek, s. ADR 0031
 │   └── views/              Ein Modul pro Tab (workout.js, statistics.js, profile.js),
-│                           jedes exportiert render(container). Außerdem
-│                           workout-exercise-detail.js - kein eigener Tab,
-│                           sondern ein Sub-View, direkt von workout.js
-│                           aufgerufen (s. View-Pattern unten)
-└── icons/                  App-Icons (generiert, s. unten)
+│       │                   jedes exportiert render(container)
+│       ├── workout.js, statistics.js, profile.js
+│       ├── workout-exercise-detail.js    Sub-View: Übungs-Detailseite im Workout-Tab (s. View-Pattern unten)
+│       └── statistics-exercise-detail.js Sub-View: Übungs-Seite im Statistik-Tab (Reiter Statistik/Verlauf/Info)
+├── tests/                  `npm test`: db, backup, pr, exerciseStats, muscleStats (+ setup.js), s. "Tests" unten
+├── docs/                   Architektur, Features, Design-System, Changelog, ADRs (`decisions/`), Specs (`specs/`)
+├── drafts/                 UI-Entwürfe, nicht Teil der ausgelieferten App
+├── icons/                  App-Icons (generiert, s. unten)
+└── .github/dependabot.yml  Dependabot-Konfiguration, s. ADR 0033
 ```
 
 ## View-Pattern
@@ -46,7 +65,7 @@ Jede View in `js/views/*.js` folgt demselben Muster: ein modul-lokaler `state`, 
 
 Optionaler zweiter Export: `unmount()`. `app.js`'s `showView()` ruft ihn (falls vorhanden) auf der bisherigen View auf, bevor zur neuen gewechselt wird — für Aufräumarbeiten, die über den Container hinausgehen (globale Locks, `document`-weite Listener, ausstehende Timeouts). Genutzt von `workout.js`, `profile.js` und `statistics.js` (jeweils für offene Bottom-Sheets) (Body-Scroll-Sperre/Nav-z-index der Bottom-Sheets, s. [design-system.md](design-system.md#navigation), Zwölfte Iteration, sowie ADR 0011) — die meisten Views brauchen das nicht, da bloßes Ersetzen von `innerHTML` beim nächsten `render()` ausreicht.
 
-**Sub-Views**: `workout-exercise-detail.js` (Übungs-Detailseite, [ADR 0010](decisions/0010-uebungs-detailseite.md)) folgt demselben `render()`/`paint()`/`wireEvents()`-Muster, ist aber nicht in `app.js`s View-Registrierung eingetragen — `workout.js` öffnet sie über `openPage()` (`js/swipeBack.js`) in einer eigenen **Seiten-Ebene** `#page-layer` (fixiert über der Tagesübersicht, [ADR 0039](decisions/0039-seiten-ebene-fuer-unterseiten.md)) und ruft `render(layer, { entryId, onBack, refreshUnder })` auf. Die Tagesübersicht in `#view-container` bleibt darunter unangetastet (Scrollposition bleibt von selbst erhalten) und wird beim Zurückgehen über `refreshUnder` in place neu gezeichnet; `onBack()` räumt die Seite auf und entfernt die Ebene (`removePageLayer()`). Bottom-Nav bleibt unbeeinflusst sichtbar (Ebene liegt unter ihr, z-index 8 gegenüber 20). Sheets, die von der Unterseite aus öffnen, liegen weiter im Container der Übersicht (über der Ebene) und sperren per `lockBodyScroll()` auch `#page-layer`.
+**Sub-Views**: `workout-exercise-detail.js` (Übungs-Detailseite, [ADR 0010](decisions/0010-uebungs-detailseite.md)) und `statistics-exercise-detail.js` (Übungs-Seite im Statistik-Tab, von `statistics.js` über `openPage()` geöffnet) folgen demselben `render()`/`paint()`/`wireEvents()`-Muster, sind aber nicht in `app.js`s View-Registrierung eingetragen — `workout.js` öffnet die Workout-Detailseite über `openPage()` (`js/swipeBack.js`) in einer eigenen **Seiten-Ebene** `#page-layer` (fixiert über der Tagesübersicht, [ADR 0039](decisions/0039-seiten-ebene-fuer-unterseiten.md)) und ruft `render(layer, { entryId, onBack, refreshUnder })` auf. Die Tagesübersicht in `#view-container` bleibt darunter unangetastet (Scrollposition bleibt von selbst erhalten) und wird beim Zurückgehen über `refreshUnder` in place neu gezeichnet; `onBack()` räumt die Seite auf und entfernt die Ebene (`removePageLayer()`). Bottom-Nav bleibt unbeeinflusst sichtbar (Ebene liegt unter ihr, z-index 8 gegenüber 20). Sheets, die von der Unterseite aus öffnen, liegen weiter im Container der Übersicht (über der Ebene) und sperren per `lockBodyScroll()` auch `#page-layer`.
 
 **Ausnahme**: Bottom-Sheets (großer Kalender, [ADR 0009](decisions/0009-grosser-kalender-vollstaendiges-rendern.md); Übungs-Sheet + die beiden gestapelten Übungs-Detail- und Neue-Übung-Sheets, [ADR 0011](decisions/0011-uebungs-sheet-bottom-sheet-extraktion.md) bzw. [ADR 0014](decisions/0014-neue-uebung-sheet-gestapelt.md), alle in `workout.js`) manipulieren das DOM während des Drag-to-Dismiss-Gestus am Ziehgriff bewusst direkt statt über `paint()` (muss 1:1 dem Finger folgen). Die geteilte Mechanik dafür (Body-Scroll-Sperre, Nav-z-index, Drag-Pointer-Events) steckt in `js/sheet.js` (ADR 0011) - State, Öffnen/Schließen-Zeitpunkt und Render-Inhalt jedes einzelnen Sheets bleiben beim jeweiligen View-Modul. Historisch gab es beim großen Kalender zusätzlich Lazy-Nachladen weiterer Monate beim Scrollen ([ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md)), das spürbares Ruckeln verursachte und durch vollständiges Vorab-Rendern ersetzt wurde.
 
@@ -114,9 +133,31 @@ Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (priv
 
 ## Bekannte Abweichungen vom ursprünglichen Konzept
 
+(Das ursprüngliche Konzept-Dokument liegt nicht im Repo.)
+
 - **Gewicht-Eingabe**: `inputmode="decimal"` statt `inputmode="numeric"` — Scheiben-Abstufungen wie 82,5 kg brauchen eine Kommastelle, die bei `numeric` auf dem iOS-Tastenfeld fehlt. Wiederholungen bleiben bei `numeric`.
 
 
 ## Geteiltes Neue-Übung-Sheet
 
 `js/exerciseCreateSheet.js` enthält Neue-Übung-/Übung-bearbeiten-Sheet samt eigenem State. Aufrufer (Workout-Tab, Statistik-Tab) übergeben Container, z-Ebene und einen `onSaved`-Callback und rufen in `unmount()` `unmountExerciseCreateSheet()` auf.
+
+## Backup (Export/Import)
+
+`js/backup.js` ([ADR 0034](decisions/0034-export-import-json-backup.md)) schreibt alle Dexie-Tabellen der aktiven Datenbank sowie Username und Einstellungen in eine JSON-Datei und liest sie wieder ein. Der Sync-Token ist nicht Teil des Backups: `buildBackup` entfernt ihn (`stripToken`), `parseBackup` verwirft ihn aus älteren Dateien, und der Import lässt das lokale Profil unverändert (Nachtrag 2026-11-06 im ADR). Der Import ersetzt den gesamten Bestand in einer Dexie-Transaktion; die Dexie-Instanz kommt als Parameter herein, damit die Logik in Node testbar ist. Die Oberfläche (Abschnitt „Daten“ im Profil-Tab, Teilen per Web Share API bzw. Download, Vorschau im Action Sheet) liegt in `js/views/profile.js`; Funktionsbeschreibung in [features.md](features.md).
+
+## Testmodus (temporär)
+
+`js/testmode.js` ([ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md)) ist ein Entwickler-Feature und gilt als temporär: Es soll entfernt werden, sobald die App produktiv genutzt wird (Rückbau-Schritte im ADR). Ob und wann das geschieht, ist nicht entschieden. Ist der Testmodus aktiv (Flag in `localStorage`), öffnet `js/db.js` statt der Datenbank `fitlog` die separate Datenbank `fitlog-test`, schema-identisch über dieselben `db.version(N)`-Migrationen. Umschalten per Schieberegler im Profil-Tab lädt die Seite neu. Beim Start sät `js/app.js` einmalig synthetische Trainingsdaten (ca. 3 Jahre, `seedTestData()`; verweigert den Dienst, wenn die Instanz nicht `fitlog-test` heißt). Alle Ankopplungsstellen sind im Code mit „TESTMODUS“ markiert: `js/db.js`, `js/app.js`, `js/views/profile.js`, `js/views/workout.js` (Untergrenze des großen Kalenders) und `sw.js` (Eintrag in `APP_SHELL`). Das Backup wirkt im Testmodus auf die Test-Datenbank.
+
+## Tests
+
+`npm test` startet den eingebauten Node-Test-Runner (`node --test`); `fake-indexeddb` simuliert IndexedDB. Die Tests in `tests/` decken nur Datenlogik ab:
+
+- `db.test.js` — heikle Funktionen in `js/db.js` (Löschkaskaden, Routine-Wechsel, Tages-Workout-Eindeutigkeit, Notizen)
+- `backup.test.js` — Export/Import (Round-Trip, Validierung, Import schlägt fehl ohne den Bestand zu ändern)
+- `pr.test.js` — PR-Berechnung (`js/pr.js`)
+- `exerciseStats.test.js` — Zeitraum und persönliche Bestwerte (`js/exerciseStats.js`)
+- `muscleStats.test.js` — Frequenz/Sätze pro Muskel (`js/muscleStats.js`)
+
+`tests/setup.js` stellt `Dexie` und die IndexedDB-Fälschung bereit. Die Oberfläche ist nicht abgedeckt und wird weiterhin manuell im Browser geprüft.

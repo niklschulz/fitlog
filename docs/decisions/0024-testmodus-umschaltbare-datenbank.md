@@ -1,5 +1,7 @@
 # 0024 – Testmodus: umschaltbare zweite Datenbank mit synthetischen Testdaten
 
+**Status:** Gültig – temporäres Feature, Rückbau vorgesehen (s. „Konsequenzen“)
+
 ## Kontext
 
 Die App wird bislang nicht produktiv genutzt — auf dem iPhone des Nutzers liegen dadurch keine größeren Datenmengen, an denen sich z. B. der Volumen-Chart (ADR 0023) oder das Balkendiagramm "Workouts pro Woche" sinnvoll ausprobieren lassen. Ein zuvor am Entwickler-Rechner einmalig live erzeugter 3-Jahres-Testdatensatz diente bereits zur Verifikation dieser Features, existierte aber nur als einmaliger `javascript_tool`-Aufruf, nicht als wiederverwendbarer Code, und ließ sich nicht aufs Telefon übertragen — es gibt keinen Sync-Mechanismus, der Bytes vom Entwickler-Rechner zum iPhone bringt (s. "Sync & Infrastruktur (geplant)" in architecture.md, noch nicht gebaut).
