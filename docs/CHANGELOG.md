@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Wisch-Zurück: Übersicht danach vollständig gezeichnet)
+
+### Fixed
+- Nach dem Zurückwischen (und Zurück-Pfeil) auf iOS war die Workout-Übersicht nur für den sofort sichtbaren Ausschnitt gezeichnet, der Rest blieb leer und der erste Wisch nach oben löste nur das Gummiband aus. Ursache: `will-change: transform` auf dem Scroll-Container selbst plus Scrollposition, die gesetzt wurde, während er ausgeblendet/transformiert war - iOS behielt danach die alte Kachel-Aufteilung. `will-change` entfällt am Container (bleibt an Abbild/Abdunklung), und `resetContainerStyles()` (`js/swipeBack.js`) erzwingt am Ende per kurzem `display:none` ein vollständiges Neuzeichnen und stellt die Scrollposition wieder her (ersetzt den Overflow-Trick aus v247). `CACHE_NAME` auf `fitlog-v249`
+
 ## 2026-11-06 (Profil-Tab: App-Name und Version)
 
 ### Added

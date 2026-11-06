@@ -165,20 +165,21 @@ function resetContainerStyles(container) {
   container.style.zIndex = '';
   container.style.background = '';
   container.style.boxShadow = '';
-  resyncScroll(container);
+  rerasterize(container);
 }
 
-// iOS verliert die native Scrollposition des Containers, wenn er während der
-// Geste ausgeblendet/transformiert war und seine Position per scrollTop gesetzt
-// wurde: der erste Wisch nach oben löste dann nur das Gummiband aus, statt zu
-// scrollen. Overflow kurz aus/an gleicht sie wieder mit dem DOM-Wert ab (nicht,
-// wenn ein Sheet den Container gerade per lockBodyScroll() sperrt).
-function resyncScroll(container) {
-  if (container.style.overflowY !== '') return;
+// iOS zeichnet einen Scroll-Container, der während der Geste ausgeblendet und
+// transformiert war (und dessen Position dabei per scrollTop gesetzt wurde),
+// danach nur noch für den gerade sichtbaren Ausschnitt: der Rest der Liste blieb
+// leer und der erste Wisch nach oben löste nur das Gummiband aus. Ein kurzes
+// display:none/-Zurücksetzen (ohne dass dazwischen gezeichnet wird) verwirft die
+// alte Kachel-Aufteilung und die native Scrollposition; die Position wird
+// danach aus dem DOM-Wert wiederhergestellt.
+function rerasterize(container) {
   const top = container.scrollTop;
-  container.style.overflowY = 'hidden';
+  container.style.display = 'none';
   void container.offsetHeight;
-  container.style.overflowY = '';
+  container.style.display = '';
   container.scrollTop = top;
 }
 
@@ -212,7 +213,6 @@ export function pushPage(container, renderFn) {
   painted.promise
     .then(() => {
       container.style.transform = `translateX(${width}px)`;
-      container.style.willChange = 'transform';
       container.style.visibility = '';
       // Layout jetzt erzwingen, nicht erst im ersten Animations-Bild.
       void container.offsetHeight;
@@ -317,7 +317,6 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     painted = whenContainerPainted(container);
     painted.promise.then(() => {
       ready = true;
-      container.style.willChange = 'transform';
       container.style.visibility = '';
       if (snapshot) applyProgress(x);
     });
