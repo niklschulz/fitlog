@@ -200,7 +200,7 @@ function renderStepperRow(field, label, value) {
       <span class="text-label uppercase text-muted">${label}</span>
       <div class="flex items-center gap-2">
         <button data-stepper="${field}" data-delta="-1" type="button" class="stepper-btn tap-feedback w-8 h-8 rounded-lg bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">−</button>
-        <input id="detail-${field}-input" type="number" inputmode="${inputMode}" step="${step}" min="0" value="${value}" class="w-16 text-center bg-base rounded-btn py-2 text-ink" />
+        <input id="detail-${field}-input" type="number" inputmode="${inputMode}" step="${step}" min="0" value="${escapeHtml(value)}" class="w-16 text-center bg-base rounded-btn py-2 text-ink" />
         <button data-stepper="${field}" data-delta="1" type="button" class="stepper-btn tap-feedback w-8 h-8 rounded-lg bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">+</button>
       </div>
     </div>
@@ -272,7 +272,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel, note, exercise
             return renderSetTimelineRow(i + 1, renderSetContent(set, { badgeInset: true }), {
               isLast: i === rows.length - 1,
               liClasses: set ? 'set-row' : 'empty-set-row',
-              liAttrs: set ? `data-set="${set.id}"` : 'data-row-empty="true"',
+              liAttrs: set ? `data-set="${escapeHtml(set.id)}"` : 'data-row-empty="true"',
               highlighted: isSelected,
             });
           })

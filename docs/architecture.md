@@ -43,7 +43,9 @@ fitlog/
 │   ├── settings.js        Geräte-lokale Einstellungen in localStorage (Standardanzahl Sätze,
 │   │                       Wochenziel, Favoriten im Statistik-Tab)
 │   ├── backup.js          Export/Import als JSON-Backup (ADR 0034)
-│   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
+│   ├── utils.js           Geteilte Helfer (z. B. escapeHtml, renderMuscleFilterPopup)
+│   ├── dates.js           Datums-Helfer ohne DOM/Dexie (parseISODate, formatDate mit benannten
+│   │                       Varianten, addMonths), getestet in tests/dates.test.js
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
 │   ├── vendor/dexie.min.js  Lokal ausgelieferte Dexie-Bibliothek, s. ADR 0031
 │   └── views/              Ein Modul pro Tab (workout.js, statistics.js, profile.js),
@@ -51,7 +53,7 @@ fitlog/
 │       ├── workout.js, statistics.js, profile.js
 │       ├── workout-exercise-detail.js    Sub-View: Übungs-Detailseite im Workout-Tab (s. View-Pattern unten)
 │       └── statistics-exercise-detail.js Sub-View: Übungs-Seite im Statistik-Tab (Reiter Statistik/Verlauf/Info)
-├── tests/                  `npm test`: db, backup, pr, exerciseStats, muscleStats (+ setup.js), s. "Tests" unten
+├── tests/                  `npm test`: db, backup, pr, exerciseStats, muscleStats, dates, escapeHtml (+ setup.js), s. "Tests" unten
 ├── docs/                   Architektur, Features, Design-System, Changelog, ADRs (`decisions/`), Specs (`specs/`)
 ├── drafts/                 UI-Entwürfe, nicht Teil der ausgelieferten App
 ├── icons/                  App-Icons (generiert, s. unten)

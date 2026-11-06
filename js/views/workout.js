@@ -676,7 +676,7 @@ async function renderRoutinePicker(workout) {
                 .map(
                   (r, i) => `
                 <li>
-                  <button data-routine="${r.id}" class="pick-routine-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-surface text-ink text-body flex items-center justify-between">
+                  <button data-routine="${escapeHtml(r.id)}" class="pick-routine-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-surface text-ink text-body flex items-center justify-between">
                     <span class="flex flex-col gap-0.5">
                       <span>${escapeHtml(r.name)}</span>
                       <span class="text-label text-muted uppercase">${exerciseCounts[i]} Übung${exerciseCounts[i] === 1 ? '' : 'en'}</span>
@@ -869,7 +869,7 @@ async function renderRoutinesSheetEditContent() {
           <span class="flex-1 min-w-0 text-card-title truncate ${exercise ? '' : 'text-muted italic'}">${label}</span>
           <button
             type="button"
-            data-id="${id}"
+            data-id="${escapeHtml(id)}"
             class="routines-sheet-edit-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
             aria-label="Optionen für ${label}"
             aria-haspopup="true"
@@ -1050,7 +1050,7 @@ function renderRoutinesSheetEditMenu(exerciseId) {
   return `
     <div id="routines-sheet-edit-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div class="routines-sheet-edit-menu-popup routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" data-id="${exerciseId}" class="routines-sheet-edit-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      <button type="button" data-id="${escapeHtml(exerciseId)}" class="routines-sheet-edit-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Entfernen
       </button>
     </div>
@@ -1169,7 +1169,7 @@ function renderRoutineSheetCard(routine, exerciseCount) {
           </div>
           <button
             type="button"
-            data-routine="${routine.id}"
+            data-routine="${escapeHtml(routine.id)}"
             class="routines-sheet-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
             aria-label="Optionen für ${escapeHtml(routine.name)}"
             aria-haspopup="true"
@@ -1197,10 +1197,10 @@ function renderRoutinesSheetMenu(routine) {
   return `
     <div id="routines-sheet-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div class="routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" data-routine="${routine.id}" class="routines-sheet-edit-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+      <button type="button" data-routine="${escapeHtml(routine.id)}" class="routines-sheet-edit-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
         Bearbeiten
       </button>
-      <button type="button" data-routine="${routine.id}" class="routines-sheet-delete-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      <button type="button" data-routine="${escapeHtml(routine.id)}" class="routines-sheet-delete-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Löschen
       </button>
     </div>
@@ -1354,7 +1354,7 @@ function renderExerciseRow(entry, name, sets, prs) {
   if (!isUnstarted) {
     return `
       <li class="relative">
-        <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1 bg-surface rounded-card overflow-hidden">
+        <button data-entry="${escapeHtml(entry.id)}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1 bg-surface rounded-card overflow-hidden">
           <span class="${titleClasses}">${escapeHtml(label)}</span>
           ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
           ${entry.note ? renderNote(entry.note, { extraClasses: 'mt-3' }) : ''}
@@ -1364,17 +1364,17 @@ function renderExerciseRow(entry, name, sets, prs) {
   }
 
   return `
-    <li class="reorder-item relative rounded-card" data-entry="${entry.id}">
+    <li class="reorder-item relative rounded-card" data-entry="${escapeHtml(entry.id)}">
       <div class="bg-surface rounded-card overflow-hidden">
         <div class="flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
-          <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
+          <button data-entry="${escapeHtml(entry.id)}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
             <span class="${titleClasses}">${escapeHtml(label)}</span>
           </button>
           ${
             canRemove
               ? `<button
             type="button"
-            data-entry="${entry.id}"
+            data-entry="${escapeHtml(entry.id)}"
             class="exercise-roster-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
             aria-label="Optionen für ${escapeHtml(label)}"
             aria-haspopup="true"
@@ -1391,7 +1391,7 @@ function renderExerciseRow(entry, name, sets, prs) {
         </div>
         ${
           sets.length > 0 || entry.note
-            ? `<button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left block px-4 pb-3 ${sets.length > 0 ? '-mt-2' : '-mt-1'}">
+            ? `<button data-entry="${escapeHtml(entry.id)}" class="exercise-row-toggle tap-feedback w-full text-left block px-4 pb-3 ${sets.length > 0 ? '-mt-2' : '-mt-1'}">
                 ${sets.length > 0 ? `<ul class="flex flex-col">${setRows}</ul>` : ''}
                 ${noteHtml}
               </button>`
@@ -1428,7 +1428,7 @@ function renderExerciseRosterMenu(entry) {
   return `
     <div id="exercise-roster-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div class="exercise-roster-menu-popup routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" data-entry="${entry.id}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      <button type="button" data-entry="${escapeHtml(entry.id)}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Übung entfernen
       </button>
     </div>
@@ -1892,13 +1892,13 @@ function renderExerciseSheetRow(exercise, alreadyInWorkout) {
 
   // Kästchen immer antippbar: leer = hinzufügen, grün mit Haken = wieder
   // entfernen (s. toggleExerciseFromSheet).
-  const trailingColumn = `<button type="button" data-id="${exercise.id}" class="exercise-select-toggle-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-pressed="${alreadyInWorkout}" aria-label="${escapeHtml(exercise.name)} ${alreadyInWorkout ? 'entfernen' : 'hinzufügen'}">
+  const trailingColumn = `<button type="button" data-id="${escapeHtml(exercise.id)}" class="exercise-select-toggle-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-pressed="${alreadyInWorkout}" aria-label="${escapeHtml(exercise.name)} ${alreadyInWorkout ? 'entfernen' : 'hinzufügen'}">
         <span class="w-6 h-6 rounded-btn flex items-center justify-center text-label ${alreadyInWorkout ? 'bg-accent text-base' : 'border-2 border-white/25'}">${alreadyInWorkout ? '✓' : ''}</span>
       </button>`;
 
   return `
     <li class="${LIST_ROW} flex items-center gap-3">
-      <button type="button" data-id="${exercise.id}" class="exercise-open-detail-btn tap-feedback flex-1 min-w-0 flex flex-col gap-0.5 text-left">
+      <button type="button" data-id="${escapeHtml(exercise.id)}" class="exercise-open-detail-btn tap-feedback flex-1 min-w-0 flex flex-col gap-0.5 text-left">
         <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
         ${muscleNames.length > 0 ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleNames.join(', '))}</span>` : ''}
       </button>

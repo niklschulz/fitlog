@@ -102,7 +102,7 @@ function renderSettings(settings) {
           inputmode="numeric"
           min="1"
           step="1"
-          value="${settings.defaultSetCount}"
+          value="${escapeHtml(settings.defaultSetCount)}"
           class="bg-white/[0.08] ${INPUT}"
         />
         <p class="text-body text-muted">Lege fest, wie viele Sätze Fitlog für jede Übung standardmäßig vorsehen soll. Du kannst jederzeit mehr oder weniger Sätze absolvieren.</p>
@@ -115,7 +115,7 @@ function renderSettings(settings) {
           inputmode="numeric"
           min="1"
           step="1"
-          value="${settings.weeklyGoal}"
+          value="${escapeHtml(settings.weeklyGoal)}"
           class="bg-white/[0.08] ${INPUT}"
         />
         <p class="text-body text-muted">Fitlog kann dir anzeigen, wie häufig du in der aktuellen Woche schon trainiert hast. Lege hier dein Wochenziel fest.</p>

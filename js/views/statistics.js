@@ -857,7 +857,7 @@ async function renderExercisesTab() {
     .map(
       (e) => `
       <li>
-        <button type="button" data-stat-exercise-id="${e.id}" class="tap-feedback w-full text-left px-4 py-3 bg-surface rounded-card">
+        <button type="button" data-stat-exercise-id="${escapeHtml(e.id)}" class="tap-feedback w-full text-left px-4 py-3 bg-surface rounded-card">
           <span class="text-card-title truncate flex items-center min-h-[44px]">${escapeHtml(e.name)}</span>
         </button>
       </li>`
@@ -911,7 +911,7 @@ function renderExerciseSheetRow(exercise, isFavorite) {
         <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
         ${muscleNames.length > 0 ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleNames.join(', '))}</span>` : ''}
       </div>
-      <button type="button" data-id="${exercise.id}" class="exercise-favorite-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 ${isFavorite ? 'text-accent' : 'text-muted'}" aria-pressed="${isFavorite}" aria-label="${escapeHtml(exercise.name)} ${isFavorite ? 'als Favorit entfernen' : 'als Favorit markieren'}">
+      <button type="button" data-id="${escapeHtml(exercise.id)}" class="exercise-favorite-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 ${isFavorite ? 'text-accent' : 'text-muted'}" aria-pressed="${isFavorite}" aria-label="${escapeHtml(exercise.name)} ${isFavorite ? 'als Favorit entfernen' : 'als Favorit markieren'}">
         <svg viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" class="w-6 h-6">
           <path d="M12 3.5l2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 16.9l-5.25 2.75 1-5.85L3.5 9.65l5.9-.85L12 3.5z" />
         </svg>

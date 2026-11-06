@@ -153,9 +153,9 @@ function renderPersonalBests(bests) {
       </div>
       <div class="${CARD} !py-0 divide-y divide-divider">
         ${renderBestRow(BEST_ICONS.oneRm, '1RM', null, '')}
-        ${renderBestRow(BEST_ICONS.weight, 'Gewicht', w, w ? `${formatNumber(w.weight)} kg <span class="text-muted">(x${w.reps})</span>` : '')}
+        ${renderBestRow(BEST_ICONS.weight, 'Gewicht', w, w ? `${formatNumber(w.weight)} kg <span class="text-muted">(x${escapeHtml(w.reps)})</span>` : '')}
         ${renderBestRow(BEST_ICONS.volume, 'Volumen', v, v ? `${formatNumber(v.volume)} kg` : '')}
-        ${renderBestRow(BEST_ICONS.reps, 'Reps', r, r ? `${r.reps} Reps <span class="text-muted">(${formatNumber(r.weight)} kg)</span>` : '')}
+        ${renderBestRow(BEST_ICONS.reps, 'Reps', r, r ? `${escapeHtml(r.reps)} Reps <span class="text-muted">(${formatNumber(r.weight)} kg)</span>` : '')}
       </div>
     </div>
   `;

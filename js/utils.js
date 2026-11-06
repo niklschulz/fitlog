@@ -86,10 +86,14 @@ export function withViewTransition(renderFn, direction = 'forward') {
   });
 }
 
+// Escaped & < > " ' - Anführungszeichen mit, weil Werte auch in Attributen
+// landen (`value="${escapeHtml(x)}"`, `data-id="..."`). Reine String-
+// Ersetzung ohne DOM, damit in Node testbar (tests/escapeHtml.test.js).
+// Nicht-Strings (Zahlen aus einem Import) werden zu Text umgewandelt.
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 export function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str).replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 }
 
 // Popup des Muskelgruppen-Filters im Übungs-Sheet (Workout- und Statistik-Tab
@@ -327,10 +331,10 @@ export function positionSegmentedIndicator(container, { fromRect = null } = {}) 
 export function renderSetValues(weight, reps) {
   return `
     <span class="inline-flex items-baseline gap-1">
-      <span class="inline-block w-16 text-right">${weight}</span><span class="text-muted">kg</span>
+      <span class="inline-block w-16 text-right">${escapeHtml(weight)}</span><span class="text-muted">kg</span>
     </span>
     <span class="inline-flex items-baseline gap-1">
-      <span class="inline-block w-8 text-right">${reps}</span><span class="text-muted">Reps</span>
+      <span class="inline-block w-8 text-right">${escapeHtml(reps)}</span><span class="text-muted">Reps</span>
     </span>
   `;
 }
