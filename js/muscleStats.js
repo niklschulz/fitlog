@@ -4,11 +4,13 @@
 // tests/muscleStats.test.js. Wird bei jedem Öffnen der Statistik neu
 // berechnet, kein Cache (bei der Datenmenge eines Jahres unkritisch).
 //
-// Eigene kleine Datums-Helfer statt Import aus db.js: db.js setzt beim
+// Eigene kleine Datums-Helfer (parseISODate aus dates.js) statt Import aus db.js: db.js setzt beim
 // Import ein globales `Dexie` voraus (CDN-Script im Browser) und ließe sich
 // in den Tests nur mit fake-indexeddb laden - diese Datei soll wie pr.js
 // ohne jede Datenbank testbar bleiben. Gleiche Semantik wie
 // addDays()/mondayOf() in db.js (lokale Zeitzone, 'YYYY-MM-DD').
+
+import { parseISODate } from './dates.js';
 
 const DEFAULT_RANGE_WEEKS = 8;
 
@@ -17,11 +19,6 @@ function toISODate(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
-}
-
-function parseISODate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d);
 }
 
 function addDays(dateStr, delta) {

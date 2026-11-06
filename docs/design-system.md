@@ -14,6 +14,7 @@ Visuelle Prinzipien (Farben, Formen, Abstände, Typografie) sind eigenständig e
 | `bg-surface` | `#252525` | Karten, Sheets, Listenzeilen, Segmented-Control-Track |
 | `bg-raised` | `#2A2A2A` | Sekundäre Buttons, Stepper-Buttons, Hervorhebungs-Band ausgewählter Sätze |
 | `bg-highlight` | `#404040` | Aktives Segment der Segmented Control |
+| `bg-popup` | `#363636` | Deckendes Dropdown-Popup über Listen (Muskelgruppen-Filter im Übungs-Sheet); entspricht `rgba(255,255,255,0.08)` über `bg-surface` |
 | `bg-accent` / `text-accent` | `#B5EB98` | Primäre Buttons, aktive/ausgewählte Zustände, Textlinks |
 | `bg-accent-muted` | `#637456` | Gedimmte, deckende Akzentfarbe: nicht aktuelle Wochen im Balkendiagramm |
 | `border-divider` / `divide-divider` | `#1A1A1A` | Trennlinien in Statistik-Karten (bewusst dunkler als die Diagramm-Gitterlinien `border-white/15`) |

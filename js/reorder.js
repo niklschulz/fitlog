@@ -38,7 +38,7 @@ export function wireLongPressReorder({
   itemSelector,
   ignoreSelector = null,
   scrollEl = null,
-  liftedBackground = '#404040',
+  liftedBackground = '#404040', // Spiegel des Tokens `highlight` (tailwind.config.js) - JS liest Tokens nicht
   edgeInsets = {},
   onReorder,
 }) {

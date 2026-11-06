@@ -86,10 +86,44 @@ export function withViewTransition(renderFn, direction = 'forward') {
   });
 }
 
+// Escaped & < > " ' - Anführungszeichen mit, weil Werte auch in Attributen
+// landen (`value="${escapeHtml(x)}"`, `data-id="..."`). Reine String-
+// Ersetzung ohne DOM, damit in Node testbar (tests/escapeHtml.test.js).
+// Nicht-Strings (Zahlen aus einem Import) werden zu Text umgewandelt.
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
 export function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str).replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+}
+
+// Popup des Muskelgruppen-Filters im Übungs-Sheet (Workout- und Statistik-Tab
+// teilen sich Markup und Optionen): bildschirmfüllender Backdrop zum Schließen
+// plus Dropdown-Popup unter dem Filter-Button. `bg-popup` ist deckend, weil das
+// Popup über der scrollenden Übungsliste liegt (s. tailwind.config.js). Das
+// Wiring (Backdrop-/`.pick-muscle-filter-option-btn`-Klicks) bleibt Sache der
+// aufrufenden View.
+export function renderMuscleFilterPopup(muscleGroups, selectedId, closing) {
+  const optionsHtml = [{ id: '', name: 'Alle Muskelgruppen' }, ...muscleGroups]
+    .map(
+      (m) => `
+        <li>
+          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
+            <span>${escapeHtml(m.name)}</span>
+            ${(m.id === '' ? selectedId === null : selectedId === m.id) ? '<span class="text-accent">✓</span>' : ''}
+          </button>
+        </li>
+      `
+    )
+    .join('');
+
+  return `
+    <div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-popup rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
+      <ul class="flex flex-col gap-0">
+        ${optionsHtml}
+      </ul>
+    </div>
+  `;
 }
 
 // Eine Zeile einer "verbundenen" Satz-Liste: Nummern-Kreis + vertikale
@@ -297,10 +331,10 @@ export function positionSegmentedIndicator(container, { fromRect = null } = {}) 
 export function renderSetValues(weight, reps) {
   return `
     <span class="inline-flex items-baseline gap-1">
-      <span class="inline-block w-16 text-right">${weight}</span><span class="text-muted">kg</span>
+      <span class="inline-block w-16 text-right">${escapeHtml(weight)}</span><span class="text-muted">kg</span>
     </span>
     <span class="inline-flex items-baseline gap-1">
-      <span class="inline-block w-8 text-right">${reps}</span><span class="text-muted">Reps</span>
+      <span class="inline-block w-8 text-right">${escapeHtml(reps)}</span><span class="text-muted">Reps</span>
     </span>
   `;
 }

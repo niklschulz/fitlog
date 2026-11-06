@@ -8,7 +8,8 @@
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
 import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
-import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { formatDate, addMonths, yearMonthOf } from '../dates.js';
+import { escapeHtml, renderMuscleFilterPopup, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
@@ -109,16 +110,6 @@ async function paint({ pageFromRect = null, volumeFromRect = null } = {}) {
 }
 
 // --- Übersicht-Reiter: "Workouts pro Woche" ---
-
-function yearMonthOf(dateStr) {
-  return dateStr.slice(0, 7); // 'YYYY-MM'
-}
-
-function addMonths(yearMonth, delta) {
-  const [y, m] = yearMonth.split('-').map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
 
 // Reine Berechnung, getrennt vom Rendering - erleichtert spätere
 // automatisierte Tests, falls dieses Feature mal so heikel wird wie die
@@ -400,9 +391,9 @@ function formatWeekAxisLabel(weekStart) {
 // (s. ADR 0023, "bekannte Einschränkung"), deshalb dort nur die Jahreszahl
 // ("2026") statt des Monats.
 function formatMonthAxisLabel(yearMonth, tabKey) {
-  const [y, m] = yearMonth.split('-').map(Number);
+  const y = Number(yearMonth.split('-')[0]);
   if (tabKey === 'max') return `${y}`;
-  const monthShort = new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'short' });
+  const monthShort = formatDate(yearMonth, 'monthShort');
   return `${monthShort} ${String(y).slice(-2)}`;
 }
 
@@ -866,7 +857,7 @@ async function renderExercisesTab() {
     .map(
       (e) => `
       <li>
-        <button type="button" data-stat-exercise-id="${e.id}" class="tap-feedback w-full text-left px-4 py-3 bg-surface rounded-card">
+        <button type="button" data-stat-exercise-id="${escapeHtml(e.id)}" class="tap-feedback w-full text-left px-4 py-3 bg-surface rounded-card">
           <span class="text-card-title truncate flex items-center min-h-[44px]">${escapeHtml(e.name)}</span>
         </button>
       </li>`
@@ -920,7 +911,7 @@ function renderExerciseSheetRow(exercise, isFavorite) {
         <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
         ${muscleNames.length > 0 ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleNames.join(', '))}</span>` : ''}
       </div>
-      <button type="button" data-id="${exercise.id}" class="exercise-favorite-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 ${isFavorite ? 'text-accent' : 'text-muted'}" aria-pressed="${isFavorite}" aria-label="${escapeHtml(exercise.name)} ${isFavorite ? 'als Favorit entfernen' : 'als Favorit markieren'}">
+      <button type="button" data-id="${escapeHtml(exercise.id)}" class="exercise-favorite-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 ${isFavorite ? 'text-accent' : 'text-muted'}" aria-pressed="${isFavorite}" aria-label="${escapeHtml(exercise.name)} ${isFavorite ? 'als Favorit entfernen' : 'als Favorit markieren'}">
         <svg viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" class="w-6 h-6">
           <path d="M12 3.5l2.6 5.3 5.9.85-4.25 4.15 1 5.85L12 16.9l-5.25 2.75 1-5.85L3.5 9.65l5.9-.85L12 3.5z" />
         </svg>
@@ -936,18 +927,6 @@ function renderExerciseSheetMuscleFilter() {
   const closing = state.exerciseSheetMuscleFilterClosing;
   const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
 
-  const options = [{ id: '', name: 'Alle Muskelgruppen' }, ...MUSCLE_GROUPS]
-    .map(
-      (m) => `
-        <li>
-          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
-            <span>${escapeHtml(m.name)}</span>
-            ${(m.id === '' ? state.exerciseSheetMuscleFilterId === null : state.exerciseSheetMuscleFilterId === m.id) ? '<span class="text-accent">✓</span>' : ''}
-          </button>
-        </li>`
-    )
-    .join('');
-
   return `
     <div class="px-4 pb-4 flex-shrink-0">
       <div class="relative">
@@ -957,10 +936,7 @@ function renderExerciseSheetMuscleFilter() {
         </button>
         ${
           open
-            ? `<div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
-               <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-[#363636] rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
-                 <ul class="flex flex-col gap-0">${options}</ul>
-               </div>`
+            ? renderMuscleFilterPopup(MUSCLE_GROUPS, state.exerciseSheetMuscleFilterId, closing)
             : ''
         }
       </div>

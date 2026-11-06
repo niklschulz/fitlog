@@ -29,7 +29,7 @@ import {
   daysBetween,
   mondayOf,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
+import { escapeHtml, renderMuscleFilterPopup, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -39,6 +39,7 @@ import {
   SHEET_CLOSE_ANIMATION_MS,
 } from '../sheet.js';
 import { wireLongPressReorder } from '../reorder.js';
+import { formatDate, parseISODate, yearMonthOf, addMonths } from '../dates.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
@@ -238,23 +239,19 @@ export function unmount() {
 // --- Datums-Hilfsfunktionen (lokale Zeitzone, kein UTC-Shift) ---
 
 function formatDayLabel(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return { weekday: date.toLocaleDateString('de-DE', { weekday: 'short' }), day: d };
+  return { weekday: formatDate(dateStr, 'weekdayShort'), day: parseISODate(dateStr).getDate() };
 }
 
 // Relative Bezeichnung für nahe Tage ("Heute"/"Gestern"/"Morgen"), sonst
 // vollständiger Wochentag - angelehnt an die Referenz-App.
 function formatFullDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const datePart = date.toLocaleDateString('de-DE', { day: '2-digit', month: 'long' });
+  const datePart = formatDate(dateStr, 'dayMonth2Long');
   const diff = daysBetween(todayISODate(), dateStr);
 
   if (diff === 0) return `Heute, ${datePart}`;
   if (diff === -1) return `Gestern, ${datePart}`;
   if (diff === 1) return `Morgen, ${datePart}`;
-  return `${date.toLocaleDateString('de-DE', { weekday: 'long' })}, ${datePart}`;
+  return `${formatDate(dateStr, 'weekdayLong')}, ${datePart}`;
 }
 
 // --- Monats-Hilfsfunktionen für den großen Kalender (Abschnitt 11) ---
@@ -263,19 +260,9 @@ function formatFullDate(dateStr) {
 // möglich.
 const CALENDAR_SHEET_MIN_MONTH = '2026-01';
 
-function yearMonthOf(dateStr) {
-  return dateStr.slice(0, 7);
-}
-
 function currentYearMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function addMonths(yearMonth, delta) {
-  const [y, m] = yearMonth.split('-').map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
 // Ein Monat über den aktuellen Monat hinaus erreichbar - relativ zum
@@ -285,8 +272,7 @@ function calendarSheetMaxMonth() {
 }
 
 function monthLabel(yearMonth) {
-  const [y, m] = yearMonth.split('-').map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  return formatDate(yearMonth, 'monthYearLong');
 }
 
 function daysInMonth(yearMonth) {
@@ -690,7 +676,7 @@ async function renderRoutinePicker(workout) {
                 .map(
                   (r, i) => `
                 <li>
-                  <button data-routine="${r.id}" class="pick-routine-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-surface text-ink text-body flex items-center justify-between">
+                  <button data-routine="${escapeHtml(r.id)}" class="pick-routine-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] bg-surface text-ink text-body flex items-center justify-between">
                     <span class="flex flex-col gap-0.5">
                       <span>${escapeHtml(r.name)}</span>
                       <span class="text-label text-muted uppercase">${exerciseCounts[i]} Übung${exerciseCounts[i] === 1 ? '' : 'en'}</span>
@@ -883,7 +869,7 @@ async function renderRoutinesSheetEditContent() {
           <span class="flex-1 min-w-0 text-card-title truncate ${exercise ? '' : 'text-muted italic'}">${label}</span>
           <button
             type="button"
-            data-id="${id}"
+            data-id="${escapeHtml(id)}"
             class="routines-sheet-edit-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
             aria-label="Optionen für ${label}"
             aria-haspopup="true"
@@ -1064,7 +1050,7 @@ function renderRoutinesSheetEditMenu(exerciseId) {
   return `
     <div id="routines-sheet-edit-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div class="routines-sheet-edit-menu-popup routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" data-id="${exerciseId}" class="routines-sheet-edit-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      <button type="button" data-id="${escapeHtml(exerciseId)}" class="routines-sheet-edit-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Entfernen
       </button>
     </div>
@@ -1183,7 +1169,7 @@ function renderRoutineSheetCard(routine, exerciseCount) {
           </div>
           <button
             type="button"
-            data-routine="${routine.id}"
+            data-routine="${escapeHtml(routine.id)}"
             class="routines-sheet-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
             aria-label="Optionen für ${escapeHtml(routine.name)}"
             aria-haspopup="true"
@@ -1211,10 +1197,10 @@ function renderRoutinesSheetMenu(routine) {
   return `
     <div id="routines-sheet-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div class="routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" data-routine="${routine.id}" class="routines-sheet-edit-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
+      <button type="button" data-routine="${escapeHtml(routine.id)}" class="routines-sheet-edit-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body">
         Bearbeiten
       </button>
-      <button type="button" data-routine="${routine.id}" class="routines-sheet-delete-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      <button type="button" data-routine="${escapeHtml(routine.id)}" class="routines-sheet-delete-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Löschen
       </button>
     </div>
@@ -1368,7 +1354,7 @@ function renderExerciseRow(entry, name, sets, prs) {
   if (!isUnstarted) {
     return `
       <li class="relative">
-        <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1 bg-surface rounded-card overflow-hidden">
+        <button data-entry="${escapeHtml(entry.id)}" class="exercise-row-toggle tap-feedback w-full text-left px-4 py-3 min-h-[44px] flex flex-col gap-1 bg-surface rounded-card overflow-hidden">
           <span class="${titleClasses}">${escapeHtml(label)}</span>
           ${sets.length > 0 ? `<ul class="flex flex-col mt-2">${setRows}</ul>` : ''}
           ${entry.note ? renderNote(entry.note, { extraClasses: 'mt-3' }) : ''}
@@ -1378,17 +1364,17 @@ function renderExerciseRow(entry, name, sets, prs) {
   }
 
   return `
-    <li class="reorder-item relative rounded-card" data-entry="${entry.id}">
+    <li class="reorder-item relative rounded-card" data-entry="${escapeHtml(entry.id)}">
       <div class="bg-surface rounded-card overflow-hidden">
         <div class="flex items-center gap-1 pl-4 pr-1 py-3 min-h-[44px]">
-          <button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
+          <button data-entry="${escapeHtml(entry.id)}" class="exercise-row-toggle tap-feedback flex-1 min-w-0 text-left">
             <span class="${titleClasses}">${escapeHtml(label)}</span>
           </button>
           ${
             canRemove
               ? `<button
             type="button"
-            data-entry="${entry.id}"
+            data-entry="${escapeHtml(entry.id)}"
             class="exercise-roster-menu-btn tap-feedback flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted"
             aria-label="Optionen für ${escapeHtml(label)}"
             aria-haspopup="true"
@@ -1405,7 +1391,7 @@ function renderExerciseRow(entry, name, sets, prs) {
         </div>
         ${
           sets.length > 0 || entry.note
-            ? `<button data-entry="${entry.id}" class="exercise-row-toggle tap-feedback w-full text-left block px-4 pb-3 ${sets.length > 0 ? '-mt-2' : '-mt-1'}">
+            ? `<button data-entry="${escapeHtml(entry.id)}" class="exercise-row-toggle tap-feedback w-full text-left block px-4 pb-3 ${sets.length > 0 ? '-mt-2' : '-mt-1'}">
                 ${sets.length > 0 ? `<ul class="flex flex-col">${setRows}</ul>` : ''}
                 ${noteHtml}
               </button>`
@@ -1442,7 +1428,7 @@ function renderExerciseRosterMenu(entry) {
   return `
     <div id="exercise-roster-menu-backdrop" class="fixed inset-0 z-30"></div>
     <div class="exercise-roster-menu-popup routine-picker-popup popup-glass ${closing ? 'closing' : ''} absolute right-0 top-0 z-40 rounded-sheet p-1 min-w-[190px]">
-      <button type="button" data-entry="${entry.id}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
+      <button type="button" data-entry="${escapeHtml(entry.id)}" class="exercise-roster-remove-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] ${DESTRUCTIVE_LINK}">
         Übung entfernen
       </button>
     </div>
@@ -1857,8 +1843,8 @@ function renderExerciseSheetMuscleFilter() {
 // ließe die Liste sichtbar durchscheinen. `#363636` = `rgba(255,255,255,
 // 0.08)` über `bg-surface` (`#252525`) gerechnet (Canvas-`globalCompositeOperation`
 // im Browser verifiziert) - optisch ununterscheidbar vom Suchfeld, aber
-// deckend. Zeilen-Buttons selbst bleiben transparent (kein eigener
-// Hintergrund) - Nutzer-Entscheidung nach Live-Vorschau, sie sollen nicht
+// deckend (Token `bg-popup`, Markup in utils.js `renderMuscleFilterPopup`).
+// Zeilen-Buttons selbst bleiben transparent (kein eigener Hintergrund) - Nutzer-Entscheidung nach Live-Vorschau, sie sollen nicht
 // als abgesetzte Kästchen wirken, nur der Abstand trennt sie. Engster
 // Zeilenabstand (`gap-0`, mehrfach auf Nutzer-Wunsch verringert von `gap-1`
 // über `gap-0.5`) - hier nur einzeilige Einträge ohne Untertitel, anders als
@@ -1866,30 +1852,7 @@ function renderExerciseSheetMuscleFilter() {
 // ist mit acht festen Einträgen (7 Muskelgruppen + "Alle") kurz genug, um
 // immer vollständig zu passen.
 function renderExerciseSheetMuscleFilterPicker() {
-  const closing = state.exerciseSheetMuscleFilterClosing;
-  const selectedId = state.exerciseSheetMuscleFilterId;
-
-  const optionsHtml = [{ id: '', name: 'Alle Muskelgruppen' }, ...MUSCLE_GROUPS]
-    .map(
-      (m) => `
-        <li>
-          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
-            <span>${escapeHtml(m.name)}</span>
-            ${(m.id === '' ? selectedId === null : selectedId === m.id) ? '<span class="text-accent">✓</span>' : ''}
-          </button>
-        </li>
-      `
-    )
-    .join('');
-
-  return `
-    <div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
-    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-[#363636] rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
-      <ul class="flex flex-col gap-0">
-        ${optionsHtml}
-      </ul>
-    </div>
-  `;
+  return renderMuscleFilterPopup(MUSCLE_GROUPS, state.exerciseSheetMuscleFilterId, state.exerciseSheetMuscleFilterClosing);
 }
 
 function renderExerciseSheetList(filteredExercises, inWorkoutIds, totalCount) {
@@ -1929,13 +1892,13 @@ function renderExerciseSheetRow(exercise, alreadyInWorkout) {
 
   // Kästchen immer antippbar: leer = hinzufügen, grün mit Haken = wieder
   // entfernen (s. toggleExerciseFromSheet).
-  const trailingColumn = `<button type="button" data-id="${exercise.id}" class="exercise-select-toggle-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-pressed="${alreadyInWorkout}" aria-label="${escapeHtml(exercise.name)} ${alreadyInWorkout ? 'entfernen' : 'hinzufügen'}">
+  const trailingColumn = `<button type="button" data-id="${escapeHtml(exercise.id)}" class="exercise-select-toggle-btn tap-feedback min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0" aria-pressed="${alreadyInWorkout}" aria-label="${escapeHtml(exercise.name)} ${alreadyInWorkout ? 'entfernen' : 'hinzufügen'}">
         <span class="w-6 h-6 rounded-btn flex items-center justify-center text-label ${alreadyInWorkout ? 'bg-accent text-base' : 'border-2 border-white/25'}">${alreadyInWorkout ? '✓' : ''}</span>
       </button>`;
 
   return `
     <li class="${LIST_ROW} flex items-center gap-3">
-      <button type="button" data-id="${exercise.id}" class="exercise-open-detail-btn tap-feedback flex-1 min-w-0 flex flex-col gap-0.5 text-left">
+      <button type="button" data-id="${escapeHtml(exercise.id)}" class="exercise-open-detail-btn tap-feedback flex-1 min-w-0 flex flex-col gap-0.5 text-left">
         <span class="text-card-title truncate">${escapeHtml(exercise.name)}</span>
         ${muscleNames.length > 0 ? `<span class="text-label text-muted uppercase">${escapeHtml(muscleNames.join(', '))}</span>` : ''}
       </button>

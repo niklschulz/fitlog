@@ -2,6 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Audit-Block 6: Standardisierung im Code)
+
+### Changed
+- Datumsformatierung zentral in neuer `js/dates.js` (`parseISODate`, `formatDate(dateStr, variante)` mit zehn benannten Varianten, `formatDateDotted`, `yearMonthOf`, `addMonths`); `db.js`, `muscleStats.js`, `exerciseStats.js`, `noteSheet.js` und alle Views nutzen sie, lokale Kopien von `addMonths`/`yearMonthOf`/`formatDateDE` entfernt. Ausgaben unverändert; `tests/dates.test.js`.
+- Neues Token `bg-popup` (`#363636`) ersetzt `bg-[#363636]`; das Muskelgruppen-Filter-Popup (identisch in Workout- und Statistik-Tab) kommt aus `renderMuscleFilterPopup()` in `js/utils.js`. `css/tailwind.css` neu gebaut.
+- Kommentar zu `liftedBackground` in `js/reorder.js` (Spiegel von `highlight`).
+
+### Fixed
+- `escapeHtml` escapet jetzt auch `"` und `'` (reine String-Ersetzung statt DOM): Werte in `value="…"`/`aria-label="…"` konnten Attribute verlassen. IDs in `data-*`-Attributen und Gewicht/Reps/Einstellungswerte in Templates laufen ebenfalls durch `escapeHtml`. `tests/escapeHtml.test.js`. `CACHE_NAME` auf `fitlog-v257`.
+
 ## 2026-11-06 (Audit-Block 5: Testmodus entfernt)
 
 ### Removed

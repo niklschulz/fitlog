@@ -3,6 +3,7 @@ import { getSettings, saveSettings } from '../settings.js';
 import { showActionSheet } from '../actionSheet.js';
 import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js';
 import { db, toISODate } from '../db.js';
+import { formatDateDotted } from '../dates.js';
 import { buildBackup, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../backup.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
@@ -101,7 +102,7 @@ function renderSettings(settings) {
           inputmode="numeric"
           min="1"
           step="1"
-          value="${settings.defaultSetCount}"
+          value="${escapeHtml(settings.defaultSetCount)}"
           class="bg-white/[0.08] ${INPUT}"
         />
         <p class="text-body text-muted">Lege fest, wie viele Sätze Fitlog für jede Übung standardmäßig vorsehen soll. Du kannst jederzeit mehr oder weniger Sätze absolvieren.</p>
@@ -114,7 +115,7 @@ function renderSettings(settings) {
           inputmode="numeric"
           min="1"
           step="1"
-          value="${settings.weeklyGoal}"
+          value="${escapeHtml(settings.weeklyGoal)}"
           class="bg-white/[0.08] ${INPUT}"
         />
         <p class="text-body text-muted">Fitlog kann dir anzeigen, wie häufig du in der aktuellen Woche schon trainiert hast. Lege hier dein Wochenziel fest.</p>
@@ -137,11 +138,6 @@ function renderDataSection() {
       </div>
     </div>
   `;
-}
-
-function formatDateDE(isoDate) {
-  const [y, m, d] = isoDate.slice(0, 10).split('-');
-  return `${d}.${m}.${y}`;
 }
 
 function setDataStatus(message) {
@@ -188,8 +184,8 @@ async function importData(file) {
   try {
     const backup = parseBackup(await file.text(), db);
     const s = summarizeBackup(backup);
-    const range = s.firstDate ? `, ${formatDateDE(s.firstDate)} – ${formatDateDE(s.lastDate)}` : '';
-    const when = s.exportedAt ? ` vom ${formatDateDE(s.exportedAt)}` : '';
+    const range = s.firstDate ? `, ${formatDateDotted(s.firstDate)} – ${formatDateDotted(s.lastDate)}` : '';
+    const when = s.exportedAt ? ` vom ${formatDateDotted(s.exportedAt)}` : '';
     const confirmed = await showActionSheet({
       message: `Backup${when}: ${s.workoutCount} Workouts, ${s.setCount} Sätze, ${s.exerciseCount} Übungen, ${s.routineCount} Routinen${range}. Alle aktuellen Daten werden ersetzt.`,
       actionLabel: 'Daten ersetzen',

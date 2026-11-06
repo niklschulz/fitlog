@@ -4,14 +4,17 @@
 // tests/exerciseStats.test.js. Alle Statistiken einer Übung werden über
 // denselben, oben auf der Seite gewählten Zeitraum (3M / 1J / Max) berechnet.
 
+import { parseISODate } from './dates.js';
+
 // Erster Tag des Zeitraums (ISO-Datum, einschließlich) - `null` = gesamte
 // Historie (Max). Kalendermonate/-jahre rückwärts ab heute; hat der Zielmonat
 // den Tag nicht (z. B. 31. Mai - 3 Monate), gilt dessen letzter Tag.
 export function getRangeStart(range, today) {
   const months = { '3m': 3, '1j': 12 }[range];
   if (!months) return null;
-  const [y, m, d] = today.split('-').map(Number);
-  const target = new Date(y, m - 1 - months, 1);
+  const todayDate = parseISODate(today);
+  const d = todayDate.getDate();
+  const target = new Date(todayDate.getFullYear(), todayDate.getMonth() - months, 1);
   const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
   target.setDate(Math.min(d, lastDay));
   const pad = (n) => String(n).padStart(2, '0');

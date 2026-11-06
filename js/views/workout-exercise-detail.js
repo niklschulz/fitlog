@@ -19,6 +19,7 @@ import {
   CARD,
 } from '../utils.js';
 import { openNoteSheet, unmountNoteSheet } from '../noteSheet.js';
+import { formatDate } from '../dates.js';
 import { getSettings } from '../settings.js';
 import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
 
@@ -187,8 +188,7 @@ function renderHeader(exerciseName) {
 }
 
 function formatShortDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+  return formatDate(dateStr, 'weekdayDayMonthShort');
 }
 
 function renderStepperRow(field, label, value) {
@@ -200,7 +200,7 @@ function renderStepperRow(field, label, value) {
       <span class="text-label uppercase text-muted">${label}</span>
       <div class="flex items-center gap-2">
         <button data-stepper="${field}" data-delta="-1" type="button" class="stepper-btn tap-feedback w-8 h-8 rounded-lg bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">−</button>
-        <input id="detail-${field}-input" type="number" inputmode="${inputMode}" step="${step}" min="0" value="${value}" class="w-16 text-center bg-base rounded-btn py-2 text-ink" />
+        <input id="detail-${field}-input" type="number" inputmode="${inputMode}" step="${step}" min="0" value="${escapeHtml(value)}" class="w-16 text-center bg-base rounded-btn py-2 text-ink" />
         <button data-stepper="${field}" data-delta="1" type="button" class="stepper-btn tap-feedback w-8 h-8 rounded-lg bg-raised text-ink text-lg font-semibold flex items-center justify-center flex-shrink-0">+</button>
       </div>
     </div>
@@ -272,7 +272,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel, note, exercise
             return renderSetTimelineRow(i + 1, renderSetContent(set, { badgeInset: true }), {
               isLast: i === rows.length - 1,
               liClasses: set ? 'set-row' : 'empty-set-row',
-              liAttrs: set ? `data-set="${set.id}"` : 'data-row-empty="true"',
+              liAttrs: set ? `data-set="${escapeHtml(set.id)}"` : 'data-row-empty="true"',
               highlighted: isSelected,
             });
           })
@@ -285,8 +285,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel, note, exercise
 }
 
 function formatHistoryDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  return formatDate(dateStr, 'fullLong');
 }
 
 // Verlauf-Reiter, auch vom Statistik-Tab (js/views/statistics-exercise-detail.js)
