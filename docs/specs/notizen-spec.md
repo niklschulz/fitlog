@@ -186,4 +186,3 @@ UI-Teil nur manuell (Abschnitt 9).
 | ✕ mit ungespeichertem Text | Sheet schließt, Text ist weg (bewusst, keine Rückfrage) |
 | Notiz an Übung mit `sourceRoutineId`, Routine wird gewechselt | Eintrag bleibt, unabhängig von der neuen Routine |
 | Notiz an Übung, Übung wird gelöscht (Übungs-Detail-Sheet) | Eintrag bleibt zur Wahrung des Verlaufs, wie bei Einträgen mit Sätzen |
-| Testmodus ([ADR 0024](../decisions/0024-testmodus-umschaltbare-datenbank.md)) | identisches Schema, Notizen gelten pro Datenbank |

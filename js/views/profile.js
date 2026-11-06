@@ -5,10 +5,6 @@ import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js
 import { db, toISODate } from '../db.js';
 import { buildBackup, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../backup.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
-// TESTMODUS (temporär, s. ADR 0024/js/testmode.js): nur für renderTestModeToggle()/
-// deren Klick-Handler weiter unten nötig - zum Entfernen diese Zeile sowie
-// beide markierten Stellen darunter löschen.
-import { isTestModeEnabled, setTestModeEnabled } from '../testmode.js';
 
 let currentContainer = null;
 let state = {
@@ -59,7 +55,6 @@ function paint() {
       ${body}
       ${renderSettings(getSettings())}
       ${renderDataSection()}
-      ${renderTestModeToggle()}
       <p id="app-version" class="text-label text-muted text-center pt-2">Fitlog</p>
     </div>
 
@@ -128,8 +123,7 @@ function renderSettings(settings) {
   `;
 }
 
-// Export/Import als JSON-Backup, s. ADR 0034/js/backup.js. Im Testmodus
-// wirkt beides auf die Test-Datenbank (die gerade aktive DB).
+// Export/Import als JSON-Backup, s. ADR 0034/js/backup.js.
 function renderDataSection() {
   return `
     <div class="flex flex-col gap-2">
@@ -164,7 +158,7 @@ async function exportData() {
   try {
     const backup = await buildBackup(db, { profile: getProfile(), settings: getSettings() });
     const day = toISODate(new Date());
-    const name = `fitlog-backup-${day}${isTestModeEnabled() ? '-testdaten' : ''}.json`;
+    const name = `fitlog-backup-${day}.json`;
     const file = new File([JSON.stringify(backup)], name, { type: 'application/json' });
     if (navigator.canShare?.({ files: [file] })) {
       try {
@@ -197,7 +191,7 @@ async function importData(file) {
     const range = s.firstDate ? `, ${formatDateDE(s.firstDate)} – ${formatDateDE(s.lastDate)}` : '';
     const when = s.exportedAt ? ` vom ${formatDateDE(s.exportedAt)}` : '';
     const confirmed = await showActionSheet({
-      message: `Backup${when}: ${s.workoutCount} Workouts, ${s.setCount} Sätze, ${s.exerciseCount} Übungen, ${s.routineCount} Routinen${range}. Alle aktuellen Daten${isTestModeEnabled() ? ' (Testdaten)' : ''} werden ersetzt.`,
+      message: `Backup${when}: ${s.workoutCount} Workouts, ${s.setCount} Sätze, ${s.exerciseCount} Übungen, ${s.routineCount} Routinen${range}. Alle aktuellen Daten werden ersetzt.`,
       actionLabel: 'Daten ersetzen',
     });
     if (!confirmed) return;
@@ -210,42 +204,6 @@ async function importData(file) {
     setDataStatus(err instanceof BackupError ? err.message : `Import fehlgeschlagen: ${err.message}`);
   }
 }
-
-// ============================================================================
-// TESTMODUS (temporär, s. ADR 0024/js/testmode.js) - kompletter Block klar
-// markiert, damit er sich später als Ganzes wieder entfernen lässt (Aufruf
-// oben in paint(), dieser Abschnitt, Wiring unten in wireEvents()). Schalter
-// ohne eigene CSS-Klassen (reine Tailwind-Utilities), damit beim Entfernen
-// nichts in css/styles.css übrig bleibt. Ein Wechsel bindet js/db.js beim
-// nächsten Start an eine andere Dexie-Datenbank ("fitlog" vs. "fitlog-test")
-// - dafür reicht kein bloßes Neu-Rendern, sondern ein vollständiger
-// Seiten-Reload (reduceMotion/Animation wären ohnehin irreführend, da sich
-// dabei buchstäblich die gesamte Datengrundlage austauscht).
-function renderTestModeToggle() {
-  const enabled = isTestModeEnabled();
-  return `
-    <div class="flex flex-col gap-2">
-      <p class="text-label-large text-muted">Entwicklung</p>
-      <div class="${CARD} flex items-center justify-between gap-3">
-        <div class="flex flex-col gap-1 min-w-0">
-          <span class="text-label-large text-muted">Testdaten verwenden</span>
-          <p class="text-body text-muted">Zeigt einen synthetischen, ca. 3 Jahre umfassenden Testdatensatz statt deiner echten Trainingsdaten. Ein Wechsel lädt die App neu.</p>
-        </div>
-        <button
-          id="test-mode-toggle"
-          type="button"
-          role="switch"
-          aria-checked="${enabled}"
-          aria-label="Testdaten verwenden"
-          class="tap-feedback relative flex-shrink-0 w-12 h-7 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-white/20'}"
-        >
-          <span class="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}"></span>
-        </button>
-      </div>
-    </div>
-  `;
-}
-// --- Ende TESTMODUS-Render-Block ---
 
 function renderView(profile) {
   return `
@@ -493,12 +451,5 @@ function wireEvents() {
     const file = importInput.files[0];
     importInput.value = '';
     if (file) importData(file);
-  });
-
-  // TESTMODUS (temporär, s. ADR 0024/js/testmode.js) - zum Entfernen diesen
-  // Block löschen (s. auch renderTestModeToggle() oben).
-  currentContainer.querySelector('#test-mode-toggle')?.addEventListener('click', () => {
-    setTestModeEnabled(!isTestModeEnabled());
-    window.location.reload();
   });
 }

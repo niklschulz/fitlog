@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Audit-Block 5: Testmodus entfernt)
+
+### Removed
+- Testmodus (ADR 0024) vollständig zurückgebaut: `js/testmode.js` gelöscht, "Entwicklung"-Bereich im Profil-Tab entfernt, `js/db.js` öffnet wieder fest `fitlog`, `js/app.js` ohne Seed-Aufruf, `CALENDAR_SHEET_MIN_MONTH` in `js/views/workout.js` wieder fest `'2026-01'`. Zusätzlich entfernt: `-testdaten` im Backup-Dateinamen und Testdaten-Hinweis im Import-Dialog, Kommentarverweis in `js/backup.js`.
+- Datenbank `fitlog`, Schema und echte Daten unverändert; kein Bereinigungscode für die Reste von `fitlog-test`/`localStorage`-Flags auf Geräten, die den Testmodus genutzt haben.
+
+### Changed
+- `docs/`: ADR 0024 als zurückgebaut markiert (Nachtrag), Testmodus-Erwähnungen in `architecture.md`, `features.md`, ADR 0034 und `notizen-spec.md` entfernt. `CACHE_NAME` auf `fitlog-v256`.
+
 ## 2026-11-06 (Audit-Block 4: Design-System als Referenz)
 
 ### Changed

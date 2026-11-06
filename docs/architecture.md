@@ -43,7 +43,6 @@ fitlog/
 │   ├── settings.js        Geräte-lokale Einstellungen in localStorage (Standardanzahl Sätze,
 │   │                       Wochenziel, Favoriten im Statistik-Tab)
 │   ├── backup.js          Export/Import als JSON-Backup (ADR 0034)
-│   ├── testmode.js        TEMPORÄR: umschaltbare Test-Datenbank mit synthetischen Daten (ADR 0024, s. unten)
 │   ├── utils.js           Geteilte Helfer (z. B. escapeHtml)
 │   ├── app.js              Tab-Router: schaltet zwischen den Views um
 │   ├── vendor/dexie.min.js  Lokal ausgelieferte Dexie-Bibliothek, s. ADR 0031
@@ -145,10 +144,6 @@ Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (priv
 ## Backup (Export/Import)
 
 `js/backup.js` ([ADR 0034](decisions/0034-export-import-json-backup.md)) schreibt alle Dexie-Tabellen der aktiven Datenbank sowie Username und Einstellungen in eine JSON-Datei und liest sie wieder ein. Der Sync-Token ist nicht Teil des Backups: `buildBackup` entfernt ihn (`stripToken`), `parseBackup` verwirft ihn aus älteren Dateien, und der Import lässt das lokale Profil unverändert (Nachtrag 2026-11-06 im ADR). Der Import ersetzt den gesamten Bestand in einer Dexie-Transaktion; die Dexie-Instanz kommt als Parameter herein, damit die Logik in Node testbar ist. Die Oberfläche (Abschnitt „Daten“ im Profil-Tab, Teilen per Web Share API bzw. Download, Vorschau im Action Sheet) liegt in `js/views/profile.js`; Funktionsbeschreibung in [features.md](features.md).
-
-## Testmodus (temporär)
-
-`js/testmode.js` ([ADR 0024](decisions/0024-testmodus-umschaltbare-datenbank.md)) ist ein Entwickler-Feature und gilt als temporär: Es soll entfernt werden, sobald die App produktiv genutzt wird (Rückbau-Schritte im ADR). Ob und wann das geschieht, ist nicht entschieden. Ist der Testmodus aktiv (Flag in `localStorage`), öffnet `js/db.js` statt der Datenbank `fitlog` die separate Datenbank `fitlog-test`, schema-identisch über dieselben `db.version(N)`-Migrationen. Umschalten per Schieberegler im Profil-Tab lädt die Seite neu. Beim Start sät `js/app.js` einmalig synthetische Trainingsdaten (ca. 3 Jahre, `seedTestData()`; verweigert den Dienst, wenn die Instanz nicht `fitlog-test` heißt). Alle Ankopplungsstellen sind im Code mit „TESTMODUS“ markiert: `js/db.js`, `js/app.js`, `js/views/profile.js`, `js/views/workout.js` (Untergrenze des großen Kalenders) und `sw.js` (Eintrag in `APP_SHELL`). Das Backup wirkt im Testmodus auf die Test-Datenbank.
 
 ## Tests
 
