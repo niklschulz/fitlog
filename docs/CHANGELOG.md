@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Unterseiten in eigener Seiten-Ebene, Wisch-Zurück-Umbau)
+
+### Fixed
+- Nach dem Zurückwischen von der Übungs-Detailseite ließ sich die Liste auf iOS nicht scrollen (nur Gummiband, schwarzer Bereich dahinter). Vermutete Ursache: Detailseite und Liste teilten sich den Scroll-Container, der beim Wechsel ausgeblendet, verschoben und neu befüllt wurde. Die Detailseiten (Workout und Statistik) liegen jetzt in einer eigenen Seiten-Ebene `#page-layer` über der Übersicht, deren Container die ganze Zeit sichtbar und unberührt bleibt (`js/swipeBack.js`: `openPage()`, `removePageLayer()`, `wireSwipeBack({ container, onBack, refreshUnder })`). Details und Begründung: [ADR 0039](decisions/0039-seiten-ebene-fuer-unterseiten.md)
+
+### Changed
+- `listScrollTop`-Wiederherstellen in `workout.js`/`statistics.js` entfällt, ebenso `onRestore`/`restore` der Detailseiten (abgebrochene Geste schiebt die Ebene nur zurück). Notiz-Sheet der Workout-Detailseite öffnet in `#view-container`, `lockBodyScroll()` sperrt auch `#page-layer`. `CACHE_NAME` auf `fitlog-v253`. Rollback-Punkt: Git-Tag `pre-page-layer-v252`
+
 ## 2026-11-06 (Abhängigkeiten: Tailwind 3.4.19, fake-indexeddb 6.2.7)
 
 ### Changed

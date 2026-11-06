@@ -29,7 +29,7 @@ import {
   daysBetween,
   mondayOf,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW, withViewTransition } from '../utils.js';
+import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -41,7 +41,7 @@ import {
 import { wireLongPressReorder } from '../reorder.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
-import { pushPage } from '../swipeBack.js';
+import { openPage, removePageLayer } from '../swipeBack.js';
 import { openNoteSheet } from '../noteSheet.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
@@ -54,8 +54,6 @@ let currentContainer = null;
 let state = {
   selectedDate: todayISODate(),
   detailEntryId: null, // workoutExercises.id der geöffneten Übungs-Detailseite (Abschnitt 12), oder null für die Tagesübersicht
-  // Scroll-Position der Tagesübersicht, gemerkt beim Öffnen einer Übungs-Detailseite und nach der Rückkehr wiederhergestellt (der Container scrollt selbst, s. `#view-container`); null = nichts zu restaurieren.
-  listScrollTop: null,
   routinePickerOpen: false,
   routinePickerClosing: false,
   // "Routinen"-Sheet: erreichbar über "Alle Routinen anzeigen" im
@@ -130,8 +128,8 @@ let renderEpoch = 0;
 export async function render(container) {
   renderEpoch++;
   currentContainer = container;
+  removePageLayer();
   state.detailEntryId = null;
-  state.listScrollTop = null;
   state.routinePickerOpen = false;
   state.routinePickerClosing = false;
   state.routinesSheetOpen = false;
@@ -176,6 +174,7 @@ export async function render(container) {
 // gleichzeitig offene Stapel-Sheets wie Übungen+Übungs-Detail erlaubt).
 export function unmount() {
   renderEpoch++;
+  removePageLayer();
   if (pendingCalendarSheetCloseTimeout) {
     clearTimeout(pendingCalendarSheetCloseTimeout);
     pendingCalendarSheetCloseTimeout = null;
@@ -361,47 +360,37 @@ function allowedSheetMonths() {
 
 // --- Paint ---
 
-// Übungs-Detailseite (Abschnitt 12) ersetzt die Tagesübersicht komplett,
-// solange sie offen ist - eigenständiges Sub-View-Modul, verwaltet sich
-// ab hier vollständig selbst (eigenes render()/paint()/wireEvents()).
-// onBack räumt nur den State hier auf und rendert die Tagesübersicht neu.
-// Eigene Funktion (statt Inline-Aufruf in paint()), weil auch die abgebrochene
-// Wisch-Zurück-Geste die Seite wieder aufbauen muss (`restore`, s.
-// js/swipeBack.js): onBack() hat zu diesem Zeitpunkt die Übersicht schon
-// darunter gezeichnet.
-function showDetailPage(entryId, { restore = false } = {}) {
-  return exerciseDetail.render(currentContainer, {
+// Übungs-Detailseite (Abschnitt 12): eigenständiges Sub-View-Modul, verwaltet
+// sich vollständig selbst (eigenes render()/paint()/wireEvents()) und liegt
+// in einer eigenen Seiten-Ebene ÜBER der Tagesübersicht (`layer`, s.
+// js/swipeBack.js und ADR 0039). Die Übersicht bleibt darunter unangetastet
+// (Scrollposition bleibt von selbst erhalten) und wird erst beim Zurückgehen
+// in place neu gezeichnet (`refreshUnder`), damit geänderte Sätze stimmen.
+function showDetailPage(entryId, layer) {
+  return exerciseDetail.render(layer, {
     entryId,
-    restore,
     onOpenInfo: (exerciseId) => openExerciseDetailSheet(exerciseId),
-    onRestore: () => {
-      state.detailEntryId = entryId;
-      return showDetailPage(entryId, { restore: true });
-    },
-    onBack: ({ swipe = false } = {}) => {
-      // Sub-View wird verlassen, noch bevor die Tagesübersicht neu
-      // gerendert wird - ein zu diesem Zeitpunkt evtl. noch laufender
-      // paint()-Aufruf der Detailseite (z. B. durch einen vorherigen
-      // Reiter-Wechsel dort ausgelöst) darf den Container nicht mehr
-      // überschreiben, sobald er fertig wird (s. exerciseDetail.unmount()).
+    refreshUnder: () => paint(),
+    // `animated: true`: Zurück-Pfeil/Wisch-Geste haben die Übersicht schon
+    // über `refreshUnder` aktualisiert und die Ebene weggeschoben.
+    onBack: ({ animated = false } = {}) => {
+      // Sub-View wird verlassen - ein evtl. noch laufender paint()-Aufruf der
+      // Detailseite darf nicht mehr schreiben (s. exerciseDetail.unmount()).
       exerciseDetail.unmount();
-      // Zurück-Pfeil und Wisch-Geste animieren selbst (js/swipeBack.js),
-      // `swipe: true` heißt hier: keine eigene Übergangs-Animation.
-      withViewTransition(() => {
-        state.detailEntryId = null;
-        paint();
-      }, swipe ? 'none' : 'back');
+      state.detailEntryId = null;
+      if (animated) {
+        removePageLayer();
+        return;
+      }
+      // Ohne Animation (Bewegung reduzieren, Eintrag gelöscht): erst die
+      // Übersicht aktualisieren, dann die Ebene wegnehmen.
+      Promise.resolve(paint()).finally(removePageLayer);
     },
   });
 }
 
 async function paint() {
   const myEpoch = renderEpoch;
-
-  if (state.detailEntryId) {
-    await showDetailPage(state.detailEntryId);
-    return;
-  }
 
   // Vorwoche, aktuelle Woche, folgende Woche (±1 Woche um die Auswahl) -
   // je ein 7-Tage-Block, s. renderCalendarStrip.
@@ -471,14 +460,6 @@ async function paint() {
 
   currentContainer.innerHTML = html;
   wireEvents();
-
-  // Rückkehr von einer Übungs-Detailseite: vorherige vertikale Position
-  // wiederherstellen (beim Ersetzen des Inhalts durch die Detailseite wurde
-  // sie auf 0 geklemmt).
-  if (state.listScrollTop !== null) {
-    currentContainer.scrollTop = state.listScrollTop;
-    state.listScrollTop = null;
-  }
 
   // Erst im nächsten Frame scrollen - direkt nach dem innerHTML-Update hat
   // der Browser das Layout des Scroll-Containers noch nicht fertig berechnet.
@@ -2606,11 +2587,11 @@ function wireEvents() {
   // expandieren.
   currentContainer.querySelectorAll('.exercise-row-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.listScrollTop = currentContainer.scrollTop;
-      // iOS-Schiebe-Animation (js/swipeBack.js) statt Skalieren+Ausblenden.
-      pushPage(currentContainer, () => {
+      if (state.detailEntryId) return;
+      // iOS-Schiebe-Animation (js/swipeBack.js): Detailseite in eigener Ebene.
+      openPage(currentContainer, (layer) => {
         state.detailEntryId = btn.dataset.entry;
-        paint();
+        showDetailPage(btn.dataset.entry, layer);
       });
     });
   });

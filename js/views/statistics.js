@@ -11,7 +11,7 @@ import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
-import { pushPage } from '../swipeBack.js';
+import { openPage, removePageLayer } from '../swipeBack.js';
 import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
@@ -38,16 +38,10 @@ const initialState = () => ({
 });
 let state = initialState();
 
-// Scroll-Position des Übungen-Reiters, gemerkt beim Öffnen einer Übungs-Seite
-// und nach der Rückkehr wiederhergestellt (der Container scrollt selbst, die
-// Übungs-Seite ersetzt seinen Inhalt und klemmt die Position dabei auf 0).
-// null = nichts zu restaurieren.
-let listScrollTop = null;
-
 export function render(container) {
   currentContainer = container;
   state = initialState();
-  listScrollTop = null;
+  removePageLayer();
   return paint();
 }
 
@@ -57,6 +51,7 @@ export function render(container) {
 // muss, s. js/sheet.js.
 export function unmount() {
   exerciseDetail.unmount();
+  removePageLayer();
   unmountExerciseCreateSheet();
   if (pendingMuscleGroupSheetCloseTimeout) {
     clearTimeout(pendingMuscleGroupSheetCloseTimeout);
@@ -111,10 +106,6 @@ async function paint({ pageFromRect = null, volumeFromRect = null } = {}) {
   positionSegmentedIndicator(currentContainer.querySelector('#page-tabs'), { fromRect: pageFromRect });
   positionSegmentedIndicator(currentContainer.querySelector('#volume-range-control'), { fromRect: volumeFromRect });
   wireEvents();
-  if (listScrollTop !== null) {
-    currentContainer.scrollTop = listScrollTop;
-    listScrollTop = null;
-  }
 }
 
 // --- Übersicht-Reiter: "Workouts pro Woche" ---
@@ -1171,27 +1162,29 @@ function toggleFavorite(id) {
   repaintExerciseSheetBodyInPlace();
 }
 
-// Übungs-Seite übernimmt den Container komplett (wie die Workout-
-// Übungsseite im Workout-Tab); Zurück zeichnet den Übungen-Reiter neu.
-function showExerciseDetail(exerciseId, { restore = false } = {}) {
-  return exerciseDetail.render(currentContainer, {
+// Übungs-Seite liegt (wie die Workout-Übungsseite im Workout-Tab) in einer
+// eigenen Seiten-Ebene über dem Reiter (js/swipeBack.js, ADR 0039); der Reiter
+// darunter bleibt unangetastet und wird beim Zurückgehen in place neu
+// gezeichnet (`refreshUnder`).
+function showExerciseDetail(exerciseId, layer) {
+  return exerciseDetail.render(layer, {
     exerciseId,
-    restore,
-    onBack: () => {
+    refreshUnder: () => paint(),
+    // `animated: true`: Übersicht wurde schon aktualisiert, Ebene wegschieben.
+    onBack: ({ animated = false } = {}) => {
       exerciseDetail.unmount();
-      paint();
+      if (animated) {
+        removePageLayer();
+        return;
+      }
+      Promise.resolve(paint()).finally(removePageLayer);
     },
-    // Wisch-Zurück abgebrochen: Seite mit erhaltenem Zustand wieder aufbauen.
-    onRestore: () => showExerciseDetail(exerciseId, { restore: true }),
   });
 }
 
 // Öffnen mit der iOS-Schiebe-Animation (js/swipeBack.js).
 function openExerciseDetail(exerciseId) {
-  pushPage(currentContainer, () => {
-    listScrollTop = currentContainer.scrollTop;
-    showExerciseDetail(exerciseId);
-  });
+  openPage(currentContainer, (layer) => showExerciseDetail(exerciseId, layer));
 }
 
 function wireEvents() {
