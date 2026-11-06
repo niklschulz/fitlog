@@ -165,6 +165,21 @@ function resetContainerStyles(container) {
   container.style.zIndex = '';
   container.style.background = '';
   container.style.boxShadow = '';
+  resyncScroll(container);
+}
+
+// iOS verliert die native Scrollposition des Containers, wenn er während der
+// Geste ausgeblendet/transformiert war und seine Position per scrollTop gesetzt
+// wurde: der erste Wisch nach oben löste dann nur das Gummiband aus, statt zu
+// scrollen. Overflow kurz aus/an gleicht sie wieder mit dem DOM-Wert ab (nicht,
+// wenn ein Sheet den Container gerade per lockBodyScroll() sperrt).
+function resyncScroll(container) {
+  if (container.style.overflowY !== '') return;
+  const top = container.scrollTop;
+  container.style.overflowY = 'hidden';
+  void container.offsetHeight;
+  container.style.overflowY = '';
+  container.scrollTop = top;
 }
 
 // Öffnen einer Unterseite: Die alte Seite (Abbild) rückt mit Versatz nach links

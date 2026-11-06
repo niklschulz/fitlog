@@ -485,11 +485,31 @@ async function paint() {
   // Nur horizontal zur aktuellen Woche: `scrollIntoView` darf die vertikale
   // Position des Containers nicht verändern (sonst springt eine
   // heruntergescrollte Liste wieder nach oben zum Kalender).
+  //
+  // Statt `scrollIntoView` (das auch die Vorfahren-Scroll-Container
+  // verstellen kann und auf iOS nach einer Zurück-Navigation/View-Transition
+  // deren native Scroll-Position desynchronisiert - die Liste ließ sich dann
+  // beim ersten Wischen nicht hochscrollen, stattdessen kam das Gummiband
+  // wie bei scrollTop 0) scrollt nur der Wochenstreifen selbst.
   requestAnimationFrame(() => {
-    const weekBlock = currentContainer.querySelector('.calendar-week[data-week-start="' + currentMonday + '"]');
-    const top = currentContainer.scrollTop;
-    weekBlock?.scrollIntoView({ block: 'nearest', inline: 'start' });
-    currentContainer.scrollTop = top;
+    const container = currentContainer;
+    if (!container) return;
+    const weekBlock = container.querySelector('.calendar-week[data-week-start="' + currentMonday + '"]');
+    const strip = weekBlock?.parentElement;
+    if (weekBlock && strip) {
+      const padLeft = parseFloat(getComputedStyle(strip).paddingLeft) || 0;
+      strip.scrollLeft += weekBlock.getBoundingClientRect().left - strip.getBoundingClientRect().left - padLeft;
+    }
+    const top = container.scrollTop;
+    // Native Scroll-Position von iOS neu mit dem DOM-Wert abgleichen
+    // (overflow kurz aus/an). Nicht, wenn ein Sheet den Container gerade
+    // per lockBodyScroll() sperrt.
+    if (container.style.overflowY === '') {
+      container.style.overflowY = 'hidden';
+      void container.offsetHeight;
+      container.style.overflowY = '';
+    }
+    container.scrollTop = top;
   });
 }
 

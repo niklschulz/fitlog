@@ -15,7 +15,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ## 2026-11-04 (Info-Button auf der Übungs-Detailseite)
 
 ### Added
-- Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v235`
+- Übungs-Detailseite (Workout-Tab): Glass-Info-Button ("i") rechts oben in der Kopfzeile. Er öffnet das bestehende Übungs-Detail-Sheet (primäre/sekundäre Muskeln, inkl. Bearbeiten/Löschen-Menü bei eigenen Übungen). `workout.js` übergibt dafür den Callback `onOpenInfo` an `workout-exercise-detail.js`. `CACHE_NAME` auf `fitlog-v247`
 
 ## 2026-11-04 (Wisch-Zurück: Buttons wurden beim Auflegen des Fingers heller)
 
@@ -70,6 +70,10 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Changed
 - `openNoteSheet()` (`js/noteSheet.js`) nimmt optional `saveNote`, `z` und `dateISO: null` (keine Datumszeile) entgegen
 - Standard-Übungen: Das "⋮"-Menü im Übungs-Detail-Sheet erscheint jetzt auch bei ihnen, mit dem Notiz-Eintrag als einzigem Eintrag. `CACHE_NAME` auf `fitlog-v237`
+## 2026-11-06 (Workout-Liste: Scrollen nach Zurück von der Detailseite)
+
+### Fixed
+- Nach dem Zurückgehen von der Übungs-Detailseite ließ sich die Workout-Liste auf iOS nicht direkt hochscrollen (Gummiband wie bei Scrollposition 0). Ursache: `scrollIntoView` für den Wochenstreifen verstellte den Scroll-Container, die native iOS-Scrollposition lief nach der View-Transition auseinander. Jetzt scrollt nur der Wochenstreifen selbst, und der Container wird nach dem Wiederherstellen der Position sowie nach Ende der Wisch-Zurück-Geste (`resetContainerStyles()` in `js/swipeBack.js`) neu synchronisiert. `CACHE_NAME` auf `fitlog-v247`
 
 ## 2026-11-01 (Notiz-Sheet: Seite springt nicht mehr hoch)
 
