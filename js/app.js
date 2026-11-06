@@ -98,7 +98,10 @@ function showView(name) {
   const previousActiveBtn = document.querySelector('.nav-btn.active');
   currentViewName = name;
 
-  views[name].render(viewContainer);
+  // Scrollposition erst zurücksetzen, wenn der neue Tab gezeichnet ist (render()
+  // zeichnet nach DB-Abfragen asynchron): Direkt beim Klick würde der alte Tab
+  // sichtbar nach oben scrollen, bevor der neue erscheint (Flackern).
+  const rendered = views[name].render(viewContainer);
   const activeBtn = Array.from(navButtons).find((btn) => btn.dataset.view === name);
 
   if (activeBtn) {
@@ -118,7 +121,11 @@ function showView(name) {
       },
     });
   }
-  viewContainer.scrollTop = 0;
+  Promise.resolve(rendered)
+    .catch(() => {})
+    .then(() => {
+      if (currentViewName === name) viewContainer.scrollTop = 0;
+    });
 }
 
 navButtons.forEach((btn) => {

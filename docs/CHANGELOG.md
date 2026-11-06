@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Bottom-Nav: kein Hochscrollen mehr vor dem Tab-Wechsel)
+
+### Fixed
+- Beim Tippen auf die Bottom-Nav scrollte der aktuelle Tab erst sichtbar nach oben, bevor der neue erschien (Flackern). Ursache: `showView()` (`js/app.js`) setzte `scrollTop = 0` direkt nach dem Start von `render()`, das aber asynchron zeichnet - der alte Inhalt war dann noch zu sehen. Jetzt wird erst zurückgesetzt, wenn `render()` fertig gezeichnet hat (`statistics.render()` gibt dafür sein `paint()`-Promise zurück). `CACHE_NAME` auf `fitlog-v250`
+
 ## 2026-11-06 (Wisch-Zurück: Übersicht danach vollständig gezeichnet)
 
 ### Fixed

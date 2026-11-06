@@ -48,7 +48,7 @@ export function render(container) {
   currentContainer = container;
   state = initialState();
   listScrollTop = null;
-  paint();
+  return paint();
 }
 
 // Analog zu profile.js's unmount() - ein offenes Muskelgruppen-Sheet hält
