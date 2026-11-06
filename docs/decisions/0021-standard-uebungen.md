@@ -1,5 +1,7 @@
 # 0021 – Standard-Übungen: fest mit der App ausgeliefert, für Nutzer nicht veränderbar
 
+**Status:** Gültig
+
 ## Kontext
 
 Bisher legt jeder Nutzer alle Übungen selbst an (`createExercise()`), es gibt keine mit der App mitgelieferte Grundausstattung. Nutzer-Vorgabe: Ein fester Satz an Standard-Übungen soll künftig bei jeder Installation automatisch vorhanden sein — Name und Muskel-Zuordnung dieser Übungen sind komplett fix, der Nutzer kann sie weder umbenennen noch löschen noch ihre Muskel-Zuordnung ändern. Eigene, zusätzliche Übungen bleiben weiterhin möglich; beide Arten erscheinen gemischt, alphabetisch sortiert, im Übungs-Sheet (unverändert `db.exercises.orderBy('name')`, s. `js/views/workout.js`).

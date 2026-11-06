@@ -1,5 +1,7 @@
 # 0010 – Übungs-Detailseite: eigenständiges Sub-View-Modul statt Inline-Akkordeon
 
+**Status:** Gültig
+
 ## Kontext
 
 Abschnitt 12 der Konzept-Erweiterungen ersetzt die bisherige Inline-Akkordeon-Erweiterung einer Übungszeile im Workout-Tab (Tap öffnet ein Panel direkt in der Liste, s. ursprüngliche Umsetzung von Abschnitt 10) durch eine vollständige, eigenständige Seite: Zurück-Pfeil zur Tagesübersicht, Segmented Control mit drei Reitern (Tages-Erfassung/Verlauf/Statistik-Platzhalter), Gewicht/Wiederholungen-Stepper, Satz-Auswahl mit Speichern/Update/Delete.
@@ -29,3 +31,7 @@ Das bestehende App-weite View-System (`app.js`, vier Tabs über die Bottom-Nav) 
 Nutzer-Vorgabe nach gezielter Nachfrage, ob Daten aus einem aktuell laufenden Workout auch im Verlauf auftauchen: Ja, sollen sie — die bisherige Ausblendung des gerade betrachteten Tages (s. oben, "der aktuell betrachtete Tag ausgeschlossen") wurde als unerwünscht empfunden.
 
 `getExerciseSetHistory(exerciseId, excludeWorkoutId)` verliert den `excludeWorkoutId`-Parameter samt Filter — zeigt jetzt ausnahmslos alle Tage mit mindestens einem Satz dieser Übung, neueste zuerst, **einschließlich** des Tages, dessen Detailseite gerade offen ist. Einziger Aufrufer (`workout-exercise-detail.js`) entsprechend angepasst: `getExerciseSetHistory(entry.exerciseId)` ohne zweites Argument. Bewusste Konsequenz: Der heutige/gerade betrachtete Tag kann jetzt sowohl im ersten Reiter (Tages-Erfassung) als auch — mit denselben Sätzen — ganz oben im Verlauf-Reiter erscheinen; diese Dopplung wird in Kauf genommen, da der Nutzer den vollständigen, lückenlosen Verlauf einer Wiederholung ohne Sonderfall vorzieht.
+
+## Nachtrag (2026-11-06): Verweise auf das Konzept
+
+"Abschnitt N" und "Konzept" in diesem ADR beziehen sich auf das ursprüngliche Konzept-Dokument (nicht im Repo). Den heutigen Stand beschreiben [features.md](../features.md) und [architecture.md](../architecture.md).

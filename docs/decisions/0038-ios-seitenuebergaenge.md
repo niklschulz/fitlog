@@ -1,5 +1,7 @@
 # 0038 – iOS-Seitenübergänge: echte Übersicht darunter, Federn mit Fingergeschwindigkeit
 
+**Status:** Teilweise überholt durch [ADR 0039](0039-seiten-ebene-fuer-unterseiten.md) (Aufbau: Unterseite in eigener Seiten-Ebene)
+
 ## Kontext
 
 Die Wisch-Zurück-Geste ([ADR 0037](0037-wisch-zurueck-geste.md)) fühlte sich nicht nativ an: Beim Ziehen war unter der Seite nur leerer Hintergrund, nach dem Loslassen lief eine feste Animation, und Zurück-Pfeil sowie Öffnen nutzten andere Bewegungen. Der Nutzer wollte alles iOS-gleich.

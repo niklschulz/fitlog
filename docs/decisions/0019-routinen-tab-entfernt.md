@@ -1,5 +1,7 @@
 # 0019 – Eigenständiger Routinen-Tab entfernt, Routinen nur noch über das Routinen-Sheet
 
+**Status:** Gültig – abgeschlossen: Der Routinen-Tab ist entfernt (`js/views/routines.js` gelöscht); Passagen älterer ADRs und Doku, die ihn nennen, beschreiben den damaligen Stand.
+
 ## Kontext
 
 Neben dem eigenständigen Routinen-Tab (`js/views/routines.js`, dritte Position in der Bottom-Nav: Liste → Namensformular → Editor → Übungs-Picker als Voll-Seiten-Flow mit sofortigem Live-Speichern und ▲/▼-Umsortieren) ist im Workout-Tab ein **Routinen-Sheet** entstanden: Liste aller Routinen, Neuanlage und Bearbeiten als zweiter Inhalts-Modus desselben Sheets (Entwurf im State, gesammeltes Speichern), Übungen hinzufügen über das bestehende Übungs-Sheet (inkl. spontaner Neuanlage), Umsortieren per Gedrückthalten und Verschieben ([js/reorder.js](../../js/reorder.js)), Entfernen über ein Kontextmenü, Löschen mit Bestätigung. Mit dem Umsortieren war der letzte Punkt erledigt, den nur der Tab konnte.

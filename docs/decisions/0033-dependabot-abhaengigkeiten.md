@@ -1,5 +1,7 @@
 # 0033 – Dependabot für Abhängigkeiten
 
+**Status:** Gültig
+
 ## Kontext
 
 Bisher gab es keinen Prozess, um Sicherheitslücken in Abhängigkeiten zu bemerken. Die App hat keinen Backend-Code und lädt zur Laufzeit nur das lokal eingecheckte Dexie ([ADR 0031](0031-dexie-lokal.md)); Tailwind ist vorkompiliert ([ADR 0030](0030-tailwind-vorkompiliert.md)). `npm audit` meldet aktuell drei Befunde mittlerer Schwere in der Tailwind-Build-Kette (`postcss-selector-parser`), die nur den Build auf dem Entwicklerrechner betreffen.

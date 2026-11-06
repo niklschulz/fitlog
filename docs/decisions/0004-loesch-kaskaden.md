@@ -1,5 +1,7 @@
 # 0004 – Lösch-Kaskaden ohne Soft-Delete
 
+**Status:** Gültig
+
 ## Kontext
 
 Alle Entitäten müssen laut Scope jederzeit und dauerhaft löschbar sein — es gibt keine Sperre für abgeschlossene Trainings oder referenzierte Übungen/Routinen. Gleichzeitig darf der Trainingsverlauf durch das Löschen einer Übung oder Routine nicht verloren gehen.

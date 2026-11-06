@@ -1,6 +1,8 @@
 # 0008 – Großer Kalender im Workout-Tab: wachsendes Lazy-Loading statt echter Virtualisierung
 
-**Status: Überholt durch [ADR 0009](0009-grosser-kalender-vollstaendiges-rendern.md).** Das hier beschriebene Nachladen-beim-Scrollen verursachte in der Praxis spürbares Ruckeln (asynchrone DB-Abfragen mitten in der Scroll-Geste) und wurde durch vollständiges Vorab-Rendern des gesamten (praktisch begrenzten) Zeitraums ersetzt. Dokument bleibt als Entscheidungshistorie erhalten.
+**Status:** Überholt durch [ADR 0009](0009-grosser-kalender-vollstaendiges-rendern.md)
+
+Das hier beschriebene Nachladen-beim-Scrollen verursachte in der Praxis spürbares Ruckeln (asynchrone DB-Abfragen mitten in der Scroll-Geste) und wurde durch vollständiges Vorab-Rendern des gesamten (praktisch begrenzten) Zeitraums ersetzt. Dokument bleibt als Entscheidungshistorie erhalten.
 
 ## Kontext
 
@@ -24,3 +26,7 @@ Das bestehende Render-Modell der App (jede `paint()` ersetzt komplett `innerHTML
 - Erste echte Bottom-Sheet-Komponente der App – etabliert das Muster (Slide-up-Animation, `rounded-sheet`, Backdrop mit Abdunklung) für zukünftige Sheets.
 - Innerhalb einer sehr langen Scroll-Sitzung (viele Dutzend Monate in beide Richtungen) wächst die DOM-Größe des Sheets unbegrenzt, da nichts evictiert wird – für die Praxis (Einzelnutzer, realistische Scroll-Distanzen) unkritisch; sollte sich das als Problem erweisen, wäre der nächste Schritt echtes Element-Recycling.
 - Der alte native Datums-Picker-Ansatz aus ADR 0007 ist vollständig entfernt (kein Parallelbetrieb, kein Fallback).
+
+## Nachtrag (2026-11-06): Verweise auf das Konzept
+
+"Abschnitt N" und "Konzept" in diesem ADR beziehen sich auf das ursprüngliche Konzept-Dokument (nicht im Repo). Den heutigen Stand beschreiben [features.md](../features.md) und [architecture.md](../architecture.md).

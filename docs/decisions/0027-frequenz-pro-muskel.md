@@ -1,5 +1,7 @@
 # 0027 – Frequenz & Sätze pro Muskel (Statistik-Tab)
 
+**Status:** Gültig
+
 ## Kontext
 
 Nutzer-Spezifikation (Markdown mit Referenz-Screenshot einer Fremd-App): Im Statistik-Tab soll eine Tabelle zeigen, wie oft und mit wie vielen Sätzen jeder Muskel im Schnitt pro Woche trainiert wurde, damit vernachlässigte oder übertrainierte Muskeln auffallen.

@@ -1,5 +1,7 @@
 # 0037 – Wisch-Zurück-Geste wie in iOS
 
+**Status:** Teilweise überholt durch [ADR 0038](0038-ios-seitenuebergaenge.md) (Animation, Schwellen, Hintergrund beim Ziehen)
+
 > **Teilweise überholt durch [ADR 0038](0038-ios-seitenuebergaenge.md):** Abbild-Animation nach dem Loslassen, Schwellen und leerer Hintergrund beim Ziehen wurden dort ersetzt. Randstreifen, `touch-action: none` und die Einbindung in die Detailseiten gelten weiter.
 
 ## Kontext

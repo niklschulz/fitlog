@@ -1,5 +1,7 @@
 # 0014 – "Neue Übung" als gestapeltes Sheet statt Inline-Modus, Muskel-Zuordnungs-Formular
 
+**Status:** Teilweise überholt durch [ADR 0020](0020-einzelne-muskeln-statt-muskelgruppen.md) und [ADR 0022](0022-mehrere-primaere-muskeln.md) (Formularfelder für primäre und sekundäre Muskeln)
+
 ## Kontext
 
 [ADR 0013](0013-uebung-muskel-verknuepfung.md) legte `primaryMuscleId`/`secondaryMuscleIds` an `exercises` an, ließ aber bewusst offen: *"Weder das Übungen-Tab-Formular noch das Übungs-Sheet-Anlage-Formular bieten aktuell eine Muskel-Auswahl an ... Folgt als eigener UI-Schritt."* Dieses ADR ist dieser Schritt für das Übungs-Sheet-Anlage-Formular (Referenz-Screenshot einer Fremd-App als Vorbild, mit Abweichungen — Kategorie/Notizen/erweiterte Muskel-Taxonomie bewusst nicht übernommen, feste 8er-`MUSCLE_GROUPS`-Liste aus ADR 0012 bleibt unverändert).

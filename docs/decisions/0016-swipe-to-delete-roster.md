@@ -1,5 +1,7 @@
 # 0016 – Swipe-to-Delete für Roster-Karten, kein Bestätigungsdialog mehr
 
+**Status:** Teilweise überholt durch [ADR 0017](0017-kontextmenue-redesign-referenzbild.md) (Swipe-Geste entfernt; der Verzicht auf den Bestätigungsdialog gilt weiter)
+
 > **Nachtrag (2026-09-11): Swipe-Geste wieder entfernt.** Nach einem Vergleich mit einem iOS-Liquid-Glass-Referenzbild (überlagerndes Kontextmenü, kein Swipe) entschied der Nutzer, dass die Wisch-Geste hier nicht passt — sie wurde vollständig entfernt (`wireExerciseRosterSwipe()`, alle `SWIPE_*`-Konstanten, `.exercise-roster-swipe-*`-Klassen, s. [ADR 0017](0017-kontextmenue-redesign-referenzbild.md)). Das "⋮"-Kontextmenü bleibt der **einzige** Weg, eine Übung aus dem Tages-Roster zu entfernen, weiterhin ohne Bestätigungsdialog. Die Abschnitte unten zur Swipe-Geste und zum daraus resultierenden `setPointerCapture`/`click`-Bug sind rein historisch (die zugrunde liegende Erkenntnis zu `setPointerCapture` bleibt aber für künftige Pointer-Gesten mit interaktiven Kind-Elementen relevant) - die Abschnitte zu Kontextmenü und Bestätigungsdialog-Ausnahme gelten unverändert fort.
 
 ## Kontext

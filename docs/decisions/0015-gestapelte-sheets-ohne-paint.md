@@ -1,5 +1,7 @@
 # 0015 – Gestapelte Sheets öffnen/schließen ohne globales `paint()`
 
+**Status:** Gültig
+
 ## Kontext
 
 [ADR 0014](0014-neue-uebung-sheet-gestapelt.md) baute das Neue-Übung-Sheet nach demselben Muster wie das bestehende Übungs-Detail-Sheet: beide sind über dem Übungs-Sheet gestapelte Sheets, deren Öffnen/Schließen bis dahin — wie bei allen übrigen Sheets in der App — über die oberste `paint()`-Funktion der View lief (`state.xSheetOpen = true; await paint();`).

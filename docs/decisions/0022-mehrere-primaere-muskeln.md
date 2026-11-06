@@ -1,5 +1,7 @@
 # 0022 – Eine Übung kann mehrere primäre Muskeln haben
 
+**Status:** Gültig
+
 ## Kontext
 
 Bisher ([ADR 0013](0013-uebung-muskel-verknuepfung.md), erweitert um [ADR 0020](0020-einzelne-muskeln-statt-muskelgruppen.md)) hatte eine Übung genau einen primären Muskel (`primaryMuscleId`, einzelner Wert oder `null`) und beliebig viele sekundäre. Nutzer-Vorgabe: Manche Übungen trainieren mehrere Muskeln gleichermaßen primär (z. B. ein Klimmzug: Lat und Bizeps), das sollte sich auch so abbilden lassen — künftig soll eine Übung mehrere primäre Muskeln haben können.

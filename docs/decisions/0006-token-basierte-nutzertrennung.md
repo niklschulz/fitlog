@@ -1,5 +1,7 @@
 # 0006 – Token-basierte Nutzertrennung für den späteren Sync
 
+**Status:** Gültig
+
 ## Kontext
 
 Die App wird künftig von mehreren Personen genutzt (aktuell zwei, generisch erweiterbar), deren Trainingsdaten beim geplanten Sync zum Pi-Backend (s. [architecture.md](../architecture.md#sync--infrastruktur-geplant-noch-nicht-gebaut)) server-seitig getrennt gehalten werden müssen. Ein vollwertiges Login-System (Passwort, Sessions, Registrierung) steht aber in keinem Verhältnis zum eigentlichen Schutzbedarf: Der Netzwerkzugriff selbst ist bereits über Tailscale (privates Mesh-VPN) beschränkt, es geht nur noch um die *Zuordnung* von Daten zu Personen, nicht um Abwehr fremder Angreifer aus dem offenen Internet.
