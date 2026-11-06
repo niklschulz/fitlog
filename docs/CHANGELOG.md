@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Audit-Block 1: Schutz und Ordnung)
+
+### Changed
+- `.claude/` in `.gitignore` aufgenommen (lokale Vorschau-Konfiguration, soll nicht ins öffentliche Repo).
+- Veraltete Kommentare in `js/db.js` und `js/views/workout-exercise-detail.js` angepasst: Löschen läuft seit [ADR 0029](decisions/0029-action-sheet-saetze-und-uebung-entfernen.md) über das Action Sheet statt `confirm()`. Keine Logikänderung. `CACHE_NAME` auf `fitlog-v254`
+
 ## 2026-11-06 (Unterseiten in eigener Seiten-Ebene, Wisch-Zurück-Umbau)
 
 ### Fixed
