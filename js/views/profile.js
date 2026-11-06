@@ -202,8 +202,7 @@ async function importData(file) {
     });
     if (!confirmed) return;
     await replaceAllData(db, backup);
-    if (backup.profile && backup.profile.username && backup.profile.token) saveProfile(backup.profile);
-    else clearProfile();
+    // Das Backup enthält keinen Token: lokales Profil bleibt unverändert.
     if (backup.settings) saveSettings({ ...getSettings(), ...backup.settings });
     // Alle Views halten Daten im Speicher - Neuladen ist der sicherste Weg.
     window.location.reload();
