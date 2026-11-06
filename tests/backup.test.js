@@ -4,11 +4,11 @@ import './setup.js';
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { db, getOrCreateWorkoutForDate, addSet, createExercise } from '../js/db.js';
-import { buildBackup, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../js/backup.js';
+import { buildBackup, stripToken, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../js/backup.js';
 
 await db.open();
 
-const META = { profile: { username: 'a', token: 'b' }, settings: { defaultSetCount: 4, weeklyGoal: 3 } };
+const META = { profile: { username: 'a' }, settings: { defaultSetCount: 4, weeklyGoal: 3 } };
 
 async function clearAll() {
   await db.transaction('rw', db.tables, async () => {
@@ -81,4 +81,20 @@ test('fehlgeschlagener Import lässt den Bestand unverändert', async () => {
   await assert.rejects(replaceAllData(db, backup));
   assert.equal(await db.sets.count(), 2);
   assert.equal(await db.workouts.count(), 1);
+});
+
+test('Export enthält keinen Token, auch nicht als leeres Feld', async () => {
+  const backup = await buildBackup(db, { ...META, profile: { username: 'a', token: 'geheim' } });
+  const json = JSON.stringify(backup);
+  assert.equal(backup.profile.username, 'a');
+  assert.ok(!('token' in backup.profile));
+  assert.ok(!json.includes('geheim'));
+  assert.deepEqual(stripToken(null), null);
+});
+
+test('Import verwirft einen Token aus älteren Backup-Dateien', async () => {
+  const old = await buildBackup(db, META);
+  old.profile = { username: 'a', token: 'geheim' };
+  const parsed = parseBackup(JSON.stringify(old), db);
+  assert.deepEqual(parsed.profile, { username: 'a' });
 });

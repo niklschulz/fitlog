@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Audit-Block 2: Token nicht mehr im Backup)
+
+### Changed
+- Das JSON-Backup enthält den Sync-Token nicht mehr (`stripToken` in `js/backup.js`; Username bleibt). Der Import lässt das lokale Profil unverändert (vorher: Profil aus Datei übernommen bzw. gelöscht) und verwirft Tokens aus älteren Dateien. Nachtrag in [ADR 0034](decisions/0034-export-import-json-backup.md). Bei einem Gerätewechsel muss das Profil einmal neu verknüpft werden. `CACHE_NAME` auf `fitlog-v255`
+
 ## 2026-11-06 (Audit-Block 1: Schutz und Ordnung)
 
 ### Changed

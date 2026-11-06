@@ -9,11 +9,23 @@
 // Node testen lassen (tests/backup.test.js). Profil/Einstellungen werden
 // vom Aufrufer (views/profile.js) hereingereicht bzw. zurückgegeben, da
 // localStorage in Node fehlt.
+//
+// Der Sync-Token gehört NICHT ins Backup (ADR 0034, Nachtrag 2026-11-06): die
+// Datei wird geteilt (AirDrop/iCloud). Entfernt wird er hier in buildBackup,
+// damit jeder Aufrufer geschützt ist; parseBackup verwirft ihn zusätzlich aus
+// älteren Dateien, und der Import fasst das lokale Profil nie an.
 
 export const BACKUP_APP = 'fitlog';
 export const BACKUP_FORMAT_VERSION = 1;
 
 export class BackupError extends Error {}
+
+// Profil ohne Token (Username ist kein Geheimnis); null bleibt null.
+export function stripToken(profile) {
+  if (!profile || typeof profile !== 'object') return profile ?? null;
+  const { token: _token, ...rest } = profile;
+  return rest;
+}
 
 // `profile`/`settings`: aktueller Stand aus getProfile()/getSettings().
 export async function buildBackup(db, { profile, settings }) {
@@ -28,7 +40,7 @@ export async function buildBackup(db, { profile, settings }) {
     formatVersion: BACKUP_FORMAT_VERSION,
     exportedAt: new Date().toISOString(),
     data,
-    profile,
+    profile: stripToken(profile),
     settings,
   };
 }
@@ -59,6 +71,8 @@ export function parseBackup(text, db) {
       throw new BackupError(`Die Tabelle „${table.name}“ im Backup enthält ungültige Einträge.`);
     }
   }
+  // Token aus älteren Dateien nie weiterreichen.
+  if (backup.profile) backup.profile = stripToken(backup.profile);
   return backup;
 }
 
