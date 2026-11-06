@@ -1,5 +1,7 @@
 # 0023 – Volumen-Chart mit Zeitraum-Reitern (Wochen-/Monats-Aggregation, gleitender Durchschnitt)
 
+**Status:** Teilweise überholt durch [ADR 0026](0026-volumen-chart-eine-datenreihe.md) (Monats-Aggregation für 1J/Max)
+
 > **Teilweise abgelöst durch [ADR 0026](0026-volumen-chart-eine-datenreihe.md):** Die Monats-Aggregation mit 3-Monats-Durchschnitt für 1J/Max gibt es nicht mehr — alle Reiter zeigen denselben wöchentlichen 4-Wochen-Durchschnitt, nur unterschiedlich lange Ausschnitte. Die übrigen Regeln unten gelten weiter.
 
 ## Kontext

@@ -1,5 +1,7 @@
 # 0011 – Übungs-Sheet: Mehrfachauswahl, gestapeltes Detail-Sheet, generische Bottom-Sheet-Basis
 
+**Status:** Gültig
+
 ## Kontext
 
 Der "+ Übung hinzufügen"-Button im Workout-Tab war seit [ADR 0007](0007-workout-tab-tagesbasiertes-modell.md) bewusst ein reiner Platzhalter ohne Funktion ("die Auswahl-/Anlage-Logik folgt in einem separaten, späteren Markdown"). Dieses ADR ist dieser separate Schritt: ein neues Bottom-Sheet ("Übungen"), über das Übungen angesehen, ausgewählt, neu angelegt und zum Tages-Workout hinzugefügt werden können - im selben visuellen Muster wie der bereits bestehende große Kalender (Bottom-Sheet, [ADR 0008](0008-grosser-kalender-lazy-loading.md)/[0009](0009-grosser-kalender-vollstaendiges-rendern.md)).

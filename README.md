@@ -10,7 +10,8 @@ Live: https://niklschulz.github.io/fitlog/
 - [`docs/features.md`](docs/features.md) — Funktionsumfang, User Flows, MVP-Scope
 - [`docs/design-system.md`](docs/design-system.md) — Farben, Typografie, Radien, Abstände, Komponenten-Muster
 - [`docs/archiv/design-system-verlauf.md`](docs/archiv/design-system-verlauf.md) — historischer Verlauf des Design-Systems (Iterationen, entfernte Features)
-- [`docs/decisions/`](docs/decisions) — Architecture Decision Records (Warum X statt Y)
+- [`docs/decisions/`](docs/decisions) — Architecture Decision Records (Warum X statt Y), jeweils mit Statuszeile
+- [`docs/specs/`](docs/specs) — Spezifikationen umgesetzter Features (Notizen, Statistik-Tab)
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — Chronologische Änderungshistorie
 
 Infrastruktur-Details (Netzwerk, Tailscale, Raspberry Pi, Zugänge) liegen bewusst **nicht** hier, sondern in einem separaten privaten Repo — dieses Repo ist öffentlich. Siehe `docs/architecture.md` → Abschnitt "Sync & Infrastruktur" für den Verweis.

@@ -8,6 +8,14 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - `docs/design-system.md` von einem Iterations-Tagebuch (676 Zeilen) zu einer kurzen, am Code geprüften Referenz umgebaut (Farben, Typografie, Radien, Abstände, Navigation, Komponenten-Muster, Bewegung, globale Regeln, bewusst Nichtverwendetes). Der vollständige alte Inhalt liegt unverändert in `docs/archiv/design-system-verlauf.md`; Verweise auf alte Iterations-Abschnitte in Changelog, `architecture.md` und ADRs zeigen jetzt dorthin.
 - Doku an den Code angepasst: Stepper-Buttons sind `w-8 h-8 rounded-lg bg-raised` (nicht rund, nicht `bg-base`), Chips `px-3 py-1`, Notiz-Sheet `bg-base`. Reine Doku-Änderung, `CACHE_NAME` unverändert.
 
+## 2026-11-06 (Audit-Block 3: Doku auf Ist-Stand)
+
+### Changed
+- `docs/architecture.md`: Projektstruktur vollständig (u. a. `actionSheet.js`, `exerciseCreateSheet.js`, `exerciseInfo.js`, `exerciseStats.js`, `noteSheet.js`, `settings.js`, `swipeBack.js`, `testmode.js`, beide Detail-Sub-Views, `tests/`), neue Abschnitte zu Backup, Testmodus und Tests.
+- `docs/features.md`: Statistik-Abschnitt aufgeräumt (Reiter „Übungen“ ist kein Platzhalter mehr, Überschriften in richtiger Reihenfolge), 1RM als vorgemerkte Erweiterung, Backup im MVP-Scope.
+- Specs nach `docs/specs/` verschoben (`notizen-spec.md`, `statistik-tab-spec.md`), Links angepasst; `statistik-tab-spec.md` auf Ist-Stand gebracht.
+- Alle ADRs haben eine Statuszeile (`**Status:** Gültig | Überholt durch … | Teilweise überholt durch …`); Konvention in `CLAUDE.md` beschrieben. Verweise auf das nicht im Repo liegende Konzept-Dokument in ADR 0002/0008/0010 und `CLAUDE.md` gekennzeichnet. Löschen-Regel in `CLAUDE.md` in Unterpunkte gegliedert (Inhalt unverändert). Kein App-Code geändert, `CACHE_NAME` bleibt `fitlog-v255`.
+
 ## 2026-11-06 (Audit-Block 2: Token nicht mehr im Backup)
 
 ### Changed
@@ -153,7 +161,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ## 2026-11-01 (Notizen pro Übung und Tag)
 
 ### Added
-- Notizen pro Übung und Workout-Tag (Spec: [notizen-spec.md](notizen-spec.md), [ADR 0035](decisions/0035-notizen-pro-uebung-und-tag.md)): neues Feld `note` an `workoutExercises`, `setWorkoutExerciseNote()` in `js/db.js`. Erfassen über einen Notiz-Icon-Button in der Button-Zeile der Übungs-Detailseite und ein Bottom-Sheet (`js/noteSheet.js`, ✓ speichert, ✕ verwirft). Anzeige nur lesbar auf der Roster-Karte und im Verlauf-Reiter (auf 3 Zeilen gekürzt) sowie vollständig unter den Satz-Zeilen der Detailseite (`renderNote()`/`renderNoteIcon()` in `js/utils.js`)
+- Notizen pro Übung und Workout-Tag (Spec: [notizen-spec.md](specs/notizen-spec.md), [ADR 0035](decisions/0035-notizen-pro-uebung-und-tag.md)): neues Feld `note` an `workoutExercises`, `setWorkoutExerciseNote()` in `js/db.js`. Erfassen über einen Notiz-Icon-Button in der Button-Zeile der Übungs-Detailseite und ein Bottom-Sheet (`js/noteSheet.js`, ✓ speichert, ✕ verwirft). Anzeige nur lesbar auf der Roster-Karte und im Verlauf-Reiter (auf 3 Zeilen gekürzt) sowie vollständig unter den Satz-Zeilen der Detailseite (`renderNote()`/`renderNoteIcon()` in `js/utils.js`)
 - Tests für Notiz und Schutzregel in `tests/db.test.js`
 
 ### Changed

@@ -1,5 +1,7 @@
 # 0028 – Muskelgruppen-Sheet mit "Frequenz pro Muskel"
 
+**Status:** Gültig
+
 ## Kontext
 
 Die Zeilen der Tabelle "Frequenz pro Muskelgruppe" ([ADR 0027](0027-frequenz-pro-muskel.md)) waren bereits als Buttons mit leerem Platzhalter-Handler angelegt. Nutzer-Vorgabe: Ein Tipp öffnet ein Bottom-Sheet für die Gruppe, das dieselbe Statistik für die einzelnen Muskeln der Gruppe zeigt.

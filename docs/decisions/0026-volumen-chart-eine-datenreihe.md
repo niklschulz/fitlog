@@ -1,5 +1,7 @@
 # 0026 – Volumen-Chart: eine Datenreihe für alle Zeitraum-Reiter
 
+**Status:** Gültig
+
 ## Kontext
 
 Seit [ADR 0023](0023-volumen-chart-zeitraum-reiter.md) rechnete der Volumen-Chart je Reiter etwas anderes: 3M zeigte den 4-Wochen-Durchschnitt der Wochenwerte, 1J/Max einen 3-Monats-Durchschnitt über Monatswerte (selbst schon Durchschnitte der Wochen). Nutzer-Bugreport: Die Linie endet je nach Reiter an einem anderen Punkt — aus Nutzersicht nicht nachvollziehbar. Ursachen im Einzelnen:

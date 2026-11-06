@@ -1,5 +1,7 @@
 # 0012 – Muskelgruppen: feste Taxonomie als Konstante statt Dexie-Table
 
+**Status:** Teilweise überholt durch [ADR 0020](0020-einzelne-muskeln-statt-muskelgruppen.md) (Liste der Gruppen und deren Verwendung an der Übung)
+
 ## Kontext
 
 Für den geplanten Muskelgruppen-Filter im Übungs-Sheet (s. Referenz-Screenshot und Diskussion in der Session, Anschluss an [ADR 0011](0011-uebungs-sheet-bottom-sheet-extraktion.md)) braucht jede Übung künftig eine Muskelgruppen-Zuordnung. Nutzer-Vorgabe für die Muskelgruppen selbst:

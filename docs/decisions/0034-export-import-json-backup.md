@@ -1,5 +1,7 @@
 # 0034 – Export/Import als JSON-Backup
 
+**Status:** Gültig
+
 ## Kontext
 
 Alle Daten liegen ausschließlich lokal (IndexedDB + `localStorage`), ein Sync existiert noch nicht ([ADR 0006](0006-token-basierte-nutzertrennung.md)). Ohne Backup bedeutet ein Gerätewechsel oder gelöschte Website-Daten (iOS räumt PWA-Speicher unter Umständen auf) den Verlust aller Trainingsdaten.

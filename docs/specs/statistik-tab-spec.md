@@ -1,14 +1,15 @@
 # Statistik-Tab — Spezifikation (Entwurf)
 
-> Arbeitsdokument, wird schrittweise ergänzt. Noch kein ADR — sobald der volle Funktionsumfang steht, ggf. als ADR in `decisions/` festhalten und hier verlinken.
+> Ursprüngliche Spezifikation des Kopfbereichs und der Reiter-Zeile. Der Tab selbst ist inzwischen umgesetzt; den aktuellen Funktionsumfang beschreibt [features.md](../features.md#statistik-jsviewsstatisticsjs), die Entscheidungen dazu [ADR 0023](../decisions/0023-volumen-chart-zeitraum-reiter.md), [0026](../decisions/0026-volumen-chart-eine-datenreihe.md), [0027](../decisions/0027-frequenz-pro-muskel.md) und [0028](../decisions/0028-muskelgruppen-sheet.md).
 
 ## Status
 
 **Umgesetzt:**
-- h1 "Statistik" + Reiter-Zeile ("Übersicht"/"Übungen"), Segmented Control nach `js/utils.js` extrahiert (s. [CHANGELOG](CHANGELOG.md) und [design-system.md](design-system.md), Sechsundsiebzigste Iteration)
-- Erstes Feature im Übersicht-Reiter: "Workouts pro Woche" (Zähler-Zeile + Balkendiagramm), s. [features.md](features.md) und design-system.md, Siebenundsiebzigste Iteration. Details zur Zähl-Definition ("Tage mit ≥1 Satz" statt roher `workouts`-Zeilen), Zeitzone und `WEEKLY_GOAL`-Konstante dort dokumentiert
+- h1 "Statistik" + Reiter-Zeile ("Übersicht"/"Übungen"), Segmented Control nach `js/utils.js` extrahiert (s. [CHANGELOG](../CHANGELOG.md) und [design-system.md (Verlauf)](../archiv/design-system-verlauf.md), Sechsundsiebzigste Iteration)
+- Erstes Feature im Übersicht-Reiter: "Workouts pro Woche" (Zähler-Zeile + Balkendiagramm), s. [features.md](../features.md) und design-system.md, Siebenundsiebzigste Iteration. Details zur Zähl-Definition ("Tage mit ≥1 Satz" statt roher `workouts`-Zeilen), Zeitzone und `WEEKLY_GOAL`-Konstante dort dokumentiert
 
-Übungen-Reiter weiterhin reiner Platzhalter.
+- Reiter „Übersicht“: außerdem Volumen-Chart (3M/1J/Max) und Frequenz pro Muskelgruppe samt Muskelgruppen-Sheet, s. features.md
+- Reiter „Übungen“: Favoritenliste mit „Alle Übungen“-Sheet und Übungs-Seite (`js/views/statistics-exercise-detail.js`, Reiter Statistik/Verlauf/Info), s. features.md
 
 ## 1. Kopfbereich — Überschrift "Statistik"
 
@@ -19,7 +20,7 @@ Identisch zum bestehenden Muster auf jedem Haupt-Tab (z. B. "Workout" in `js/vie
 ```
 
 - Nur ein reines `<h1>` mit der einzigen Klasse `text-screen-title` — keine eigene Komponente, kein Wrapper.
-- Token `text-screen-title` (`tailwind.config.js`, gespiegelt in [design-system.md](design-system.md)): **21px / font-weight 700 / line-height 1.2**.
+- Token `text-screen-title` (`tailwind.config.js`, gespiegelt in [design-system.md](../design-system.md)): **21px / font-weight 700 / line-height 1.2**.
 - Farbe wird nicht durch die Klasse selbst gesetzt, sondern über `text-ink` (`#F5F5F5`) vom `<body>` vererbt.
 - Font-Family global `font-sans` (`-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif`).
 - Umgesetzt in `js/views/statistics.js`.
@@ -51,7 +52,7 @@ Darunter eine Reiter-Zeile nach dem gleichen visuellen Muster wie auf der Übung
 | — | kein `border` | app-weit bewusst keine Trennlinien, nur Hintergrundkontrast |
 
 - `text-label` = 11.5px / font-weight 600 / letter-spacing 0.6px (identisch zur Bottom-Nav-Beschriftung).
-- Referenz in [design-system.md](design-system.md) (Abschnitt "Segmented Control", Komponenten-Muster).
+- Referenz in [design-system.md](../design-system.md) (Abschnitt "Segmented Control", Komponenten-Muster).
 
 ### Wiederverwendbarkeit — umgesetzt
 
@@ -59,5 +60,4 @@ Entscheidung: Extrahieren statt duplizieren. `renderSegmentedControl(tabs, activ
 
 ## Noch offen / folgt
 
-- Inhalte der beiden Reiter ("Übersicht", "Übungen")
-- Datenquelle(n), Interaktionen, Leerzustände
+Die früher hier gelisteten Punkte „Inhalte der beiden Reiter“ und „Datenquelle(n), Interaktionen, Leerzustände“ sind umgesetzt (s. Status oben und `js/views/statistics.js`). Tatsächlich offen ist nur der 1RM in der Tabelle „Persönliche Bestwerte“ der Übungs-Seite: Er bleibt leer, bis die Berechnung festgelegt ist (Kommentar in `js/views/statistics-exercise-detail.js`); vorgemerkt in [features.md](../features.md#vorgemerkte-noch-nicht-spezifizierte-erweiterungen).

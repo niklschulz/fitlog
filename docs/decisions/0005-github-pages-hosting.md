@@ -1,5 +1,7 @@
 # 0005 – GitHub Pages als Hosting, Repo öffentlich
 
+**Status:** Gültig
+
 ## Kontext
 
 Die App braucht HTTPS-Hosting (Voraussetzung für Service Worker) für den Test auf einem echten iPhone. Kein eigener Server soll für den MVP nötig sein.

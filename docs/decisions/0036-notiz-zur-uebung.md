@@ -1,5 +1,7 @@
 # 0036 – Dauerhafte Notiz zur Übung
 
+**Status:** Gültig
+
 ## Kontext
 
 Der Nutzer will zu einer Übung selbst (nicht zu einem Trainingstag) eine bleibende Notiz festhalten, z. B. Geräte-Einstellungen. Neben der Notiz pro Übung und Tag ([ADR 0035](0035-notizen-pro-uebung-und-tag.md)) ist das ein eigenes Konzept.

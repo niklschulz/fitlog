@@ -1,5 +1,7 @@
 # 0013 – Übungen ↔ Muskelgruppen: Direktfelder statt Verknüpfungstabelle
 
+**Status:** Teilweise überholt durch [ADR 0020](0020-einzelne-muskeln-statt-muskelgruppen.md) und [ADR 0022](0022-mehrere-primaere-muskeln.md) (Felder `primaryMuscleId`/`secondaryMuscleIds` und Bezug auf `MUSCLE_GROUPS`)
+
 ## Kontext
 
 Direkte Fortsetzung von [ADR 0012](0012-muskelgruppen-feste-taxonomie.md) (feste `MUSCLE_GROUPS`-Taxonomie ohne Verwendungsstelle). Jetzt: Übungen sollen eine Muskel-Zuordnung bekommen, künftig vom Nutzer im Formular editierbar. Nutzer-Vorgabe: **eine primäre** Muskelgruppe und **beliebig viele sekundäre**.

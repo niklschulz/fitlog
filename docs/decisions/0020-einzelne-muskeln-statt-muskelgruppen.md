@@ -1,5 +1,7 @@
 # 0020 – Einzelne Muskeln statt Muskelgruppen an der Übung, Gruppen bleiben nur zur Anzeige/zum Filtern
 
+**Status:** Gültig
+
 ## Kontext
 
 Bisher ([ADR 0012](0012-muskelgruppen-feste-taxonomie.md)/[ADR 0013](0013-uebung-muskel-verknuepfung.md)) verwies eine Übung direkt auf eine `MUSCLE_GROUPS`-Gruppe (acht grobe Gruppen: Brust, Schultern, Rücken, Bizeps, Trizeps, Bauch, Po, Beine). Nutzer-Vorgabe: Das ist zu grob — künftig soll einer Übung ein **einzelner Muskel** zugeordnet werden (z. B. "Seitliche Schulter" statt nur "Schultern"). Einige Gruppen bestehen dabei aus nur einem, gleichnamigen Muskel (z. B. "Bauch" wird zu den zwei Muskeln "Gerade Bauchmuskeln"/"Schräge Bauchmuskeln" — kein Gegenbeispiel mehr in der finalen Liste, s. u., aber "Po" bleibt ein Ein-Muskel-Fall). Die Gruppenliste selbst ändert sich ebenfalls: "Bizeps"/"Trizeps" waren bisher eigene Gruppen, werden jetzt zu Muskeln unter einer neuen Gruppe "Arme" (zusammen mit "Unterarme").

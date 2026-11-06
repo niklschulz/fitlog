@@ -1,5 +1,7 @@
 # 0025 – PR-Markierungen an Sätzen (Gewichts- und Wiederholungs-Rekorde)
 
+**Status:** Gültig
+
 ## Kontext
 
 Beim Blick auf ein vergangenes Workout soll sofort sichtbar sein, an welchem Satz ein persönlicher Rekord (PR) aufgestellt wurde. Die Badges sollen dauerhaft am Satz bleiben, auch wenn der Rekord später übertroffen wird. Grundlage war eine Feature-Spezifikation des Nutzers, die an einigen Stellen bewusst an das tatsächliche Datenmodell angepasst wurde (s. "Abweichungen" unten).
