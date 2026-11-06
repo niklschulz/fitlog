@@ -1,6 +1,6 @@
 # 0024 – Testmodus: umschaltbare zweite Datenbank mit synthetischen Testdaten
 
-**Status:** Gültig – temporäres Feature, Rückbau vorgesehen (s. „Konsequenzen“)
+**Status:** Abgeschlossen – zurückgebaut am 2026-11-06 (s. Nachtrag am Ende)
 
 ## Kontext
 
@@ -51,3 +51,7 @@ Per Browser-Verifikation geprüft: Großer Kalender zeigt jetzt 38 Monate (Oktob
 Behoben: `seedTestData()` legt pro Übung und Tag zusätzlich einen `workoutExercises`-Eintrag an, mit gesetztem `startedAt` (wie nach einem echt erfassten ersten Satz, Zeitpunkt am Trainingstag selbst). Damit bereits gesäte Geräte (altes Flag gesetzt) die korrigierten Daten bekommen, ist das Gesät-Flag jetzt versioniert (`fitlog:testDataSeeded:v2`) und `seedTestData()` leert vor dem Säen `workouts`/`sets`/`workoutExercises` der Test-DB (Übungen/Routinen bleiben; der bestehende Datenbankname-Check verhindert weiterhin jeden Zugriff auf die echte DB). Folge: Im Testmodus manuell erfasste Einträge gehen dabei einmalig verloren — für Testdaten bewusst hingenommen. Bei künftigen Änderungen am Datensatz-Aufbau das Flag erneut hochzählen.
 
 Per Browser-Verifikation geprüft: altes Flag simuliert → beim Start automatisch neu gesät (292 Workouts, 2217 Sätze, 739 Roster-Einträge = 2217 / 3 Sätze pro Übung), kein Workout mehr mit Sätzen ohne Roster-Eintrag, Tagesansicht (z. B. 27.09.2026) zeigt Übungen samt Sätzen. Alle automatisierten Tests weiterhin grün.
+
+### Nachtrag (2026-11-06): Rückbau
+
+Der Testmodus wurde vollständig entfernt (Branch `chore/testmodus-entfernen`): `js/testmode.js` gelöscht; `js/db.js` öffnet wieder fest `new Dexie('fitlog')` (Datenbankname und Schema unverändert, echte Daten unberührt); `js/app.js` ohne Seed-Aufruf; `js/views/profile.js` ohne „Entwicklung“-Bereich; `js/views/workout.js` mit fester `CALENDAR_SHEET_MIN_MONTH = '2026-01'`; `sw.js` ohne `testmode.js` in `APP_SHELL`, `CACHE_NAME` hochgezählt. Zusätzlich zur Liste oben entfernt: der Testmodus-Zusatz im Backup-Dateinamen (`-testdaten`) und im Import-Hinweis (`js/views/profile.js`) sowie der Verweis im Kopfkommentar von `js/backup.js`. Es gibt bewusst keinen Bereinigungscode: Auf Geräten, auf denen der Testmodus aktiv war, bleiben die IndexedDB `fitlog-test` und die `localStorage`-Flags (`fitlog:testModeEnabled`, `fitlog:testDataSeeded…`) zurück, werden aber nie mehr gelesen. Die Website-Daten lassen sich bei Bedarf manuell löschen.

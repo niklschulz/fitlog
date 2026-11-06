@@ -1,6 +1,5 @@
 // Export/Import aller Fitlog-Daten als einzelne JSON-Datei (s. ADR 0034):
-// alle Dexie-Tabellen der AKTIVEN Datenbank (im Testmodus also die
-// Test-DB, s. js/testmode.js) plus Profil (js/profile.js) und Einstellungen
+// alle Dexie-Tabellen der Datenbank plus Profil (js/profile.js) und Einstellungen
 // (js/settings.js) aus localStorage. Import ersetzt den kompletten
 // Datenbestand - kein Zusammenführen.
 //
