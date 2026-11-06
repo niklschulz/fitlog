@@ -9,7 +9,7 @@
 import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { formatDate, addMonths, yearMonthOf } from '../dates.js';
-import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { escapeHtml, renderMuscleFilterPopup, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
@@ -927,18 +927,6 @@ function renderExerciseSheetMuscleFilter() {
   const closing = state.exerciseSheetMuscleFilterClosing;
   const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
 
-  const options = [{ id: '', name: 'Alle Muskelgruppen' }, ...MUSCLE_GROUPS]
-    .map(
-      (m) => `
-        <li>
-          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
-            <span>${escapeHtml(m.name)}</span>
-            ${(m.id === '' ? state.exerciseSheetMuscleFilterId === null : state.exerciseSheetMuscleFilterId === m.id) ? '<span class="text-accent">✓</span>' : ''}
-          </button>
-        </li>`
-    )
-    .join('');
-
   return `
     <div class="px-4 pb-4 flex-shrink-0">
       <div class="relative">
@@ -948,10 +936,7 @@ function renderExerciseSheetMuscleFilter() {
         </button>
         ${
           open
-            ? `<div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
-               <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-[#363636] rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
-                 <ul class="flex flex-col gap-0">${options}</ul>
-               </div>`
+            ? renderMuscleFilterPopup(MUSCLE_GROUPS, state.exerciseSheetMuscleFilterId, closing)
             : ''
         }
       </div>

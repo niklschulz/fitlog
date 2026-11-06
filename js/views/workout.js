@@ -29,7 +29,7 @@ import {
   daysBetween,
   mondayOf,
 } from '../db.js';
-import { escapeHtml, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
+import { escapeHtml, renderMuscleFilterPopup, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -1843,8 +1843,8 @@ function renderExerciseSheetMuscleFilter() {
 // ließe die Liste sichtbar durchscheinen. `#363636` = `rgba(255,255,255,
 // 0.08)` über `bg-surface` (`#252525`) gerechnet (Canvas-`globalCompositeOperation`
 // im Browser verifiziert) - optisch ununterscheidbar vom Suchfeld, aber
-// deckend. Zeilen-Buttons selbst bleiben transparent (kein eigener
-// Hintergrund) - Nutzer-Entscheidung nach Live-Vorschau, sie sollen nicht
+// deckend (Token `bg-popup`, Markup in utils.js `renderMuscleFilterPopup`).
+// Zeilen-Buttons selbst bleiben transparent (kein eigener Hintergrund) - Nutzer-Entscheidung nach Live-Vorschau, sie sollen nicht
 // als abgesetzte Kästchen wirken, nur der Abstand trennt sie. Engster
 // Zeilenabstand (`gap-0`, mehrfach auf Nutzer-Wunsch verringert von `gap-1`
 // über `gap-0.5`) - hier nur einzeilige Einträge ohne Untertitel, anders als
@@ -1852,30 +1852,7 @@ function renderExerciseSheetMuscleFilter() {
 // ist mit acht festen Einträgen (7 Muskelgruppen + "Alle") kurz genug, um
 // immer vollständig zu passen.
 function renderExerciseSheetMuscleFilterPicker() {
-  const closing = state.exerciseSheetMuscleFilterClosing;
-  const selectedId = state.exerciseSheetMuscleFilterId;
-
-  const optionsHtml = [{ id: '', name: 'Alle Muskelgruppen' }, ...MUSCLE_GROUPS]
-    .map(
-      (m) => `
-        <li>
-          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
-            <span>${escapeHtml(m.name)}</span>
-            ${(m.id === '' ? selectedId === null : selectedId === m.id) ? '<span class="text-accent">✓</span>' : ''}
-          </button>
-        </li>
-      `
-    )
-    .join('');
-
-  return `
-    <div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
-    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-[#363636] rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
-      <ul class="flex flex-col gap-0">
-        ${optionsHtml}
-      </ul>
-    </div>
-  `;
+  return renderMuscleFilterPopup(MUSCLE_GROUPS, state.exerciseSheetMuscleFilterId, state.exerciseSheetMuscleFilterClosing);
 }
 
 function renderExerciseSheetList(filteredExercises, inWorkoutIds, totalCount) {

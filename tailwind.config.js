@@ -11,6 +11,7 @@ module.exports = {
         surface: '#252525',
         raised: '#2A2A2A',
         highlight: '#404040',
+        popup: '#363636', // rgba(255,255,255,0.08) über surface, deckend (Dropdown-Popups über Listen)
         accent: '#B5EB98',
         'accent-muted': '#637456',
         divider: '#1A1A1A',

@@ -92,6 +92,36 @@ export function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Popup des Muskelgruppen-Filters im Übungs-Sheet (Workout- und Statistik-Tab
+// teilen sich Markup und Optionen): bildschirmfüllender Backdrop zum Schließen
+// plus Dropdown-Popup unter dem Filter-Button. `bg-popup` ist deckend, weil das
+// Popup über der scrollenden Übungsliste liegt (s. tailwind.config.js). Das
+// Wiring (Backdrop-/`.pick-muscle-filter-option-btn`-Klicks) bleibt Sache der
+// aufrufenden View.
+export function renderMuscleFilterPopup(muscleGroups, selectedId, closing) {
+  const optionsHtml = [{ id: '', name: 'Alle Muskelgruppen' }, ...muscleGroups]
+    .map(
+      (m) => `
+        <li>
+          <button data-muscle="${m.id}" class="pick-muscle-filter-option-btn tap-feedback w-full text-left rounded-btn px-3 py-2 min-h-[44px] text-ink text-body flex items-center justify-between">
+            <span>${escapeHtml(m.name)}</span>
+            ${(m.id === '' ? selectedId === null : selectedId === m.id) ? '<span class="text-accent">✓</span>' : ''}
+          </button>
+        </li>
+      `
+    )
+    .join('');
+
+  return `
+    <div id="exercise-sheet-muscle-filter-backdrop" class="fixed inset-0 z-30"></div>
+    <div class="routine-picker-popup ${closing ? 'closing' : ''} absolute left-0 right-0 top-[calc(100%+8px)] z-40 bg-popup rounded-card p-3 flex flex-col gap-2 shadow-lg shadow-black/40">
+      <ul class="flex flex-col gap-0">
+        ${optionsHtml}
+      </ul>
+    </div>
+  `;
+}
+
 // Eine Zeile einer "verbundenen" Satz-Liste: Nummern-Kreis + vertikale
 // Verbindungslinie zum nächsten Kreis (leer beim letzten Eintrag) links,
 // beliebiger Inhalt (Gewicht/Reps o. Ä.) rechts. Wiederverwendet zwischen
