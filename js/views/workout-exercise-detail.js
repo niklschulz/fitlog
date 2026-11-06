@@ -412,7 +412,7 @@ function wireEvents() {
   currentContainer.querySelector('#detail-delete-btn')?.addEventListener('click', async () => {
     if (!state.selectedSetId) return;
     // Bewusst ohne Bestätigungsdialog, auf Nutzer-Wunsch - abweichend von der
-    // sonst geltenden Projekt-Konvention (Löschen sonst immer mit confirm()),
+    // sonst geltenden Projekt-Konvention (Löschen sonst immer per Action Sheet),
     // s. CLAUDE.md und ADR 0010.
     await deleteSet(state.selectedSetId);
     state.selectedSetId = null;

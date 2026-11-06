@@ -570,8 +570,8 @@ export async function setWorkoutExerciseNote(entryId, text) {
 // durch diesen Weg verloren gehen (dieselbe Grundregel wie bei jeder
 // anderen workoutExercises-Kaskade, s. ADR 0007).
 //
-// Bewusst OHNE `confirm()`-Dialog (Nutzer-Vorgabe, abweichend von der
-// sonstigen App-Konvention "jedes Löschen braucht einen Bestätigungsdialog",
+// Bewusst OHNE Bestätigung per Action Sheet (Nutzer-Vorgabe, abweichend von der
+// sonstigen App-Konvention "jedes Löschen braucht eine Bestätigung",
 // s. CLAUDE.md) - der Weg dahin (Kontextmenü) betrifft wie oben beschrieben
 // ausschließlich Einträge ohne jegliche Trainingsdaten: Verlieren geht dabei
 // höchstens die Zuordnung "diese Übung steht heute auf dem Zettel", nie ein
