@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Audit-Block 4: Design-System als Referenz)
+
+### Changed
+- `docs/design-system.md` von einem Iterations-Tagebuch (676 Zeilen) zu einer kurzen, am Code geprüften Referenz umgebaut (Farben, Typografie, Radien, Abstände, Navigation, Komponenten-Muster, Bewegung, globale Regeln, bewusst Nichtverwendetes). Der vollständige alte Inhalt liegt unverändert in `docs/archiv/design-system-verlauf.md`; Verweise auf alte Iterations-Abschnitte in Changelog, `architecture.md` und ADRs zeigen jetzt dorthin.
+- Doku an den Code angepasst: Stepper-Buttons sind `w-8 h-8 rounded-lg bg-raised` (nicht rund, nicht `bg-base`), Chips `px-3 py-1`, Notiz-Sheet `bg-base`. Reine Doku-Änderung, `CACHE_NAME` unverändert.
+
 ## 2026-11-06 (Audit-Block 2: Token nicht mehr im Backup)
 
 ### Changed
@@ -1061,27 +1067,27 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Verlauf-Reiter: Datum stand als Überschrift über der Karte statt wie der Übungsname im Workout-Tab innerhalb der Karte — behoben, `CARD` sitzt jetzt auf dem gemeinsamen Wrapper aus Datum und Satz-Liste
 - Sowohl Workout-Roster-Karte als auch Verlauf-Tages-Karte hatten unten deutlich mehr Leerraum als oben: `renderSetTimelineRow()` reservierte per `pb-4` immer Platz für die Verbindungslinie zum nächsten Kreis, auch bei der letzten Zeile, für die es keine gibt. Bei der letzten Zeile entfällt `pb-4` jetzt; das Hervorhebungs-Band nutzt dort `-bottom-2` statt `bottom-2`, um trotzdem exakt auf den Kreis zentriert zu bleiben
 - Per `getBoundingClientRect()` verifiziert: Abstand oben/unten jetzt symmetrisch (12px/12px Workout-Roster, 16px/16px Verlauf-Karte), Kreis/Band-Zentrierung bei einer ausgewählten letzten Zeile weiterhin exakt (0px Abweichung)
-- Details: [design-system.md](design-system.md#navigation) (Fünfzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Fünfzigste Iteration)
 
 ## 2026-09-06 (Verlauf-Reiter: Jahreszahl und Tages-Karten)
 
 ### Added
 - Jahreszahl im Verlauf-Datum ergänzt ("Freitag, 04. September 2026" statt "Freitag, 04. September")
 - Sätze pro Tag im Verlauf-Reiter mit einer grauen Karte (`bg-surface rounded-card`) hinterlegt, damit die Zugehörigkeit zu einem Workout-Tag optisch erkennbar ist — der Tages-Reiter bleibt bewusst kastenlos
-- Details: [design-system.md](design-system.md#navigation) (Neunundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Neunundvierzigste Iteration)
 
 ## 2026-09-06 (tracking-wide-Konflikt an drei text-label-Stellen behoben)
 
 ### Fixed
 - `text-label` bringt eine feste Laufweite von 0.6px mit — an drei Stellen (Stepper-Beschriftung "GEWICHT (KG)"/"REPS", "ROUTINE: `<Name>`" in `workout-exercise-detail.js`, Übungsanzahl im Routine-Picker in `workout.js`) stand zusätzlich `tracking-wide` daneben und gewann durch denselben Kaskaden-Zufall wie beim Segmented-Tab-Schriftgewicht — Laufweite dadurch unbeabsichtigt auf 0.2875px verkleinert. `tracking-wide` entfernt
 - Vermuteten Größenunterschied zwischen Segmented-Tab und Bottom-Nav/Eingabefeld-Beschriftung per Pixel-Messung geprüft: kein Code-Fehler, alle drei identisch groß (13.5px Zeilenhöhe)
-- Details: [design-system.md](design-system.md#navigation) (Achtundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Achtundvierzigste Iteration)
 
 ## 2026-09-06 (Segmented-Control-Schriftgewicht korrigiert)
 
 ### Fixed
 - Segmented-Control-Tabs (Übungs-Detailseite) hatten Schriftgewicht 500 statt 600 wie die Bottom-Nav — verursacht durch eine überflüssige `font-medium`-Klasse neben `text-label` (das bereits 600 mitbringt), die per Kaskaden-Zufall gewann. Entfernt, Größe/Zeilenhöhe/Laufweite waren bereits identisch
-- Details: [design-system.md](design-system.md#navigation) (Siebenundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Siebenundvierzigste Iteration)
 
 ## 2026-09-06 (Routinen-Optionen im Picker: Hintergrund und Übungsanzahl)
 
@@ -1090,53 +1096,53 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ### Added
 - Übungsanzahl ("1 Übung"/"N Übungen") als zweite Zeile unter dem Routinen-Namen in jeder Options-Zeile, Schriftstil identisch zur "ROUTINE: `<Name>`"-Beschriftung auf der Übungs-Detailseite
-- Details: [design-system.md](design-system.md#navigation) (Sechsundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Sechsundvierzigste Iteration)
 
 ## 2026-09-06 ("Delete"-Button in "Löschen" umbenannt)
 
 ### Changed
 - Button-Label auf der Übungs-Detailseite: "Delete" heißt jetzt "Löschen" — reine Textänderung
-- Details: [design-system.md](design-system.md#navigation) (Fünfundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Fünfundvierzigste Iteration)
 
 ## 2026-09-06 ("Update"-Button in "Ändern" umbenannt)
 
 ### Changed
 - Button-Label auf der Übungs-Detailseite: "Update" (bei ausgewähltem Satz) heißt jetzt "Ändern" — reine Textänderung, "Speichern" (neuer Satz) unverändert
-- Details: [design-system.md](design-system.md#navigation) (Vierundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Vierundvierzigste Iteration)
 
 ## 2026-09-06 (Routine-Auswahl auf rounded-btn, rounded-btn-Radius auf 4px verkleinert)
 
 ### Changed
 - Routine-Auswahl-Button im Workout-Tab von `rounded-full` auf `rounded-btn` umgestellt
 - `rounded-btn`-Token (`index.html`, `tailwind.config`) von 13px auf 4px verkleinert — wirkt automatisch überall (Buttons, Inputs, kompakte Listenzeilen, Stepper-Eingabefeld)
-- Details: [design-system.md](design-system.md#navigation) (Dreiundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Dreiundvierzigste Iteration)
 
 ## 2026-09-06 (bg-surface aufgehellt)
 
 ### Changed
 - `bg-surface` von `#1E1E1E` auf `#252525` geändert (`index.html`, `tailwind.config`) — wirkt automatisch überall (Karten, Formulare, Listenzeilen)
 - Die beiden `rgba(30,30,30,0.55)`-Stellen in `css/styles.css` (`#bottom-nav`, `.icon-btn-glass`), die als "halbtransparente Variante von bg-surface" außerhalb des Tokens dupliziert waren, auf `rgba(37,37,37,0.55)` nachgezogen, damit der Glass-Effekt weiterhin zur neuen Oberflächenfarbe passt
-- Details: [design-system.md](design-system.md#navigation) (Zweiundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Zweiundvierzigste Iteration)
 
 ## 2026-09-06 (Zurück-Übergang auf reinen Fade reduziert)
 
 ### Changed
 - `view-back-out` (View Transition beim Zurück-Navigieren, z. B. Zurück-Pfeil auf der Übungs-Detailseite) hatte zusätzlich zum Fade ein `translateY(0→16px)`-Slide nach unten — eine zweite, gezielt zum Zurück-Pfeil ausgewertete Bildschirmaufnahme (12 native Frames) zeigte, dass der reale Übergang ein reiner Fade ohne jede Bewegung ist. Slide entfernt
-- Details: [design-system.md](design-system.md#navigation) (Einundvierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Einundvierzigste Iteration)
 
 ## 2026-09-06 (Doppel-Grün-Zeitraum beim Nav-Wechsel halbiert)
 
 ### Changed
 - Nutzer-Feedback: gleichzeitiges volles Grün beider Tabs wirkte störend. Zweite, frame-genaue Auswertung derselben Bildschirmaufnahme (11 native Frames statt Kontaktbogen) bestätigte: Real gibt es keinen Moment mit zwei vollständig grünen Tabs, nur einen kurzen (~33ms), an die Glasform gekoppelten Wisch
 - Umschaltpunkt für die Icon-Farbe von "Animationsende" auf "Hälfte der Laufzeit" vorgezogen — halbiert den wahrgenommenen Doppel-Grün-Zeitraum auf ca. 85ms
-- Details: [design-system.md](design-system.md#navigation) (Vierzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Vierzigste Iteration)
 
 ## 2026-09-06 (Nav-Indikator anhand einer echten Bildschirmaufnahme verfeinert)
 
 ### Changed
 - Übergangsdauer des Nav-Indikators von 420ms auf 170ms reduziert — anhand einer per `ffmpeg` frame-genau ausgewerteten Bildschirmaufnahme einer Referenz-App gemessen (reale Animation dauert dort nur ca. 100-130ms)
 - Icon-Farbe des alten Tabs bleibt jetzt bis zum Ende der Indikator-Animation erhalten (`animation.finished`-Callback), statt sofort beim Klick zu wechseln — während des gesamten Übergangs sind beide Tabs grün, wie in der Aufnahme zu sehen
-- Details: [design-system.md](design-system.md#navigation) (Neununddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Neununddreißigste Iteration)
 
 ## 2026-09-06 (Liquid-Glass-Animationen: Nav-Indikator, View-Transitions, Press-Feedback)
 
@@ -1148,7 +1154,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 
 ### Changed
 - Vor der Umsetzung geprüft, ob ein extern vorgeschlagener Ansatz (reiner `translateX`-Indikator) tatsächlich am besten geeignet ist — Mechanismus bestätigt, Choreografie auf ein "Morphen" statt reiner Bewegung verfeinert (s. Web-Recherche zu Apples Liquid-Glass-HIG)
-- Details: [design-system.md](design-system.md#bewegung-liquid-glass-animationen) (Achtunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#bewegung-liquid-glass-animationen) (Achtunddreißigste Iteration)
 
 ## 2026-09-06 (Kartenradius verkleinert: eckigeres Design)
 
@@ -1156,7 +1162,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - `rounded-card` von 18px auf 4px verkleinert (`index.html`, `tailwind.config`) — Karten wirken jetzt als Rechtecke mit leicht abgerundeten Ecken statt stark gerundet. Vorab im Browser getestet (temporäres CSS-Override, ohne Datei-Änderung), erst nach Bestätigung übernommen
 - Da `rounded-card` ein zentrales Token ist, wirkt die Änderung automatisch überall (Formulare, Übungs-Roster-Karten) — keine View musste einzeln angepasst werden
 - `rounded-btn`/`rounded-full` unverändert
-- Details: [design-system.md](design-system.md#navigation) (Siebenunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Siebenunddreißigste Iteration)
 
 ## 2026-09-06 (Alle übrigen Komponenten-Muster zentralisiert)
 
@@ -1164,21 +1170,21 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Neue Klassen-Konstanten in `js/utils.js`: `BTN_SECONDARY`, `DESTRUCTIVE_LINK`, `CARD`, `LIST_ROW`, `TEXTLINK_ACTION` — ersetzen von Hand kopierte Klassen-Ketten in `exercises.js`, `profile.js`, `routines.js`, `workout.js`, `workout-exercise-detail.js`
 - `.icon-btn-glass` (CSS) enthält jetzt Größe/Form (`44×44px`, `border-radius: 9999px`, zentriertes Flex-Layout) direkt, statt sie an beiden Verwendungsstellen als Tailwind-Utilities zu duplizieren
 - Reine Refaktorierung ohne sichtbare Änderung, an allen betroffenen Bildschirmen per Screenshot verifiziert
-- Details: [design-system.md](design-system.md#navigation) (Sechsunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Sechsunddreißigste Iteration)
 
 ## 2026-09-06 (Input als zentrale Klassen-Konstante)
 
 ### Changed (Fall #2 aus der Design-System-Zentralisierung)
 - Input-Styling (`rounded-btn px-3 py-3 text-ink min-h-[44px]`) war an 5 Stellen in `exercises.js`, `profile.js`, `routines.js` von Hand kopiert — jetzt als `INPUT`-Konstante in `js/utils.js`. Hintergrundfarbe (`bg-base`/`bg-surface`) bleibt bewusst pro Stelle gesetzt, da kontextabhängig
 - Reine Refaktorierung ohne sichtbare Änderung, per DOM-Vergleich verifiziert
-- Details: [design-system.md](design-system.md#navigation) (Fünfunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Fünfunddreißigste Iteration)
 
 ## 2026-09-06 (Primärer Button als zentrale Klassen-Konstante)
 
 ### Changed (Fall #1 aus der Design-System-Zentralisierung)
 - Primärer Button (`bg-accent text-base font-semibold rounded-btn`) war an 8 Stellen in `exercises.js`, `profile.js`, `routines.js` von Hand kopiert — jetzt als `BTN_PRIMARY`-Konstante in `js/utils.js`, von allen drei Views importiert und interpoliert
 - Reine Refaktorierung ohne sichtbare Änderung, per DOM-Vergleich verifiziert
-- Details: [design-system.md](design-system.md#navigation) (Vierunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Vierunddreißigste Iteration)
 
 ## 2026-09-06 (Design-System-Audit: drei doku-interne Widersprüche behoben)
 
@@ -1186,21 +1192,21 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - "Keine Trennlinien"-Passage behauptete fälschlich, `bg-red-600` sei noch aktuell im Einsatz für destruktive Aktionen — ist seit der Siebenundzwanzigsten Iteration nicht mehr der Fall, korrigiert
 - "Accent-Grün ausschließlich für Auswahl-/Selektions-Zustände" (Achtzehnte Iteration) stand im Widerspruch zum neuen "Textlink (Aktion)"-Muster (Achtundzwanzigste Iteration) — historische Aussage entsprechend markiert, Farbtabelle ergänzt
 - `bg-raised` als "Aktiver Tab-Hintergrund" war seit dem Glass-Effekt für die Bottom-Nav nicht mehr korrekt (transparente Variante dort) — auf den weiterhin zutreffenden Kontext (Segmented Control) präzisiert
-- Details: [design-system.md](design-system.md#navigation) (Dreiunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Dreiunddreißigste Iteration)
 
 ## 2026-09-06 (Design-System-Audit: Glass-Look als Navigations-Standard dokumentiert)
 
 ### Fixed (reine Doku-Korrektur, kein Code geändert)
 - "Bewusst nur die Bottom-Nav, sonst nichts" widersprach der später eingeführten "Icon-Button (Glass)"-Komponente (Zurück-Pfeil, Kalender-Icon nutzen denselben Blur-Effekt) — beide Aussagen standen unverändert nebeneinander im Dokument
 - Umformuliert: Glass-Look ist der Standard-Stil für Navigations-Buttons (Bottom-Nav + Navigations-Icon-Buttons), nicht auf die Bottom-Nav beschränkt
-- Details: [design-system.md](design-system.md#navigation) (Zweiunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Zweiunddreißigste Iteration)
 
 ## 2026-09-06 (Satz-Anzahl aus der Workout-Tab-Roster-Zeile entfernt)
 
 ### Removed
 - Übungs-Karten im Workout-Tab zeigen nicht mehr die Satz-Anzahl (z. B. "2 Sätze") rechts neben dem Titel — die Anzahl ist an der Satz-Timeline darunter ohnehin ablesbar
 - Dabei behoben: fehlerhafte Pluralbildung ("Satze" statt "Sätze" bei mehr als einem Satz)
-- Details: [design-system.md](design-system.md#navigation) (Einunddreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Einunddreißigste Iteration)
 
 ## 2026-09-06 (Design-System-Audit: veraltetes "SÄTZE"-Beispiel entfernt)
 
@@ -1212,13 +1218,13 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Notiz (keine Änderung)
 - Der "✕"-Entfernen-Button in der Routine-Übungen-Zeile passt zu keinem dokumentierten Button-Muster — Entscheidung bewusst zurückgestellt, da der Routine-Editor als Workflow noch nicht fertiggestellt ist
 - Das Umbenennen-Formular im Routine-Editor nutzt keinen Karten-Rahmen, obwohl das Anlegen einer neuen Routine denselben Vorgang als volles Karten-Formular zeigt — ebenfalls zurückgestellt, da sowohl der Routine-Editor- als auch der Übungen-Workflow noch nicht fertiggestellt sind
-- Beide als offene Punkte festgehalten: [design-system.md](design-system.md#offene-punkte-aus-dem-design-system-audit)
+- Beide als offene Punkte festgehalten: [design-system.md](archiv/design-system-verlauf.md#offene-punkte-aus-dem-design-system-audit)
 
 ## 2026-09-06 ("+"-Zeichen aus Textlink-Aktionen entfernt)
 
 ### Changed
 - "Übung hinzufügen" (Workout-Tab und Routine-Editor) zeigt kein "+" mehr vor dem Label — die Akzentfarbe des Textlink (Aktion)-Musters macht die Klickbarkeit bereits deutlich
-- Details: [design-system.md](design-system.md#navigation) (Dreißigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Dreißigste Iteration)
 
 ## 2026-09-06 ("Übung hinzufügen" im Workout-Tab: Platzhalter-Stil abgeschafft)
 
@@ -1226,14 +1232,14 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - "Übung hinzufügen" im Workout-Tab war grau/gedimmt/`disabled`, weil die Funktion dahinter noch nicht existiert — auf Nutzer-Entscheidung vereinheitlicht mit dem neuen Textlink (Aktion)-Muster (`text-accent text-body font-medium`), da eine Aktion keinen eigenen Stil bekommen soll, nur weil sie noch nicht gebaut ist
 - Eigener Kreis-Outline-"+"-Indikator entfernt zugunsten eines einfachen "+" als Text, `disabled`-Attribut entfernt — der Button hat weiterhin keinen Klick-Handler (Funktion folgt separat), sieht jetzt aber wie eine aktive Aktion aus
 - "Dezenter Icon-Link (Platzhalter)"-Muster in design-system.md als nicht mehr verwendet markiert
-- Details: [design-system.md](design-system.md#navigation) (Neunundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Neunundzwanzigste Iteration)
 
 ## 2026-09-06 (Design-System-Audit: Textlink-Aktionen vereinheitlicht)
 
 ### Changed (Fall C2 aus dem Design-System-Audit)
 - "+ Übung hinzufügen" (Routine-Editor), "Heute" (großer Kalender) und "Alle Routinen anzeigen" (Routine-Picker) nutzten denselben Grundgedanken (akzentfarbener Textlink für eine echte Aktion), aber jeweils leicht andere Klassen — auf `text-accent text-body font-medium` vereinheitlicht
 - Neues Muster "Textlink (Aktion)" in design-system.md dokumentiert
-- Details: [design-system.md](design-system.md#navigation) (Achtundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Achtundzwanzigste Iteration)
 
 ## 2026-09-06 (Design-System-Audit: Ausnahme von der "Keine Trennlinien"-Regel ergänzt)
 
@@ -1259,7 +1265,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Changed (Fall A1 aus dem Design-System-Audit)
 - Primärer Button (`bg-accent`) war je nach View unterschiedlich fett (`font-bold` in profile.js, `font-semibold` in exercises.js/routines.js) — auf `font-semibold` (600) vereinheitlicht, passend zum bereits an anderer Stelle dominanten Gewicht (`text-card-title`). h1-Überschriften (`text-screen-title`) bleiben bewusst bei `font-bold`
 - Destruktiver "Profil entfernen"-Button (`bg-red-600`) auf den Primären Button umgestellt — greift den seit der Siebzehnten Iteration vorgemerkten, aber nie entschiedenen Gesprächspunkt zur Buttons-Neugestaltung auf. Löschen bleibt weiterhin über `confirm()` abgesichert, nur ohne zusätzliche rote Warnfarbe
-- Details: [design-system.md](design-system.md#navigation) (Siebenundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Siebenundzwanzigste Iteration)
 
 ## 2026-09-06 (Gewicht-/Reps-Boxen verbreitert)
 
@@ -1268,7 +1274,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Ursache: Die feste Reps-Box (`w-6` = 24px) war zu schmal für dreistellige Werte wie "999" (natürliche Breite ca. 26.3px) — die Zahl überfüllte die Box, wodurch der feste 4px-Abstand auf ca. 1.7px zusammenschrumpfte
 - Behoben, indem beide Boxen komfortabel breiter gemacht wurden, als realistische Extremwerte je brauchen (`w-12`→`w-16` für Gewicht, `w-6`→`w-8` für Reps), statt die genaue Overflow-Mechanik von `text-align: right` bei überfüllten Boxen abschließend zu klären
 - Mit `getBoundingClientRect()` erneut verifiziert: Abstand exakt 4px in jeder Zeile (Gewicht und Reps, Werte "5"/"3" bis "999.5"/"999"), in Roster-Zeile, Tages-Reiter und Verlauf-Reiter gleichermaßen
-- Details: [design-system.md](design-system.md#navigation) (Sechsundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Sechsundzwanzigste Iteration)
 
 ## 2026-09-05 (Reps-Spalte bündig, verfeinert)
 
@@ -1279,42 +1285,42 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Changed (Zahlen rechtsbündig, Einheiten grau)
 - Auf Nutzer-Wunsch verfeinert: Zahl steckt jetzt in einer eigenen rechtsbündigen, fest breiten Box, die Einheit (`kg`/`Reps`) folgt direkt danach in `text-muted` — Zahl dadurch optisch leichter erfassbar, Einheiten landen automatisch an derselben Kante über alle Zeilen hinweg
 - Mit stark unterschiedlichen Testwerten (5 / 62.5 / 999.5 kg, 3 / 12 / 999 Reps) verifiziert: sowohl Zahlen als auch Einheiten exakt bündig, in Roster-Zeile und Übungs-Detailseite gleichermaßen
-- Details: [design-system.md](design-system.md#navigation) (Vierundzwanzigste/Fünfundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Vierundzwanzigste/Fünfundzwanzigste Iteration)
 
 ## 2026-09-05 (Auswahl-Hervorhebung final, Teil 4)
 
 ### Fixed (Band wieder dicker, ohne die Zentrierung zu verlieren)
 - Die letzte Korrektur hatte die Zentrierung repariert, dabei aber unbeabsichtigt auch die Dicke des Hervorhebungs-Bands wieder auf die reine 24px-Kreishöhe reduziert
 - Band ist jetzt wieder deutlich dicker (40px statt 24px, 8px symmetrisch oben und unten) — da Kreis und Inhalts-Box jetzt strukturell denselben Mittelpunkt haben, bleibt die Zentrierung dabei erhalten (0px Abweichung verifiziert)
-- Details: [design-system.md](design-system.md#navigation) (Dreiundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Dreiundzwanzigste Iteration)
 
 ## 2026-09-04 (Auswahl-Hervorhebung final, Teil 3)
 
 ### Fixed (Kreis, Band und Text exakt zueinander zentriert)
 - Kreis (24px), Hervorhebungs-Band und Text waren weiterhin leicht (unter 2px) zueinander versetzt — Ursache: Kreis und Textzeile hatten unterschiedliche Höhen, beide aber oben bündig ausgerichtet
 - Inhalts-Bereich steckt jetzt strukturell in einer ebenfalls exakt 24px hohen Box (statt einem beliebigen Höhen-Zuschlag zu folgen) — Kreis, Band und Text liegen dadurch exakt (0px Abweichung, mit `getBoundingClientRect()` verifiziert) auf derselben Mittelachse
-- Details: [design-system.md](design-system.md#navigation) (Zweiundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Zweiundzwanzigste Iteration)
 
 ## 2026-09-04 (Auswahl-Hervorhebung final, Teil 2)
 
 ### Fixed (Band dicker, kein zusätzlicher grauer Kreis mehr)
 - Hervorhebungs-Band saß zu knapp am Text, jetzt mit 8px zusätzlichem Raum oben und unten
 - Nummern-Kreis bleibt bei Auswahl unverändert (kein zusätzlicher `bg-raised`-Fond mehr) — Auswahl wird ausschließlich über das Band angezeigt
-- Details: [design-system.md](design-system.md#navigation) (Einundzwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Einundzwanzigste Iteration)
 
 ## 2026-09-04 (Auswahl-Hervorhebung final)
 
 ### Fixed (Zeilen-Sprung beim Auswählen behoben, Hervorhebung bildschirmbreit)
 - Satz-Zeilen "sprangen" beim Auswählen — der Auswahl-Pill hatte eigenes Padding, das nur im ausgewählten Zustand existierte und dadurch die Zeilenhöhe veränderte
 - Auswahl-Hervorhebung ist jetzt ein randloses, bildschirmbreites, eckiges Band hinter Kreis und Text (wie in der Referenz-App) statt eines schmalen Pills um den Text — umgesetzt als eigenes `position: absolute`-Element (`highlighted`-Parameter in `renderSetTimelineRow()`), dadurch komplett ohne Einfluss auf die Zeilenhöhe
-- Details: [design-system.md](design-system.md#navigation) (Zwanzigste Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Zwanzigste Iteration)
 
 ## 2026-09-04 (noch mehr Feinschliff)
 
 ### Fixed (Tap-Animation entfernt, Auswahl-Hervorhebung zentriert)
 - Satz-Zeilen (Tages-Reiter der Übungs-Detailseite) haben keine Tap-Animation mehr — wirkte beim Auswählen zusammen mit der grauen Hervorhebung störend
 - Graue Auswahl-Hervorhebung saß nicht mittig zur Schrift, da sie die ganze Zeile inkl. des unteren Platzes für die Verbindungslinie mit eingefärbt hat. Sitzt jetzt auf einem eng um den Text gelegten Pill statt auf der ganzen Zeile — 0px Abweichung zur Kreis-Mitte verifiziert
-- Details: [design-system.md](design-system.md#navigation) (Neunzehnte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Neunzehnte Iteration)
 
 ## 2026-09-04 (Referenz-App-Abgleich, Feinschliff)
 
@@ -1322,7 +1328,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Satz-Löschen läuft jetzt ohne Bestätigungsdialog (auf Nutzer-Wunsch, Ausnahme von der sonstigen Löschen-Konvention, s. CLAUDE.md)
 - Ausgewählte Satz-Zeile auf der Übungs-Detailseite jetzt grau (`bg-raised`) statt grün (`ring-accent`) hinterlegt
 - Satz-Liste und Eingabebereich (Stepper/Buttons/Routine-Label) sitzen jetzt direkt auf dem Seiten-Hintergrund statt in einer `bg-surface`-Box — näher an der Referenz-App. Gilt für Tages- und Verlauf-Reiter; die Roster-Karten im Workout-Tab bleiben unverändert eigene Karten
-- Details: [design-system.md](design-system.md#navigation) (Achtzehnte Iteration), [ADR 0010](decisions/0010-uebungs-detailseite.md)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Achtzehnte Iteration), [ADR 0010](decisions/0010-uebungs-detailseite.md)
 
 ## 2026-09-04 (Referenz-App-Abgleich)
 
@@ -1333,14 +1339,14 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Neue gemeinsame Komponente `renderSetTimelineRow()` (`js/utils.js`): nummerierte Satz-Kreise mit Verbindungslinie, jetzt einheitlich in Roster-Zeile, Tages- und Verlauf-Reiter der Übungs-Detailseite verwendet — löst dabei auch die erst kurz zuvor eingeführte kompakte " · "-Zusammenfassung in der Roster-Zeile wieder ab (volle Liste stattdessen)
 - Satz-Notation vereinheitlicht: "35 kg" / "10 Reps" (getrennt) statt "35 kg × 10"
 - Bewusst nicht übernommen (neue Funktionen, außerhalb des Scopes dieser reinen Design-Anpassung): Kamera-Icon, RPE, Einheiten-Umschalter, Stift-/Timer-Icon, Routine-Ziel-Anzeige, PR-Badge, zusätzlicher Routinen-Link, neuer Kopfbereich
-- Details: [design-system.md](design-system.md#navigation) (Siebzehnte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Siebzehnte Iteration)
 
 ## 2026-09-04 (spät, nach Abschnitt 12)
 
 ### Changed ("Reps" statt "Wdh.", Satz-Daten in der Roster-Zeile)
 - Stepper-Label auf der Übungs-Detailseite von "Wdh." auf "Reps" geändert
 - Roster-Zeile im Workout-Tab zeigt jetzt die tatsächlichen Satz-Werte (z. B. "50 kg × 10") unter dem Titel, nicht mehr nur die Anzahl
-- Details: [design-system.md](design-system.md#navigation) (Sechzehnte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Sechzehnte Iteration)
 
 ## 2026-09-04 (Nacht, Abschnitt 12)
 
@@ -1352,20 +1358,20 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - `updateSet()` in `db.js` wieder eingeführt (war mit ADR 0007 als Konsequenz des Verlauf-Wegfalls entfernt worden) — jetzt über den "Update"-Button möglich
 - Neue Abfrage `getExerciseSetHistory()` in `db.js` für den Verlauf-Reiter
 - Satz-Löschen verlangt jetzt einen Bestätigungsdialog (vorher nicht, kleine Lücke gegenüber der sonst schon geltenden Projekt-Konvention)
-- Details und Architektur-Entscheidung: [ADR 0010](decisions/0010-uebungs-detailseite.md), [design-system.md](design-system.md#navigation) (Fünfzehnte Iteration)
+- Details und Architektur-Entscheidung: [ADR 0010](decisions/0010-uebungs-detailseite.md), [design-system.md](archiv/design-system-verlauf.md#navigation) (Fünfzehnte Iteration)
 
 ## 2026-09-04 (kurz danach)
 
 ### Fixed (Routine-Picker: Leerstand-Text ausgerichtet)
 - "Noch keine Routinen vorhanden." hatte kein horizontales Padding, "Alle Routinen anzeigen" darunter dagegen `px-3` — Text begann 12px weiter links. Beide beginnen jetzt auf derselben Linie
-- Details: [design-system.md](design-system.md#navigation) (Vierzehnte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Vierzehnte Iteration)
 
 ## 2026-09-04 (noch später)
 
 ### Changed (Heutiger Tag im großen Kalender immer nur umrandet)
 - Der heutige Tag zeigt jetzt in jedem Fall nur den ungefüllten Kreis (Rand) — auch wenn er zugleich ausgewählt ist oder bereits Sätze dokumentiert sind. Vorher hatten Auswahl/Dokumentation Vorrang, jetzt "heute" unbedingten Vorrang vor beidem
 - Betrifft nur den großen Kalender, die kleine Kalenderzeile bleibt unverändert
-- Details: [design-system.md](design-system.md#navigation) (Dreizehnte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Dreizehnte Iteration)
 
 ## 2026-09-04 (nach Mitternacht)
 
@@ -1373,7 +1379,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - "Heute"-Button im Kalender-Sheet scrollt jetzt nur noch zum aktuellen Monat, statt zusätzlich den Tag auszuwählen und das Sheet zu schließen (mit sanfter Scroll-Animation statt hartem Sprung)
 - Bottom-Nav bleibt sichtbar und bedienbar, während das Sheet offen ist, statt komplett vom Backdrop verdeckt zu werden (gezielter, nur während des Sheet-Lebenszyklus gesetzter z-index) — Kalender bekommt dafür zusätzlichen unteren Freiraum (denselben Wert, den die Nav app-weit schon reserviert)
 - Neuer optionaler `unmount()`-View-Hook (`workout.js`, aufgerufen von `app.js`s `showView()`): notwendig, weil jetzt auch bei offenem Kalender-Sheet der Tab gewechselt werden kann — ohne den Hook blieben Body-Scroll-Sperre und Nav-z-index sonst hängen, und ein ausstehender Schließen-Timeout hätte nachträglich eine andere View überschrieben
-- Details: [design-system.md](design-system.md#navigation) (Zwölfte Iteration), [architecture.md](architecture.md#view-pattern)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Zwölfte Iteration), [architecture.md](architecture.md#view-pattern)
 
 ## 2026-09-04 (spät Nacht)
 
@@ -1381,7 +1387,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Der Body-Lock-Fix hat den unteren grauen Balken korrekt behoben, aber ein neues Problem sichtbar gemacht: großer Leerraum zwischen oberer Sheet-Kante und Kopfzeile
 - Ursache: `padding-top: max(8px, env(safe-area-inset-top))` zählte die Dynamic-Island-Aussparung doppelt — das Sheet startete ja bereits unterhalb der Insel, das zusätzliche Padding schob die Kopfzeile um eine weitere Insel-Höhe nach unten
 - Zurückgesetzt auf festes `pt-3` (12px) statt der `env()`-Berechnung
-- Details: [design-system.md](design-system.md#navigation) (Elfte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Elfte Iteration)
 
 ## 2026-09-04 (Nacht)
 
@@ -1390,7 +1396,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Eigentliche Ursache: `lockBodyScroll()` setzte `document.body` auf `position: fixed` — das beeinflusste auf WebKit nachweislich die Positionierung/Größe des ebenfalls `position: fixed`-Sheets (zu weit unten, Bottom-Kante nicht exakt an `bottom: 0`, dadurch auch die Scroll-zu-Zielmonat-Berechnung beim Öffnen daneben)
 - body-Lock umgestellt auf `overflow: hidden` + gezielten `touchmove`-Blocker (lässt `#calendar-sheet-months` explizit durch) — body verlässt dadurch nie den normalen Fluss, kein `scrollY`-Merken/Wiederherstellen mehr nötig
 - In der Test-Umgebung verifiziert: Sheet sitzt exakt an `bottom: 0`, Scroll-Ausrichtung zum Zielmonat 0px daneben (vorher nicht reproduzierbar, jetzt tatsächlich gemessen und bestätigt)
-- Details: [design-system.md](design-system.md#navigation) (Zehnte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Zehnte Iteration)
 
 ## 2026-09-04 (Abend)
 
@@ -1398,7 +1404,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Sheet-Header lag teilweise hinter der Dynamic Island, am unteren Rand blitzte die Bottom-Nav durch — auf echtem iPhone gemeldet, in der (Chromium-basierten) Test-Umgebung mangels Notch-Simulation nicht reproduzierbar
 - `height: 88vh` um `height: 88dvh` ergänzt (vh bleibt Fallback) — `dvh` ist für genau diese Art von iOS-Safari-Viewport-Unschärfe gedacht, möglicherweise verstärkt durch den `position: fixed`-Body-Lock aus der vorherigen Änderung
 - Sheet-Header bekommt explizites `padding-top: max(8px, env(safe-area-inset-top))`, statt sich auf die 88%-Höhen-Berechnung zur Notch-Freihaltung zu verlassen
-- Details: [design-system.md](design-system.md#navigation) (Neunte Iteration)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation) (Neunte Iteration)
 
 ## 2026-09-04 (Nachmittag)
 
@@ -1409,7 +1415,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Drag-to-Dismiss am Ziehgriff ergänzt (nach unten wegziehen schließt das Sheet, mit Rückspring unterhalb eines Schwellenwerts)
 - "Heute"-Button oben rechts im Sheet-Header ergänzt — springt direkt zum aktuellen Tag
 - Backdrop fadet jetzt weich ein/aus (220ms, synchron zur Sheet-Animation) statt hart zu erscheinen/verschwinden
-- Details: [design-system.md](design-system.md#navigation), [ADR 0009](decisions/0009-grosser-kalender-vollstaendiges-rendern.md)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation), [ADR 0009](decisions/0009-grosser-kalender-vollstaendiges-rendern.md)
 
 ## 2026-09-04
 
@@ -1419,39 +1425,39 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Monate werden nicht alle auf einmal gerendert: beim Öffnen nur Zielmonat ±1, weitere Monate werden erst beim Erreichen des Scroll-Rands nachgeladen (direkte DOM-Manipulation statt vollem Re-Paint, um die Scroll-Position zu erhalten). Details und Abwägung: [ADR 0008](decisions/0008-grosser-kalender-lazy-loading.md)
 - Tap auf einen Tag schließt das Sheet, springt zu diesem Tag und zentriert die kleine Kalenderzeile neu
 - Erste echte Bottom-Sheet-Komponente der App (Slide-up-Animation, abdunkelnder Backdrop) — etabliert das Muster für zukünftige Sheets, `rounded-sheet`-Token dadurch erstmals im Einsatz
-- Details: [design-system.md](design-system.md#navigation), [features.md](features.md#workout-jsviewsworkoutjs--kernfunktion)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation), [features.md](features.md#workout-jsviewsworkoutjs--kernfunktion)
 
 ## 2026-08-30
 
 ### Changed (Routine entfernen per Toggle)
-- Separaten "Keine Routine (entfernen)"-Button im Routine-Picker entfernt — erneuter Klick auf die bereits ausgewählte Routine (✓) entfernt sie jetzt stattdessen. Mit bereits begonnener Übung getestet: bleibt beim Entfernen korrekt erhalten. Details: [design-system.md](design-system.md#navigation)
+- Separaten "Keine Routine (entfernen)"-Button im Routine-Picker entfernt — erneuter Klick auf die bereits ausgewählte Routine (✓) entfernt sie jetzt stattdessen. Mit bereits begonnener Übung getestet: bleibt beim Entfernen korrekt erhalten. Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Fixed (Kalender-Layout korrigiert, X-Icon vergrößert)
 - Vorheriger Ausrichtungs-Fix (items-start/items-end auf gleich breiten Grid-Spalten) war funktional 0px daneben, aber optisch falsch — brach die Zentrierung von Wochentag-Text und Tageszahl zueinander. Richtig gelöst mit `flex justify-between`: alle 7 Tage bleiben einheitlich in sich zentriert, werden als Ganzes gleichmäßig über die Breite verteilt (Montag/Sonntag landen dadurch automatisch an den Rändern). Verifiziert: 0px Randabweichung **und** exakt gleicher Abstand zwischen allen Tagen
 - X-Balken des Dropdown-Icons vergrößert (7px→10px), Zentrierung von festem `margin-left` auf `translateX(-50%)` umgestellt, damit sie der jetzt mitanimierten Balkenbreite folgt
-- Details: [design-system.md](design-system.md#navigation)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Fixed / Added (Kalender-Inhaltsausrichtung, Icon-Animation)
 - Montag-/Sonntag-**Inhalt** (Wochentag-Text, Tageszahl) war innerhalb seiner Spalte zentriert und wirkte dadurch eingerückt, obwohl die Spalte selbst schon pixelgenau lag — erste Spalte jetzt linksbündig, letzte rechtsbündig
 - Chevron-zu-X-Morph-Animation für das Dropdown-Icon der Routine-Auswahl (zwei Balken schieben sich beim Öffnen zusammen, beim Schließen wieder auseinander, synchron mit der Popup-Animation)
-- Details: [design-system.md](design-system.md#navigation)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Fixed (Kalender-Randausrichtung)
-- Montag/Sonntag lagen nur in der zuletzt sichtbaren Woche pixelgenau an "Workout"-Überschrift bzw. Kalender-Icon an — in den übrigen Wochen 16px zu weit links, weil `scrollIntoView`/`scroll-snap` das eigene Container-Padding ignorierten. Behoben mit `scroll-padding` (`scroll-px-4`) statt einer JS-Heuristik; `gap` zwischen Wochenblöcken durch einen expliziten Abstandshalter-Div ersetzt (Safari/WebKit spielt `gap` + `scroll-snap` nicht immer zuverlässig zusammen). Für alle drei Wochen einzeln auf 0px Abweichung verifiziert. Details: [design-system.md](design-system.md#navigation)
+- Montag/Sonntag lagen nur in der zuletzt sichtbaren Woche pixelgenau an "Workout"-Überschrift bzw. Kalender-Icon an — in den übrigen Wochen 16px zu weit links, weil `scrollIntoView`/`scroll-snap` das eigene Container-Padding ignorierten. Behoben mit `scroll-padding` (`scroll-px-4`) statt einer JS-Heuristik; `gap` zwischen Wochenblöcken durch einen expliziten Abstandshalter-Div ersetzt (Safari/WebKit spielt `gap` + `scroll-snap` nicht immer zuverlässig zusammen). Für alle drei Wochen einzeln auf 0px Abweichung verifiziert. Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Changed (Workout-Tab Feinschliff Runde 3)
 - Kalenderzeile zeigt nur noch ±1 Woche (Vorwoche/Folgewoche) statt ±2 Wochen
 - Kalenderzeile von Flex-Prozent-Basis auf Wochenblöcke (CSS Grid) umgestellt — behebt einen angeschnitten sichtbaren nächsten Montag am rechten Rand (Rundungsfehler der vorherigen Prozent-Basis-Berechnung)
 - Größerer Abstand (`gap-6`) zwischen den Wochenblöcken zur besseren Orientierung beim Wechsel zwischen Sonntag und Montag
 - Routine-Popup poppt jetzt beim Öffnen aus der Dropdown-Pille heraus und beim Schließen wieder hinein (CSS-Keyframe-Animation, zweistufiges Schließen in `workout.js` für eine echte Exit-Animation trotz Full-Rerender-Modell)
-- Details: [design-system.md](design-system.md#navigation)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Changed (Workout-Tab Feinschliff Runde 2)
 - Heute-Markierung im Kalender: Tageszahl wird grün, wenn heute nicht ausgewählt ist; bei Auswahl bleibt es beim Accent-Badge mit dunkler Zahl
 - Kalenderzeile rastet jetzt pro voller Mo-So-Woche ein (`scroll-snap-align` nur auf Montags-Buttons) statt frei zu scrollen
 - "Routinen"-Link neben der Routine-Auswahl entfernt
 - Routine-Picker ist jetzt ein echtes Overlay (verdrängt den restigen Inhalt nicht mehr nach unten), schließt per Backdrop-Klick oder per X-Icon (ersetzt den Chevron bei geöffnetem Picker) statt über einen "Abbrechen"-Button; "Alle Routinen anzeigen" als neuer Eintrag innerhalb des Popups
-- Details: [design-system.md](design-system.md#navigation)
+- Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Changed (Workout-Tab UI-Feinschliff nach Referenz-Screenshots)
 - Kalenderzeile ohne Einzel-Pill-Hintergrund pro Tag: nur die ausgewählte Tageszahl bekommt ein Accent-Badge, Wochentag als reiner Text. `scroll-snap` sorgt für ein Wochen-Swipe-Gefühl bei weiterhin durchgehendem ±2-Wochen-Scroll
@@ -1459,7 +1465,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Routine-Auswahl als Dropdown-Pill + separater "Routinen"-Link (navigiert zum Routinen-Tab) statt "Wechseln"/"Entfernen"-Buttons; "Routine entfernen" jetzt als Option im Popup
 - Nummerierte Sätze in der aufgeklappten Übungs-Karte
 - "+ Übung hinzufügen" als dezenter, zentrierter Icon-Link statt voller Button — bleibt weiterhin reiner Platzhalter ohne Funktion
-- Bewusst ignoriert: Statistics-/Premium-Tab, KI-Routine-Generierung/Wochenplanung, Zitat des Tages, Schloss-/Weight-Badge, Ziel-Satz-Zeile — keine dieser Funktionen existiert in Fitlog, letztere beide sind laut Konzept-Erweiterung Abschnitt 10 explizit ausgeschlossen. Details: [design-system.md](design-system.md#komponenten-muster)
+- Bewusst ignoriert: Statistics-/Premium-Tab, KI-Routine-Generierung/Wochenplanung, Zitat des Tages, Schloss-/Weight-Badge, Ziel-Satz-Zeile — keine dieser Funktionen existiert in Fitlog, letztere beide sind laut Konzept-Erweiterung Abschnitt 10 explizit ausgeschlossen. Details: [design-system.md](archiv/design-system-verlauf.md#komponenten-muster)
 
 ### Added / Changed (Workout-Tab, Abschnitt 10)
 - Training-Tab durch neuen **Workout-Tab** ersetzt: Kalenderzeile (±2 Wochen um den ausgewählten Tag, automatisch zentriert, grüner Punkt an dokumentierten Tagen), natives Datums-Picker für Tage außerhalb des Fensters, Routine wählen/wechseln/entfernen als Popup-Liste, aufklappbares Übungs-Roster mit dynamischer Sortierung (begonnene Übungen zuerst nach Bearbeitungszeitpunkt, s. [ADR 0007](decisions/0007-workout-tab-tagesbasiertes-modell.md))
@@ -1475,10 +1481,10 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Pinch- und Doppeltipp-Zoom unterbunden für ein native-app-ähnlicheres Bediengefühl: `touch-action: manipulation` auf `html`/`body` (Scrollen bleibt erlaubt), Viewport-Meta-Tag um `maximum-scale=1, user-scalable=no` ergänzt als Absicherung für andere Browser. Separat: globale `input { font-size: 16px }`-Regel gegen das automatische iOS-Zoom-in beim Fokussieren kleiner Eingabefelder. Bewusster Accessibility-Trade-off für privaten, kleinen Nutzerkreis, s. [architecture.md](architecture.md#pwa-mechanik)
 
 ### Added (Scrim hinter Glass-Nav)
-- Abdunkelnder Verlaufs-Layer (`.nav-scrim`) zwischen Scroll-Inhalt und Bottom-Nav ergänzt, damit die durchscheinende Bar auch vor hellem/unruhigem Inhalt lesbar bleibt — eigenständig vom `backdrop-filter` der Bar, `pointer-events: none`, explizites Z-Index-Layering (Inhalt < Scrim < Nav). Details: [design-system.md](design-system.md#navigation)
+- Abdunkelnder Verlaufs-Layer (`.nav-scrim`) zwischen Scroll-Inhalt und Bottom-Nav ergänzt, damit die durchscheinende Bar auch vor hellem/unruhigem Inhalt lesbar bleibt — eigenständig vom `backdrop-filter` der Bar, `pointer-events: none`, explizites Z-Index-Layering (Inhalt < Scrim < Nav). Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Changed (Glass-Effekt Bottom-Nav)
-- Bottom-Navigation von deckendem `bg-surface` auf halbtransparenten Liquid-Glass-Look umgestellt (`backdrop-filter: blur(20px) saturate(160%)`, transparenter Hintergrund, Glaskanten-Rand, Specular-Highlight per `box-shadow`). Ausschließlich die Nav betroffen, alle anderen Komponenten bleiben deckend. Details: [design-system.md](design-system.md#navigation)
+- Bottom-Navigation von deckendem `bg-surface` auf halbtransparenten Liquid-Glass-Look umgestellt (`backdrop-filter: blur(20px) saturate(160%)`, transparenter Hintergrund, Glaskanten-Rand, Specular-Highlight per `box-shadow`). Ausschließlich die Nav betroffen, alle anderen Komponenten bleiben deckend. Details: [design-system.md](archiv/design-system-verlauf.md#navigation)
 
 ### Changed (Design-Überarbeitung)
 - Komplettes visuelles Redesign nach Briefing (Farben, Typografie, Radien, Abstände, Navigation) — reine Optik, keine Funktions-/Datenmodell-Änderung. Neue Palette (`#121212`/`#1E1E1E`/`#2A2A2A`/`#A3E635`/`#F5F5F5`/`#9B9BA1`), Bottom-Nav jetzt freischwebende Pillenform mit eigenen Icons statt vollflächigem Balken mit Text-only-Tabs, keine sichtbaren Trennlinien mehr (Abgrenzung nur über Hintergrundkontrast). Tokens zentral im inline `tailwind.config` in `index.html` (kein `tailwind.config.js`, s. ADR 0002). Details, Token-Tabellen und bewusst nicht umgesetzte Komponenten (Bottom-Sheet, Segmented Control, Charts — keine Entsprechung im aktuellen Funktionsumfang): [design-system.md](design-system.md)

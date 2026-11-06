@@ -4,7 +4,7 @@
 
 ## Kontext
 
-Das ursprüngliche "Volumen pro Trainingstag"-Diagramm ([Hunderteinundzwanzigste Iteration](../design-system.md)) zeigte rohe Tageswerte der letzten 14 Trainingstage. Der Nutzer hat dafür eine eigene, deutlich ausführlichere Markdown-Spezifikation verfasst (mit Claude erstellt, als Datei geliefert): Kurzfristige Schwankungen und Trainingspausen sollen den langfristigen Trend nicht verzerren, das Diagramm soll nach Wochen/Monaten statt Tagen aggregieren und einen gleitenden Durchschnitt als eigene Linie zeigen, wählbar über drei Zeitraum-Reiter. Dieses ADR ersetzt das Tages-Diagramm vollständig.
+Das ursprüngliche "Volumen pro Trainingstag"-Diagramm ([Hunderteinundzwanzigste Iteration](../archiv/design-system-verlauf.md)) zeigte rohe Tageswerte der letzten 14 Trainingstage. Der Nutzer hat dafür eine eigene, deutlich ausführlichere Markdown-Spezifikation verfasst (mit Claude erstellt, als Datei geliefert): Kurzfristige Schwankungen und Trainingspausen sollen den langfristigen Trend nicht verzerren, das Diagramm soll nach Wochen/Monaten statt Tagen aggregieren und einen gleitenden Durchschnitt als eigene Linie zeigen, wählbar über drei Zeitraum-Reiter. Dieses ADR ersetzt das Tages-Diagramm vollständig.
 
 ## Entscheidung
 
