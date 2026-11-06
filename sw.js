@@ -19,6 +19,7 @@ const APP_SHELL = [
   './js/exerciseStats.js',
   './js/reorder.js',
   './js/utils.js',
+  './js/dates.js',
   './js/vendor/dexie.min.js',
   './js/profile.js',
   './js/backup.js',
