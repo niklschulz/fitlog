@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Profil-Tab: App-Name und Version)
+
+### Added
+- Profil-Tab: ganz unten "Fitlog · Version N" (N aus dem Namen des aktuellen Service-Worker-Caches, `caches.keys()`). So ist erkennbar, ob der Service Worker die neueste Fassung schon geholt hat. `css/tailwind.css` neu gebaut, `CACHE_NAME` auf `fitlog-v248`
+
 ## 2026-11-04 (Routinen-Sheet: Inhalt von der Bottom-Nav verdeckt)
 
 ### Fixed

@@ -60,12 +60,34 @@ function paint() {
       ${renderSettings(getSettings())}
       ${renderDataSection()}
       ${renderTestModeToggle()}
+      <p id="app-version" class="text-label text-muted text-center pt-2">Fitlog</p>
     </div>
 
     ${state.linkSheetOpen ? renderLinkSheet() : ''}
   `;
 
   wireEvents();
+  showAppVersion();
+}
+
+// App-Name + Version unten im Profil-Tab. Die Version ist der Name des
+// aktuellen Service-Worker-Caches (`CACHE_NAME` in sw.js, z. B. `fitlog-v247`):
+// der SW löscht beim Aktivieren alle anderen Caches, hier steht also immer die
+// Fassung, die der SW tatsächlich ausliefert - so lässt sich prüfen, ob er die
+// neueste schon geholt hat. Ohne SW/Cache-API (z. B. unsicherer Kontext) bleibt
+// nur der App-Name stehen.
+async function showAppVersion() {
+  const el = currentContainer?.querySelector('#app-version');
+  if (!el || !('caches' in window)) return;
+  try {
+    const names = (await caches.keys()).filter((n) => /^fitlog-v\d+$/.test(n));
+    if (!names.length) return;
+    names.sort((a, b) => Number(b.slice(8)) - Number(a.slice(8)));
+    const live = currentContainer?.querySelector('#app-version');
+    if (live) live.textContent = `Fitlog · Version ${names[0].slice(8)}`;
+  } catch {
+    /* nur Anzeige, Fehler ignorieren */
+  }
 }
 
 // Noch ohne Design-Feinschliff - reine Funktions-Umsetzung der beiden bisher
