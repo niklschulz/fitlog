@@ -54,21 +54,19 @@ let renderEpoch = 0;
 // Parameter, da renderSetContent() von beiden Reitern aus aufgerufen wird.
 let prs = new Map();
 
-// `restore`: Die Seite wird nach einer abgebrochenen Wisch-Zurück-Geste wieder
-// aufgebaut (s. js/swipeBack.js) - Reiter und Satz-Auswahl bleiben dann erhalten.
-// `onRestore` ruft die Geste dafür auf, workout.js baut die Seite damit neu.
-export async function render(container, { entryId, onBack: onBackCallback, onOpenInfo: onOpenInfoCallback, onRestore = null, restore = false }) {
+// `container` ist die Seiten-Ebene (s. js/swipeBack.js, ADR 0039), nicht der
+// Container der Übersicht. `refreshUnder` zeichnet die Übersicht beim
+// Zurückwischen in place neu.
+export async function render(container, { entryId, onBack: onBackCallback, onOpenInfo: onOpenInfoCallback, refreshUnder = null }) {
   renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
   onOpenInfo = onOpenInfoCallback;
   // Wisch vom linken Rand = Zurück-Pfeil (s. js/swipeBack.js).
-  wireSwipeBack({ container, onBack: (opts) => onBack(opts), onRestore });
+  wireSwipeBack({ container, onBack: (opts) => onBack(opts), refreshUnder });
   state.entryId = entryId;
-  if (!restore) {
-    state.activeTab = 'today';
-    state.selectedSetId = null;
-  }
+  state.activeTab = 'today';
+  state.selectedSetId = null;
   await paint();
 }
 
@@ -382,7 +380,9 @@ function wireEvents() {
 
   currentContainer.querySelector('#detail-note-btn')?.addEventListener('click', () => {
     openNoteSheet({
-      container: currentContainer,
+      // Sheets liegen im Container der Übersicht (über der Seiten-Ebene, die
+      // einen eigenen Stapelkontext bildet), nicht in der Ebene selbst.
+      container: document.getElementById('view-container'),
       entryId: state.entryId,
       exerciseName: state.noteContext.exerciseName,
       dateISO: state.noteContext.dateISO,

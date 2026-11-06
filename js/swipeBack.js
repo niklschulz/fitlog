@@ -1,40 +1,48 @@
-// Seiten-Übergänge wie in iOS (s. ADR 0037/0038): Zurück per Wisch vom linken
-// Rand, per Zurück-Pfeil und das Öffnen einer Unterseite nutzen dieselbe
-// Schiebe-Bewegung. Betroffen: Übungs-Detailseite im Workout-Tab und
+// Seiten-Übergänge wie in iOS (s. ADR 0037/0038/0039): Zurück per Wisch vom
+// linken Rand, per Zurück-Pfeil und das Öffnen einer Unterseite nutzen
+// dieselbe Schiebe-Bewegung. Betroffen: Übungs-Detailseite im Workout-Tab und
 // Statistik-Übungsseite.
+//
+// Seiten-Ebene (ADR 0039): Eine Unterseite wird NICHT mehr in den Scroll-
+// Container der Übersicht (`#view-container`) gezeichnet, sondern in eine
+// eigene, frisch erzeugte Ebene (`#page-layer`, fixiert über dem Container).
+// Der Container der Übersicht bleibt damit die ganze Zeit sichtbar, wird nie
+// verschoben, ausgeblendet oder neu befüllt und behält seine Scrollposition
+// von selbst. Hintergrund: Wurde derselbe Container zwischen kurzer
+// Detailseite und langer Liste getauscht (und dabei ausgeblendet/verschoben),
+// legte iOS dafür keinen funktionierenden nativen Scroller mehr an - die Liste
+// ließ sich nach dem Zurückwischen nur noch per Gummiband dehnen.
 //
 // Ablauf der Zurück-Geste:
 //  - Start nur in einem schmalen Streifen am linken Rand (EDGE_WIDTH_PX) - ein
-//    eigenes, fixes Element außerhalb des Seiteninhalts, das jeden Repaint
-//    überlebt und keinen Seiteninhalt stört. `touch-action: none` (nicht
-//    `pan-y`): Sonst darf iOS bei schrägen Wischbewegungen parallel vertikal
-//    scrollen bzw. das Gummiband auslösen - die Seite ruckelte dann.
+//    eigenes, fixes Element außerhalb des Seiteninhalts. `touch-action: none`
+//    (nicht `pan-y`): Sonst darf iOS bei schrägen Wischbewegungen parallel
+//    vertikal scrollen bzw. das Gummiband auslösen.
 //    Offene Sheets liegen darüber und blockieren die Geste von selbst.
-//  - Sobald der Finger wandert, wird die Detailseite als Abbild (Klon) über
-//    den Container gelegt und `onBack()` zeichnet die ECHTE Übersicht darunter
-//    (bei iOS liegt sie ebenfalls schon da). Das Abbild folgt dem Finger, die
-//    Übersicht darunter läuft mit Versatz (-1/3 der Breite) nach, eine
-//    abdunkelnde Ebene dazwischen blendet mit dem Weg aus.
+//  - Beim Ziehen folgt die Seiten-Ebene dem Finger. Darunter liegt ein Abbild
+//    (Klon) der Übersicht, das mit Versatz (-1/3 der Breite) nachläuft, eine
+//    abdunkelnde Ebene dazwischen blendet mit dem Weg aus. `refreshUnder()`
+//    des Aufrufers zeichnet die echte Übersicht währenddessen in place neu
+//    (geänderte Sätze), das Abbild wird danach erneuert.
 //  - Beim Loslassen entscheiden, wie bei iOS, vor allem die Geschwindigkeit
 //    (Fling nach rechts = zurück, nach links = bleiben), sonst die Hälfte des
 //    Wegs. Das Ausgleiten ist eine gedämpfte Feder, die mit der
-//    Fingergeschwindigkeit startet (kein Knick zwischen Finger und Animation).
-//  - Bleibt die Seite stehen, ruft die Geste `onRestore()` auf, das die
-//    Detailseite wieder aufbaut (Reiter/Auswahl bleiben erhalten), und legt
-//    das Abbild erst dann wieder weg.
+//    Fingergeschwindigkeit startet.
+//  - Zurück: `onBack({ animated: true })` räumt die Seite auf (Modul
+//    abmelden, State, Ebene entfernen). Bleiben: Die Ebene gleitet zurück, es
+//    gibt nichts neu aufzubauen.
 //
-// Zurück-Pfeil (`triggerBack()`) und Öffnen (`pushPage()`) laufen über
+// Zurück-Pfeil (`triggerBack()`) und Öffnen (`openPage()`) laufen über
 // dieselbe Mechanik, nur ohne Finger.
 //
 // Layer-Reihenfolge (alles unterhalb der Scrims z-10, Bottom-Nav z-20 und der
-// Sheets ab z-50): Container (statisch) < Abdunklung (6) < Abbild (7). Beim
-// Öffnen: Abbild der alten Seite (6) < Abdunklung (7) < Container (8).
+// Sheets ab z-50, die weiter im Container der Übersicht liegen): Container
+// (statisch) < Abbild (5) < Abdunklung (6) < Seiten-Ebene (8).
 //
 // Nur ein Streifen gleichzeitig (Modul-Singleton, wie die Notiz-/Action-
 // Sheets): Aufrufer rufen `wireSwipeBack()` in ihrem render() und
 // `unwireSwipeBack()` in ihrem unmount() auf. `unwireSwipeBack()` bricht eine
-// laufende Geste/Animation nicht ab (onBack() ruft es selbst auf), sie räumt
-// sich danach selbst auf.
+// laufende Geste/Animation nicht ab, sie räumt sich danach selbst auf.
 const EDGE_WIDTH_PX = 22;
 const START_SLOP_PX = 8;
 const COMMIT_RATIO = 0.5;
@@ -47,20 +55,29 @@ const SPRING_OMEGA = 12; // gedämpft ohne Nachschwingen, ca. 0,35 s bis zur Ruh
 const SPRING_MAX_S = 0.7;
 const SHADOW = '-2px 0 10px rgba(0, 0, 0, 0.3)';
 const READY_FALLBACK_MS = 600;
-const Z = { under: 6, dim: 7, top: 8, popUnder: 5, popDim: 6, popSnap: 7 };
+const Z = { under: 5, dim: 6, layer: 8 };
 
 let teardown = null;
 let current = null;
 let transitioning = false;
+let pageLayer = null;
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const pageBackground = () => getComputedStyle(document.body).backgroundColor;
+const listContainer = () => document.getElementById('view-container');
 
 export function unwireSwipeBack() {
   current = null;
   teardown?.();
   teardown = null;
+}
+
+// Entfernt die Seiten-Ebene (falls vorhanden). Von den onBack-Callbacks der
+// Aufrufer und beim Tab-Wechsel benutzt.
+export function removePageLayer() {
+  pageLayer?.remove();
+  pageLayer = null;
 }
 
 // Zurück-Pfeil: dieselbe Animation wie die Geste, ohne Finger. Ohne aktive
@@ -156,84 +173,54 @@ function whenContainerPainted(container) {
   return { promise, cancel: done };
 }
 
-function resetContainerStyles(container) {
-  container.style.transform = '';
-  container.style.visibility = '';
-  container.style.willChange = '';
-  container.style.pointerEvents = '';
-  container.style.position = '';
-  container.style.zIndex = '';
-  container.style.background = '';
-  container.style.boxShadow = '';
-  rerasterize(container);
+// Neue Seiten-Ebene: gleiche Scroll-Eigenschaften (Klassen, Padding, Safe-
+// Area) wie der Container der Übersicht, aber ein eigener, frischer Scroller.
+function createPageLayer(list) {
+  removePageLayer();
+  const layer = document.createElement('div');
+  layer.id = 'page-layer';
+  layer.className = list.className;
+  layer.style.cssText =
+    `position:fixed;top:0;right:0;bottom:0;left:0;z-index:${Z.layer};background:${pageBackground()};`;
+  document.body.appendChild(layer);
+  pageLayer = layer;
+  return layer;
 }
 
-// iOS zeichnet einen Scroll-Container, der während der Geste ausgeblendet und
-// transformiert war (und dessen Position dabei per scrollTop gesetzt wurde),
-// danach nur noch für den gerade sichtbaren Ausschnitt: der Rest der Liste blieb
-// leer und der erste Wisch nach oben löste nur das Gummiband aus. Ein kurzes
-// display:none/-Zurücksetzen (ohne dass dazwischen gezeichnet wird) verwirft die
-// alte Kachel-Aufteilung und die native Scrollposition; die Position wird
-// danach aus dem DOM-Wert wiederhergestellt.
-function rerasterize(container) {
-  const top = container.scrollTop;
-  container.style.display = 'none';
-  void container.offsetHeight;
-  container.style.display = '';
-  container.scrollTop = top;
-  // iOS gleicht die native Position erst nach einem Frame ab: einen Frame lang
-  // 1 px daneben, dann zurück (nur, wenn der Nutzer inzwischen nicht selbst
-  // gescrollt hat).
-  if (top < 1 && container.scrollHeight <= container.clientHeight) return;
-  const nudged = top > 0 ? top - 1 : top + 1;
-  requestAnimationFrame(() => {
-    if (Math.abs(container.scrollTop - top) > 0.5) return;
-    container.scrollTop = nudged;
-    requestAnimationFrame(() => {
-      if (Math.abs(container.scrollTop - nudged) <= 0.5) container.scrollTop = top;
-    });
-  });
-}
-
-// Öffnen einer Unterseite: Die alte Seite (Abbild) rückt mit Versatz nach links
-// und wird abgedunkelt, die neue schiebt sich von rechts darüber - das
-// Gegenstück zur Zurück-Geste. `renderFn()` zeichnet die neue Seite in
-// `container`.
-export function pushPage(container, renderFn) {
-  if (transitioning) return;
+// Öffnen einer Unterseite: Die Übersicht (Abbild) rückt mit Versatz nach links
+// und wird abgedunkelt, die neue Seiten-Ebene schiebt sich von rechts darüber -
+// das Gegenstück zur Zurück-Geste. `renderFn(layer)` zeichnet die neue Seite in
+// die Ebene; der echte Container der Übersicht bleibt unberührt darunter.
+export function openPage(list, renderFn) {
+  if (transitioning || pageLayer) return;
+  const layer = createPageLayer(list);
   if (reduceMotion()) {
-    renderFn();
+    renderFn(layer);
     return;
   }
   transitioning = true;
   const width = window.innerWidth;
-  const rect = container.getBoundingClientRect();
-  const under = makeSnapshot(container, rect, Z.under);
+  const rect = list.getBoundingClientRect();
+  const under = makeSnapshot(list, rect, Z.under);
   under.style.boxShadow = 'none';
   const dim = makeDim(rect, Z.dim, 0);
 
-  container.style.visibility = 'hidden';
-  container.style.pointerEvents = 'none';
-  container.style.position = 'relative';
-  container.style.zIndex = String(Z.top);
-  container.style.background = pageBackground();
-  container.style.boxShadow = SHADOW;
+  layer.style.transform = `translateX(${width}px)`;
+  layer.style.boxShadow = SHADOW;
 
-  const painted = whenContainerPainted(container);
-  renderFn();
+  const painted = whenContainerPainted(layer);
+  renderFn(layer);
 
   painted.promise
     .then(() => {
-      container.style.transform = `translateX(${width}px)`;
-      container.style.visibility = '';
       // Layout jetzt erzwingen, nicht erst im ersten Animations-Bild.
-      void container.offsetHeight;
+      void layer.offsetHeight;
       return springRun({
         from: width,
         to: 0,
         onFrame: (x) => {
           const p = 1 - x / width;
-          container.style.transform = `translateX(${x}px)`;
+          layer.style.transform = `translateX(${x}px)`;
           under.style.transform = `translateX(${-width * PARALLAX * p}px)`;
           dim.style.opacity = String(DIM_MAX * p);
         },
@@ -242,14 +229,21 @@ export function pushPage(container, renderFn) {
     .finally(() => {
       under.remove();
       dim.remove();
-      resetContainerStyles(container);
+      layer.style.transform = '';
+      layer.style.boxShadow = '';
       transitioning = false;
     });
 }
 
-export function wireSwipeBack({ container, onBack, onRestore = null }) {
+// `container` ist die Seiten-Ebene der Unterseite. `onBack({ animated })`
+// räumt die Seite auf (Modul abmelden, State, `removePageLayer()`);
+// `animated: true` heißt: die Übersicht wurde schon über `refreshUnder()`
+// aktualisiert. `refreshUnder()` zeichnet die Übersicht in place neu (gibt
+// optional ein Promise zurück).
+export function wireSwipeBack({ container, onBack, refreshUnder = null }) {
   unwireSwipeBack();
   if (!container) return;
+  const layer = container;
 
   const strip = document.createElement('div');
   strip.id = 'swipe-back-edge';
@@ -259,7 +253,7 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
 
   let pointerId = null;
   let startX = 0;
-  let x = 0; // aktuelle Position der Seite (px)
+  let x = 0; // aktuelle Position der Seiten-Ebene (px)
   let active = false; // Seite wird gerade gezogen
   let reduced = false; // "Bewegung reduzieren": keine Visualisierung
   let busy = false; // Geste oder Zurück-Animation läuft
@@ -267,26 +261,23 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
   let samples = [];
   let frame = null;
   let width = 0;
-  let scrollTop = 0;
-  let snapshot = null;
-  let under = null; // Abbild der gezeichneten Übersicht (Parallax), s. begin()
+  let under = null; // Abbild der Übersicht (Parallax)
   let dim = null;
-  let ready = false; // Übersicht unter dem Abbild ist gezeichnet
-  let painted = null;
   let prepared = null; // vorab gebautes Abbild (s. onDown)
+  let refreshing = null;
 
   function applyProgress(pos) {
     const p = clamp(pos / width, 0, 1);
-    snapshot.style.transform = `translateX(${pos}px)`;
-    dim.style.opacity = String(DIM_MAX * (1 - p));
+    layer.style.transform = `translateX(${pos}px)`;
     if (under) under.style.transform = `translateX(${-width * PARALLAX * (1 - p)}px)`;
+    if (dim) dim.style.opacity = String(DIM_MAX * (1 - p));
   }
 
   function scheduleApply() {
     if (frame !== null) return;
     frame = requestAnimationFrame(() => {
       frame = null;
-      if (snapshot) applyProgress(x);
+      if (dim) applyProgress(x);
     });
   }
 
@@ -295,16 +286,18 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     frame = null;
   }
 
-  // Baut das Abbild schon beim Auflegen des Fingers (Klonen + Layout kosten
-  // etwas, das soll nicht das erste Zieh-Bild verzögern). Unsichtbar, bis die
-  // Geste beginnt.
+  // Baut das Abbild der Übersicht schon beim Auflegen des Fingers (Klonen +
+  // Layout kosten etwas, das soll nicht das erste Zieh-Bild verzögern).
+  // Unsichtbar, bis die Geste beginnt.
   function prepare() {
     discardPrepared();
     width = window.innerWidth;
-    const rect = container.getBoundingClientRect();
-    const snap = makeSnapshot(container, rect, Z.popSnap);
+    const list = listContainer();
+    const rect = list.getBoundingClientRect();
+    const snap = makeSnapshot(list, rect, Z.under);
+    snap.style.boxShadow = 'none';
     snap.style.visibility = 'hidden';
-    prepared = { snap, rect, scrollTop: container.scrollTop };
+    prepared = { snap, rect };
   }
 
   function discardPrepared() {
@@ -316,44 +309,44 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     busy = true;
     transitioning = true;
     if (!prepared) prepare();
-    snapshot = prepared.snap;
-    scrollTop = prepared.scrollTop;
-    snapshot.style.visibility = '';
-    dim = makeDim(prepared.rect, Z.popDim, DIM_MAX);
+    under = prepared.snap;
+    under.style.visibility = '';
+    const rect = prepared.rect;
+    dim = makeDim(rect, Z.dim, DIM_MAX);
     prepared = null;
     x = startPos;
-    ready = false;
-    // Der echte Container (Scroll-Container!) bleibt die ganze Geste über
-    // unsichtbar und unverschoben: iOS zeichnete ihn sonst danach nur für den
-    // sichtbaren Ausschnitt und scrollte nicht, sondern gummibandete. Den
-    // Parallax-Versatz der Übersicht übernimmt stattdessen ein Abbild von ihr
-    // (`under`), sobald sie gezeichnet ist.
-    container.style.visibility = 'hidden';
-    container.style.pointerEvents = 'none';
+    layer.style.boxShadow = SHADOW;
     applyProgress(x);
 
-    const rect = snapshot.getBoundingClientRect();
-    painted = whenContainerPainted(container);
-    painted.promise.then(() => {
-      if (!snapshot) return;
-      ready = true;
-      under = makeSnapshot(container, { top: rect.top, height: rect.height }, Z.popUnder);
-      under.style.boxShadow = 'none';
-      applyProgress(x);
-    });
-    // Echte Übersicht darunter zeichnen (ruft über unmount() auch
-    // unwireSwipeBack() auf - `busy` hält den Streifen am Leben).
-    onBack({ swipe: true });
+    // Übersicht darunter in place aktualisieren (Sätze der Detailseite),
+    // danach das Abbild erneuern. Der echte Container bleibt sichtbar und
+    // unverschoben, nur eben vom Abbild/der Ebene verdeckt.
+    if (refreshUnder) {
+      refreshing = Promise.resolve()
+        .then(() => refreshUnder())
+        .then(() => {
+          if (!under) return;
+          const fresh = makeSnapshot(listContainer(), rect, Z.under);
+          fresh.style.boxShadow = 'none';
+          fresh.style.transform = under.style.transform;
+          under.remove();
+          under = fresh;
+        })
+        .catch(() => {});
+    } else {
+      refreshing = Promise.resolve();
+    }
   }
 
   function cleanupVisuals() {
-    snapshot?.remove();
     under?.remove();
     dim?.remove();
-    snapshot = null;
     under = null;
     dim = null;
-    resetContainerStyles(container);
+    if (layer.isConnected) {
+      layer.style.transform = '';
+      layer.style.boxShadow = '';
+    }
   }
 
   function endSession() {
@@ -373,17 +366,12 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
         applyProgress(x);
       },
     });
-    // Übersicht muss gezeichnet sein, bevor das Abbild verschwindet.
-    await painted.promise;
-    if (!commit) {
-      // Seite bleibt: Detailseite wieder aufbauen (Zustand bleibt erhalten),
-      // erst dann das Abbild wegnehmen.
-      try {
-        await onRestore?.();
-      } catch {
-        /* Abbild trotzdem wegnehmen */
-      }
-      container.scrollTop = scrollTop;
+    // Aktualisierte Übersicht muss da sein, bevor die Ebene verschwindet.
+    await refreshing;
+    if (commit) {
+      // Ruft über unmount() auch unwireSwipeBack() auf - `busy` hält den
+      // Streifen bis hierher am Leben.
+      onBack({ animated: true });
     }
     cleanupVisuals();
     endSession();
@@ -438,7 +426,7 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     active = false;
     if (reduced) {
       // Ohne Animation: nur der Weg entscheidet.
-      if (x > window.innerWidth * 0.4) onBack({ swipe: true });
+      if (x > window.innerWidth * 0.4) onBack({ animated: false });
       return;
     }
     cancelScheduled();
@@ -472,9 +460,8 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
   function fullTeardown() {
     pendingTeardown = false;
     cancelScheduled();
-    painted?.cancel();
     discardPrepared();
-    if (snapshot || under || dim) cleanupVisuals();
+    if (under || dim) cleanupVisuals();
     strip.remove();
   }
 

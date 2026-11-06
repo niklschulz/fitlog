@@ -28,18 +28,16 @@ const state = {
 // überschreibt.
 let renderEpoch = 0;
 
-// `restore`/`onRestore`: s. workout-exercise-detail.js render().
-export async function render(container, { exerciseId, onBack: onBackCallback, onRestore = null, restore = false }) {
+// `container`/`refreshUnder`: s. workout-exercise-detail.js render().
+export async function render(container, { exerciseId, onBack: onBackCallback, refreshUnder = null }) {
   renderEpoch++;
   currentContainer = container;
   onBack = onBackCallback;
   // Wisch vom linken Rand = Zurück-Pfeil (s. js/swipeBack.js).
-  wireSwipeBack({ container, onBack: (opts) => onBack(opts), onRestore });
+  wireSwipeBack({ container, onBack: (opts) => onBack(opts), refreshUnder });
   state.exerciseId = exerciseId;
-  if (!restore) {
-    state.activeTab = 'stats';
-    state.range = '3m';
-  }
+  state.activeTab = 'stats';
+  state.range = '3m';
   await paint();
 }
 
