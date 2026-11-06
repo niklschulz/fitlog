@@ -19,6 +19,7 @@ import {
   CARD,
 } from '../utils.js';
 import { openNoteSheet, unmountNoteSheet } from '../noteSheet.js';
+import { formatDate } from '../dates.js';
 import { getSettings } from '../settings.js';
 import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
 
@@ -187,8 +188,7 @@ function renderHeader(exerciseName) {
 }
 
 function formatShortDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+  return formatDate(dateStr, 'weekdayDayMonthShort');
 }
 
 function renderStepperRow(field, label, value) {
@@ -285,8 +285,7 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel, note, exercise
 }
 
 function formatHistoryDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  return formatDate(dateStr, 'fullLong');
 }
 
 // Verlauf-Reiter, auch vom Statistik-Tab (js/views/statistics-exercise-detail.js)

@@ -9,6 +9,7 @@
 import { db, getExerciseSetHistory, getPRsForExercises, todayISODate } from '../db.js';
 import { escapeHtml, renderSegmentedControl, renderRangeControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, renderPRIcon, CARD } from '../utils.js';
 import { computePersonalBests } from '../exerciseStats.js';
+import { formatDate as formatDateVariant } from '../dates.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
 import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
@@ -122,10 +123,7 @@ const formatNumber = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 2
 // Das Jahr steht immer dabei (Nutzer-Vorgabe) - Zeiträume und Bestwerte
 // können über Jahre zurückreichen.
 function formatDate(dateStr, { weekday = false } = {}) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const options = { day: 'numeric', month: 'short', year: 'numeric' };
-  if (weekday) options.weekday = 'short';
-  return new Date(y, m - 1, d).toLocaleDateString('de-DE', options);
+  return formatDateVariant(dateStr, weekday ? 'weekdayDayMonthShortYear' : 'dayMonthShortYear');
 }
 
 function renderBestRow(icon, label, best, valueText) {

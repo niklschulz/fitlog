@@ -8,6 +8,7 @@
 // IndexedDB-Lesezugriffen praktisch nicht auftritt.
 import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
+import { formatDate, addMonths, yearMonthOf } from '../dates.js';
 import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
@@ -109,16 +110,6 @@ async function paint({ pageFromRect = null, volumeFromRect = null } = {}) {
 }
 
 // --- Übersicht-Reiter: "Workouts pro Woche" ---
-
-function yearMonthOf(dateStr) {
-  return dateStr.slice(0, 7); // 'YYYY-MM'
-}
-
-function addMonths(yearMonth, delta) {
-  const [y, m] = yearMonth.split('-').map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
 
 // Reine Berechnung, getrennt vom Rendering - erleichtert spätere
 // automatisierte Tests, falls dieses Feature mal so heikel wird wie die
@@ -400,9 +391,9 @@ function formatWeekAxisLabel(weekStart) {
 // (s. ADR 0023, "bekannte Einschränkung"), deshalb dort nur die Jahreszahl
 // ("2026") statt des Monats.
 function formatMonthAxisLabel(yearMonth, tabKey) {
-  const [y, m] = yearMonth.split('-').map(Number);
+  const y = Number(yearMonth.split('-')[0]);
   if (tabKey === 'max') return `${y}`;
-  const monthShort = new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'short' });
+  const monthShort = formatDate(yearMonth, 'monthShort');
   return `${monthShort} ${String(y).slice(-2)}`;
 }
 

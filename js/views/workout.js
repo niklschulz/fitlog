@@ -39,6 +39,7 @@ import {
   SHEET_CLOSE_ANIMATION_MS,
 } from '../sheet.js';
 import { wireLongPressReorder } from '../reorder.js';
+import { formatDate, parseISODate, yearMonthOf, addMonths } from '../dates.js';
 import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
@@ -238,23 +239,19 @@ export function unmount() {
 // --- Datums-Hilfsfunktionen (lokale Zeitzone, kein UTC-Shift) ---
 
 function formatDayLabel(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return { weekday: date.toLocaleDateString('de-DE', { weekday: 'short' }), day: d };
+  return { weekday: formatDate(dateStr, 'weekdayShort'), day: parseISODate(dateStr).getDate() };
 }
 
 // Relative Bezeichnung für nahe Tage ("Heute"/"Gestern"/"Morgen"), sonst
 // vollständiger Wochentag - angelehnt an die Referenz-App.
 function formatFullDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const datePart = date.toLocaleDateString('de-DE', { day: '2-digit', month: 'long' });
+  const datePart = formatDate(dateStr, 'dayMonth2Long');
   const diff = daysBetween(todayISODate(), dateStr);
 
   if (diff === 0) return `Heute, ${datePart}`;
   if (diff === -1) return `Gestern, ${datePart}`;
   if (diff === 1) return `Morgen, ${datePart}`;
-  return `${date.toLocaleDateString('de-DE', { weekday: 'long' })}, ${datePart}`;
+  return `${formatDate(dateStr, 'weekdayLong')}, ${datePart}`;
 }
 
 // --- Monats-Hilfsfunktionen für den großen Kalender (Abschnitt 11) ---
@@ -263,19 +260,9 @@ function formatFullDate(dateStr) {
 // möglich.
 const CALENDAR_SHEET_MIN_MONTH = '2026-01';
 
-function yearMonthOf(dateStr) {
-  return dateStr.slice(0, 7);
-}
-
 function currentYearMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function addMonths(yearMonth, delta) {
-  const [y, m] = yearMonth.split('-').map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
 // Ein Monat über den aktuellen Monat hinaus erreichbar - relativ zum
@@ -285,8 +272,7 @@ function calendarSheetMaxMonth() {
 }
 
 function monthLabel(yearMonth) {
-  const [y, m] = yearMonth.split('-').map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  return formatDate(yearMonth, 'monthYearLong');
 }
 
 function daysInMonth(yearMonth) {

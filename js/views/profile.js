@@ -3,6 +3,7 @@ import { getSettings, saveSettings } from '../settings.js';
 import { showActionSheet } from '../actionSheet.js';
 import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js';
 import { db, toISODate } from '../db.js';
+import { formatDateDotted } from '../dates.js';
 import { buildBackup, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../backup.js';
 import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
 
@@ -139,11 +140,6 @@ function renderDataSection() {
   `;
 }
 
-function formatDateDE(isoDate) {
-  const [y, m, d] = isoDate.slice(0, 10).split('-');
-  return `${d}.${m}.${y}`;
-}
-
 function setDataStatus(message) {
   state.dataStatus = message;
   const el = currentContainer?.querySelector('#data-status');
@@ -188,8 +184,8 @@ async function importData(file) {
   try {
     const backup = parseBackup(await file.text(), db);
     const s = summarizeBackup(backup);
-    const range = s.firstDate ? `, ${formatDateDE(s.firstDate)} – ${formatDateDE(s.lastDate)}` : '';
-    const when = s.exportedAt ? ` vom ${formatDateDE(s.exportedAt)}` : '';
+    const range = s.firstDate ? `, ${formatDateDotted(s.firstDate)} – ${formatDateDotted(s.lastDate)}` : '';
+    const when = s.exportedAt ? ` vom ${formatDateDotted(s.exportedAt)}` : '';
     const confirmed = await showActionSheet({
       message: `Backup${when}: ${s.workoutCount} Workouts, ${s.setCount} Sätze, ${s.exerciseCount} Übungen, ${s.routineCount} Routinen${range}. Alle aktuellen Daten werden ersetzt.`,
       actionLabel: 'Daten ersetzen',

@@ -3,6 +3,7 @@
 // workoutExercises (Abschnitt 10, s. ADR 0007).
 
 import { computePRs } from './pr.js';
+import { parseISODate } from './dates.js';
 
 export const db = new Dexie('fitlog');
 
@@ -102,8 +103,7 @@ export function todayISODate() {
 // hierher verschoben, da der Statistik-Tab (Workouts-pro-Woche) dieselbe
 // Rechnung für die Wochen-Buckets braucht (s. features.md).
 export function addDays(dateStr, delta) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
+  const date = parseISODate(dateStr);
   date.setDate(date.getDate() + delta);
   return toISODate(date);
 }
@@ -111,18 +111,15 @@ export function addDays(dateStr, delta) {
 // Ganzzahlige Tagesdifferenz zwischen zwei 'YYYY-MM-DD'-Daten (gleicher
 // Grund wie addDays).
 export function daysBetween(fromStr, toStr) {
-  const [fy, fm, fd] = fromStr.split('-').map(Number);
-  const [ty, tm, td] = toStr.split('-').map(Number);
-  const from = new Date(fy, fm - 1, fd);
-  const to = new Date(ty, tm - 1, td);
+  const from = parseISODate(fromStr);
+  const to = parseISODate(toStr);
   return Math.round((to - from) / 86400000);
 }
 
 // Montag der ISO-Woche, die dateStr enthält - ebenfalls aus workout.js
 // hierher verschoben (gleicher Grund wie daysBetween).
 export function mondayOf(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
+  const date = parseISODate(dateStr);
   const dow = date.getDay(); // 0=So..6=Sa
   const diff = dow === 0 ? -6 : 1 - dow;
   date.setDate(date.getDate() + diff);

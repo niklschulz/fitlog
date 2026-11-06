@@ -1,5 +1,6 @@
 import { setWorkoutExerciseNote, toISODate } from './db.js';
 import { escapeHtml } from './utils.js';
+import { formatDate } from './dates.js';
 import { lockBodyScroll, unlockBodyScroll, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from './sheet.js';
 
 // Notiz-Sheet (s. docs/notizen-spec.md): Bottom-Sheet mit einem Eingabefeld für
@@ -59,14 +60,12 @@ export function unmountNoteSheet() {
 
 // "Heute, 1. November" / "Gestern, 31. Oktober" / "Samstag, 25. Oktober"
 function formatSheetDate(dateISO) {
-  const [y, m, d] = dateISO.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const dayMonth = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+  const dayMonth = formatDate(dateISO, 'dayMonthLong');
   const today = new Date();
   const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
   if (dateISO === toISODate(today)) return `Heute, ${dayMonth}`;
   if (dateISO === toISODate(yesterday)) return `Gestern, ${dayMonth}`;
-  return `${date.toLocaleDateString('de-DE', { weekday: 'long' })}, ${dayMonth}`;
+  return `${formatDate(dateISO, 'weekdayLong')}, ${dayMonth}`;
 }
 
 function renderSheet({ exerciseName, dateISO, initialNote, z }) {
