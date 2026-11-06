@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Abhängigkeiten: Tailwind 3.4.19, fake-indexeddb 6.2.7)
+
+### Changed
+- Die beiden offenen Dependabot-PRs (#2 tailwindcss 3.4.17 → 3.4.19, #3 fake-indexeddb → ^6.2.6, installiert 6.2.7) auf dem aktuellen `main` eingespielt statt die alten PRs zu mergen. `css/tailwind.css` neu gebaut (unverändert), `npm test` grün. `CACHE_NAME` auf `fitlog-v252`
+
 ## 2026-11-06 (Wisch-Zurück: Scroll-Container wird nicht mehr verschoben)
 
 ### Fixed
