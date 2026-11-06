@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-06 (Wisch-Zurück: Scroll-Container wird nicht mehr verschoben)
+
+### Fixed
+- Nach dem Zurückwischen auf iOS war die Workout-Seite weiterhin nicht vollständig gezeichnet, der erste Wisch nach oben löste das Gummiband aus. Der echte Scroll-Container (`#view-container`) bleibt jetzt die ganze Geste über unverschoben und unsichtbar; den Parallax-Versatz der Übersicht übernimmt ein Abbild von ihr (`under` in `js/swipeBack.js`), sobald sie gezeichnet ist. Nach der Geste wird die Scrollposition zusätzlich einen Frame lang um 1 px versetzt und zurückgesetzt, damit iOS die native Position abgleicht. `CACHE_NAME` auf `fitlog-v251`
+
 ## 2026-11-06 (Bottom-Nav: kein Hochscrollen mehr vor dem Tab-Wechsel)
 
 ### Fixed

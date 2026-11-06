@@ -47,7 +47,7 @@ const SPRING_OMEGA = 12; // gedämpft ohne Nachschwingen, ca. 0,35 s bis zur Ruh
 const SPRING_MAX_S = 0.7;
 const SHADOW = '-2px 0 10px rgba(0, 0, 0, 0.3)';
 const READY_FALLBACK_MS = 600;
-const Z = { under: 6, dim: 7, top: 8, popDim: 6, popSnap: 7 };
+const Z = { under: 6, dim: 7, top: 8, popUnder: 5, popDim: 6, popSnap: 7 };
 
 let teardown = null;
 let current = null;
@@ -181,6 +181,18 @@ function rerasterize(container) {
   void container.offsetHeight;
   container.style.display = '';
   container.scrollTop = top;
+  // iOS gleicht die native Position erst nach einem Frame ab: einen Frame lang
+  // 1 px daneben, dann zurück (nur, wenn der Nutzer inzwischen nicht selbst
+  // gescrollt hat).
+  if (top < 1 && container.scrollHeight <= container.clientHeight) return;
+  const nudged = top > 0 ? top - 1 : top + 1;
+  requestAnimationFrame(() => {
+    if (Math.abs(container.scrollTop - top) > 0.5) return;
+    container.scrollTop = nudged;
+    requestAnimationFrame(() => {
+      if (Math.abs(container.scrollTop - nudged) <= 0.5) container.scrollTop = top;
+    });
+  });
 }
 
 // Öffnen einer Unterseite: Die alte Seite (Abbild) rückt mit Versatz nach links
@@ -257,6 +269,7 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
   let width = 0;
   let scrollTop = 0;
   let snapshot = null;
+  let under = null; // Abbild der gezeichneten Übersicht (Parallax), s. begin()
   let dim = null;
   let ready = false; // Übersicht unter dem Abbild ist gezeichnet
   let painted = null;
@@ -266,7 +279,7 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     const p = clamp(pos / width, 0, 1);
     snapshot.style.transform = `translateX(${pos}px)`;
     dim.style.opacity = String(DIM_MAX * (1 - p));
-    if (ready) container.style.transform = `translateX(${-width * PARALLAX * (1 - p)}px)`;
+    if (under) under.style.transform = `translateX(${-width * PARALLAX * (1 - p)}px)`;
   }
 
   function scheduleApply() {
@@ -310,15 +323,23 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     prepared = null;
     x = startPos;
     ready = false;
+    // Der echte Container (Scroll-Container!) bleibt die ganze Geste über
+    // unsichtbar und unverschoben: iOS zeichnete ihn sonst danach nur für den
+    // sichtbaren Ausschnitt und scrollte nicht, sondern gummibandete. Den
+    // Parallax-Versatz der Übersicht übernimmt stattdessen ein Abbild von ihr
+    // (`under`), sobald sie gezeichnet ist.
     container.style.visibility = 'hidden';
     container.style.pointerEvents = 'none';
     applyProgress(x);
 
+    const rect = snapshot.getBoundingClientRect();
     painted = whenContainerPainted(container);
     painted.promise.then(() => {
+      if (!snapshot) return;
       ready = true;
-      container.style.visibility = '';
-      if (snapshot) applyProgress(x);
+      under = makeSnapshot(container, { top: rect.top, height: rect.height }, Z.popUnder);
+      under.style.boxShadow = 'none';
+      applyProgress(x);
     });
     // Echte Übersicht darunter zeichnen (ruft über unmount() auch
     // unwireSwipeBack() auf - `busy` hält den Streifen am Leben).
@@ -327,8 +348,10 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
 
   function cleanupVisuals() {
     snapshot?.remove();
+    under?.remove();
     dim?.remove();
     snapshot = null;
+    under = null;
     dim = null;
     resetContainerStyles(container);
   }
@@ -451,7 +474,7 @@ export function wireSwipeBack({ container, onBack, onRestore = null }) {
     cancelScheduled();
     painted?.cancel();
     discardPrepared();
-    if (snapshot || dim) cleanupVisuals();
+    if (snapshot || under || dim) cleanupVisuals();
     strip.remove();
   }
 
