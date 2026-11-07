@@ -37,6 +37,9 @@ import {
   resetNavZIndex,
   wireSheetDrag,
   SHEET_CLOSE_ANIMATION_MS,
+  POPUP_CLOSE_ANIMATION_MS,
+  createSheetCloser,
+  cancelClosers,
 } from '../sheet.js';
 import { wireLongPressReorder } from '../reorder.js';
 import { formatDate, parseISODate, yearMonthOf, addMonths } from '../dates.js';
@@ -173,47 +176,22 @@ export async function render(container) {
 export function unmount() {
   renderEpoch++;
   removePageLayer();
-  if (pendingCalendarSheetCloseTimeout) {
-    clearTimeout(pendingCalendarSheetCloseTimeout);
-    pendingCalendarSheetCloseTimeout = null;
-  }
-  if (pendingRoutinePickerCloseTimeout) {
-    clearTimeout(pendingRoutinePickerCloseTimeout);
-    pendingRoutinePickerCloseTimeout = null;
-  }
-  if (pendingExerciseRosterMenuCloseTimeout) {
-    clearTimeout(pendingExerciseRosterMenuCloseTimeout);
-    pendingExerciseRosterMenuCloseTimeout = null;
-  }
-  if (pendingExerciseSheetCloseTimeout) {
-    clearTimeout(pendingExerciseSheetCloseTimeout);
-    pendingExerciseSheetCloseTimeout = null;
-  }
-  if (pendingExerciseSheetMuscleFilterCloseTimeout) {
-    clearTimeout(pendingExerciseSheetMuscleFilterCloseTimeout);
-    pendingExerciseSheetMuscleFilterCloseTimeout = null;
-  }
-  if (pendingExerciseDetailSheetCloseTimeout) {
-    clearTimeout(pendingExerciseDetailSheetCloseTimeout);
-    pendingExerciseDetailSheetCloseTimeout = null;
-  }
+  cancelClosers(
+    calendarSheetCloser,
+    routinePickerCloser,
+    exerciseRosterMenuCloser,
+    exerciseSheetCloser,
+    exerciseSheetMuscleFilterCloser,
+    exerciseDetailSheetCloser,
+    routinesSheetCloser,
+    routinesSheetMenuCloser,
+    routinesSheetEditMenuCloser
+  );
   if (pendingExerciseDetailMenuCloseTimeout) {
     clearTimeout(pendingExerciseDetailMenuCloseTimeout);
     pendingExerciseDetailMenuCloseTimeout = null;
   }
   unmountExerciseCreateSheet();
-  if (pendingRoutinesSheetCloseTimeout) {
-    clearTimeout(pendingRoutinesSheetCloseTimeout);
-    pendingRoutinesSheetCloseTimeout = null;
-  }
-  if (pendingRoutinesSheetMenuCloseTimeout) {
-    clearTimeout(pendingRoutinesSheetMenuCloseTimeout);
-    pendingRoutinesSheetMenuCloseTimeout = null;
-  }
-  if (pendingRoutinesSheetEditMenuCloseTimeout) {
-    clearTimeout(pendingRoutinesSheetEditMenuCloseTimeout);
-    pendingRoutinesSheetEditMenuCloseTimeout = null;
-  }
   if (state.calendarSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
@@ -1061,24 +1039,27 @@ function renderRoutinesSheetEditMenu(exerciseId) {
 // Analog zu openRoutinesSheetMenu()/closeRoutinesSheetMenu() (gleiche
 // Animation/Timeout-Konstante), nur mit eigenem State, da beide Menüs
 // unabhängig von der jeweils anderen Ansicht (Liste/Bearbeiten) existieren.
-let pendingRoutinesSheetEditMenuCloseTimeout = null;
-
 function openRoutinesSheetEditMenu(exerciseId) {
   state.routinesSheetEditMenuExerciseId = exerciseId;
   state.routinesSheetEditMenuClosing = false;
   repaintRoutinesSheetContentInPlace();
 }
 
-function closeRoutinesSheetEditMenu() {
-  if (!state.routinesSheetEditMenuExerciseId || state.routinesSheetEditMenuClosing) return;
-  state.routinesSheetEditMenuClosing = true;
-  repaintRoutinesSheetContentInPlace();
-  pendingRoutinesSheetEditMenuCloseTimeout = setTimeout(() => {
-    pendingRoutinesSheetEditMenuCloseTimeout = null;
+const routinesSheetEditMenuCloser = createSheetCloser({
+  isOpen: () => !!state.routinesSheetEditMenuExerciseId,
+  isClosing: () => state.routinesSheetEditMenuClosing,
+  setClosing: () => { state.routinesSheetEditMenuClosing = true; },
+  animate: () => repaintRoutinesSheetContentInPlace(),
+  finalize: () => {
     state.routinesSheetEditMenuExerciseId = null;
     state.routinesSheetEditMenuClosing = false;
     repaintRoutinesSheetContentInPlace();
-  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+  },
+  durationMs: POPUP_CLOSE_ANIMATION_MS,
+});
+
+function closeRoutinesSheetEditMenu() {
+  routinesSheetEditMenuCloser.close();
 }
 
 // Neuanlage (routineId null) oder Bearbeiten (routineId gesetzt) - lädt bei
@@ -1211,24 +1192,27 @@ function renderRoutinesSheetMenu(routine) {
 // Analog zu openExerciseRosterMenu/closeExerciseRosterMenu weiter unten
 // (gleiche Animation/Timeout-Konstante) - kein lockBodyScroll()/
 // raiseNavAboveSheet() nötig, das leichte Kontextmenü ist kein echtes Sheet.
-let pendingRoutinesSheetMenuCloseTimeout = null;
-
 function openRoutinesSheetMenu(routineId) {
   state.routinesSheetMenuRoutineId = routineId;
   state.routinesSheetMenuClosing = false;
   repaintRoutinesSheetContentInPlace();
 }
 
-function closeRoutinesSheetMenu() {
-  if (!state.routinesSheetMenuRoutineId || state.routinesSheetMenuClosing) return;
-  state.routinesSheetMenuClosing = true;
-  repaintRoutinesSheetContentInPlace();
-  pendingRoutinesSheetMenuCloseTimeout = setTimeout(() => {
-    pendingRoutinesSheetMenuCloseTimeout = null;
+const routinesSheetMenuCloser = createSheetCloser({
+  isOpen: () => !!state.routinesSheetMenuRoutineId,
+  isClosing: () => state.routinesSheetMenuClosing,
+  setClosing: () => { state.routinesSheetMenuClosing = true; },
+  animate: () => repaintRoutinesSheetContentInPlace(),
+  finalize: () => {
     state.routinesSheetMenuRoutineId = null;
     state.routinesSheetMenuClosing = false;
     repaintRoutinesSheetContentInPlace();
-  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+  },
+  durationMs: POPUP_CLOSE_ANIMATION_MS,
+});
+
+function closeRoutinesSheetMenu() {
+  routinesSheetMenuCloser.close();
 }
 
 async function openRoutinesSheet() {
@@ -1252,10 +1236,7 @@ async function openRoutinesSheet() {
 }
 
 // Analog zu closeCalendarSheet/finalizeCalendarSheetClose weiter oben.
-let pendingRoutinesSheetCloseTimeout = null;
-
 function finalizeRoutinesSheetClose() {
-  pendingRoutinesSheetCloseTimeout = null;
   state.routinesSheetOpen = false;
   state.routinesSheetClosing = false;
   // Verworfener Entwurf, falls per Drag/Backdrop mitten im
@@ -1269,11 +1250,16 @@ function finalizeRoutinesSheetClose() {
   paint();
 }
 
+const routinesSheetCloser = createSheetCloser({
+  isOpen: () => state.routinesSheetOpen,
+  isClosing: () => state.routinesSheetClosing,
+  setClosing: () => { state.routinesSheetClosing = true; },
+  animate: paint,
+  finalize: finalizeRoutinesSheetClose,
+});
+
 function closeRoutinesSheet() {
-  if (!state.routinesSheetOpen || state.routinesSheetClosing) return;
-  state.routinesSheetClosing = true;
-  paint();
-  pendingRoutinesSheetCloseTimeout = setTimeout(finalizeRoutinesSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  routinesSheetCloser.close();
 }
 
 function wireRoutinesSheetDrag() {
@@ -1283,9 +1269,7 @@ function wireRoutinesSheetDrag() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.routinesSheetClosing,
-    onDismiss: () => {
-      pendingRoutinesSheetCloseTimeout = setTimeout(finalizeRoutinesSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => routinesSheetCloser.dismissedByDrag(),
   });
 }
 
@@ -1439,65 +1423,66 @@ function renderExerciseRosterMenu(entry) {
 // Analog zu closeRoutinePicker() weiter unten (gleiche Animation/Timeout-
 // Konstante) - kein lockBodyScroll()/raiseNavAboveSheet() nötig, das leichte
 // Kontextmenü ist wie der Routine-Picker kein echtes Sheet.
-let pendingExerciseRosterMenuCloseTimeout = null;
-
 function openExerciseRosterMenu(entryId) {
   state.exerciseRosterMenuEntryId = entryId;
   state.exerciseRosterMenuClosing = false;
   paint();
 }
 
-function closeExerciseRosterMenu() {
-  if (!state.exerciseRosterMenuEntryId || state.exerciseRosterMenuClosing) return;
-  state.exerciseRosterMenuClosing = true;
-  paint();
-  pendingExerciseRosterMenuCloseTimeout = setTimeout(() => {
-    pendingExerciseRosterMenuCloseTimeout = null;
+const exerciseRosterMenuCloser = createSheetCloser({
+  isOpen: () => !!state.exerciseRosterMenuEntryId,
+  isClosing: () => state.exerciseRosterMenuClosing,
+  setClosing: () => { state.exerciseRosterMenuClosing = true; },
+  animate: paint,
+  finalize: () => {
     state.exerciseRosterMenuEntryId = null;
     state.exerciseRosterMenuClosing = false;
     paint();
-  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+  },
+  durationMs: POPUP_CLOSE_ANIMATION_MS,
+});
+
+function closeExerciseRosterMenu() {
+  exerciseRosterMenuCloser.close();
 }
 
 // --- Events ---
 
-// Spielt die Schließen-Animation ab und entfernt den Picker erst danach
-// wirklich aus dem DOM (muss zur Dauer von .routine-picker-popup.closing
-// in css/styles.css passen).
-const ROUTINE_PICKER_CLOSE_ANIMATION_MS = 150;
-
-// Muss in unmount() abgebrochen werden können - analog zu
-// pendingCalendarSheetCloseTimeout (s. dort für die Begründung: ein
-// Tab-Wechsel während der Picker noch schließt, würde sonst diesen Timeout
-// unangetastet weiterlaufen lassen).
-let pendingRoutinePickerCloseTimeout = null;
-
-function closeRoutinePicker() {
-  if (!state.routinePickerOpen || state.routinePickerClosing) return;
-  state.routinePickerClosing = true;
-  paint();
-  pendingRoutinePickerCloseTimeout = setTimeout(() => {
-    pendingRoutinePickerCloseTimeout = null;
+// Spielt die Schließen-Animation ab (POPUP_CLOSE_ANIMATION_MS in js/sheet.js,
+// muss zur Dauer von .routine-picker-popup.closing in css/styles.css passen)
+// und entfernt den Picker erst danach wirklich aus dem DOM.
+const routinePickerCloser = createSheetCloser({
+  isOpen: () => state.routinePickerOpen,
+  isClosing: () => state.routinePickerClosing,
+  setClosing: () => { state.routinePickerClosing = true; },
+  animate: paint,
+  finalize: () => {
     state.routinePickerOpen = false;
     state.routinePickerClosing = false;
     paint();
-  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+  },
+  durationMs: POPUP_CLOSE_ANIMATION_MS,
+});
+
+function closeRoutinePicker() {
+  routinePickerCloser.close();
 }
 
-// Analog zu closeRoutinePicker(), s. dort für die Begründung von Timing/
-// Aufräum-Timeout.
-let pendingExerciseSheetMuscleFilterCloseTimeout = null;
-
-function closeExerciseSheetMuscleFilter() {
-  if (!state.exerciseSheetMuscleFilterOpen || state.exerciseSheetMuscleFilterClosing) return;
-  state.exerciseSheetMuscleFilterClosing = true;
-  repaintExerciseSheetContentInPlace();
-  pendingExerciseSheetMuscleFilterCloseTimeout = setTimeout(() => {
-    pendingExerciseSheetMuscleFilterCloseTimeout = null;
+const exerciseSheetMuscleFilterCloser = createSheetCloser({
+  isOpen: () => state.exerciseSheetMuscleFilterOpen,
+  isClosing: () => state.exerciseSheetMuscleFilterClosing,
+  setClosing: () => { state.exerciseSheetMuscleFilterClosing = true; },
+  animate: () => repaintExerciseSheetContentInPlace(),
+  finalize: () => {
     state.exerciseSheetMuscleFilterOpen = false;
     state.exerciseSheetMuscleFilterClosing = false;
     repaintExerciseSheetContentInPlace();
-  }, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+  },
+  durationMs: POPUP_CLOSE_ANIMATION_MS,
+});
+
+function closeExerciseSheetMuscleFilter() {
+  exerciseSheetMuscleFilterCloser.close();
 }
 
 // Öffnet den Kalender, sperrt das Hintergrund-Scrollen (s. js/sheet.js) und
@@ -1528,7 +1513,6 @@ async function openCalendarSheet() {
 // direkte Transform-Transition statt der CSS-Keyframes, das Zurücksetzen
 // von State und Body-Scroll-Lock ist aber identisch.
 function finalizeCalendarSheetClose() {
-  pendingCalendarSheetCloseTimeout = null;
   state.calendarSheetOpen = false;
   state.calendarSheetClosing = false;
   unlockBodyScroll();
@@ -1536,20 +1520,21 @@ function finalizeCalendarSheetClose() {
   paint();
 }
 
-// Hält die ID des ausstehenden Abschluss-Timeouts fest (Schließen-Animation
-// noch nicht fertig). Muss in unmount() abgebrochen werden können: Wechselt
-// der Nutzer den Tab, während die Animation noch läuft (jetzt möglich, da
-// die Nav währenddessen nutzbar ist, s. raiseNavAboveSheet), würde der
-// verzögerte finalizeCalendarSheetClose()-Aufruf sonst noch nachträglich
-// paint() auf dem inzwischen von einer anderen View belegten Container
-// aufrufen und deren Inhalt überschreiben.
-let pendingCalendarSheetCloseTimeout = null;
+// Der Closer hält den ausstehenden Abschluss-Timeout und wird in unmount()
+// abgebrochen: Wechselt der Nutzer den Tab, während die Animation noch läuft
+// (möglich, da die Nav währenddessen nutzbar ist, s. raiseNavAboveSheet),
+// würde sonst finalizeCalendarSheetClose() nachträglich paint() auf dem
+// inzwischen von einer anderen View belegten Container aufrufen.
+const calendarSheetCloser = createSheetCloser({
+  isOpen: () => state.calendarSheetOpen,
+  isClosing: () => state.calendarSheetClosing,
+  setClosing: () => { state.calendarSheetClosing = true; },
+  animate: paint,
+  finalize: finalizeCalendarSheetClose,
+});
 
 function closeCalendarSheet() {
-  if (!state.calendarSheetOpen || state.calendarSheetClosing) return;
-  state.calendarSheetClosing = true;
-  paint();
-  pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  calendarSheetCloser.close();
 }
 
 function wireCalendarSheetDrag() {
@@ -1565,9 +1550,7 @@ function wireCalendarSheetDrag() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.calendarSheetClosing,
-    onDismiss: () => {
-      pendingCalendarSheetCloseTimeout = setTimeout(finalizeCalendarSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => calendarSheetCloser.dismissedByDrag(),
   });
 }
 
@@ -1930,7 +1913,6 @@ async function openExerciseSheet(context = 'workout') {
 }
 
 function finalizeExerciseSheetClose() {
-  pendingExerciseSheetCloseTimeout = null;
   state.exerciseSheetOpen = false;
   state.exerciseSheetClosing = false;
   unlockBodyScroll();
@@ -1942,19 +1924,24 @@ function finalizeExerciseSheetClose() {
   }
 }
 
-let pendingExerciseSheetCloseTimeout = null;
+const exerciseSheetCloser = createSheetCloser({
+  isOpen: () => state.exerciseSheetOpen,
+  isClosing: () => state.exerciseSheetClosing,
+  setClosing: () => { state.exerciseSheetClosing = true; },
+  animate: () => {
+    if (state.exerciseSheetContext === 'routine') {
+      const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
+      backdrop?.classList.add('closing');
+      backdrop?.nextElementSibling?.classList.add('closing');
+    } else {
+      paint();
+    }
+  },
+  finalize: finalizeExerciseSheetClose,
+});
 
 function closeExerciseSheet() {
-  if (!state.exerciseSheetOpen || state.exerciseSheetClosing) return;
-  state.exerciseSheetClosing = true;
-  if (state.exerciseSheetContext === 'routine') {
-    const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
-    backdrop?.classList.add('closing');
-    backdrop?.nextElementSibling?.classList.add('closing');
-  } else {
-    paint();
-  }
-  pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  exerciseSheetCloser.close();
 }
 
 function wireExerciseSheetDrag() {
@@ -1964,9 +1951,7 @@ function wireExerciseSheetDrag() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.exerciseSheetClosing,
-    onDismiss: () => {
-      pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => exerciseSheetCloser.dismissedByDrag(),
   });
 }
 
@@ -2259,7 +2244,7 @@ async function refreshExerciseDetailSheet() {
 // Kontextmenü - dasselbe Muster wie renderRoutinesSheetMenu()/
 // renderExerciseRosterMenu() (Liquid Glass, `rounded-sheet`, überlagert die
 // auslösende Stelle direkt, Ein-/Ausblendanimation über
-// ROUTINE_PICKER_CLOSE_ANIMATION_MS), nur ohne Repaint: Das Detail-Sheet
+// POPUP_CLOSE_ANIMATION_MS), nur ohne Repaint: Das Detail-Sheet
 // hat keinen eigenen paint()-Zyklus (es wird per insertAdjacentHTML
 // eingefügt), Popup und Backdrop werden deshalb direkt in den Anker-Container
 // der Kopfzeile eingefügt bzw. wieder entfernt.
@@ -2366,7 +2351,7 @@ function closeExerciseDetailMenu({ immediate = false } = {}) {
     return;
   }
   popup.classList.add('closing');
-  pendingExerciseDetailMenuCloseTimeout = setTimeout(remove, ROUTINE_PICKER_CLOSE_ANIMATION_MS);
+  pendingExerciseDetailMenuCloseTimeout = setTimeout(remove, POPUP_CLOSE_ANIMATION_MS);
 }
 
 // Öffnet OHNE das globale paint() - aus demselben Grund wie beim
@@ -2387,7 +2372,6 @@ async function openExerciseDetailSheet(exerciseId) {
 // openExerciseDetailSheet) - beide Referenzen werden VOR dem ersten Entfernen
 // eingesammelt, s. finalizeExerciseCreateSheetClose.
 function finalizeExerciseDetailSheetClose() {
-  pendingExerciseDetailSheetCloseTimeout = null;
   state.exerciseDetailSheetOpen = false;
   state.exerciseDetailSheetClosing = false;
   state.exerciseDetailSheetExerciseId = null;
@@ -2406,15 +2390,20 @@ function finalizeExerciseDetailSheetClose() {
   }
 }
 
-let pendingExerciseDetailSheetCloseTimeout = null;
+const exerciseDetailSheetCloser = createSheetCloser({
+  isOpen: () => state.exerciseDetailSheetOpen,
+  isClosing: () => state.exerciseDetailSheetClosing,
+  setClosing: () => { state.exerciseDetailSheetClosing = true; },
+  animate: () => {
+    const backdrop = currentContainer.querySelector('#exercise-detail-sheet-backdrop');
+    backdrop?.nextElementSibling?.classList.add('closing');
+    backdrop?.classList.add('closing');
+  },
+  finalize: finalizeExerciseDetailSheetClose,
+});
 
 function closeExerciseDetailSheet() {
-  if (!state.exerciseDetailSheetOpen || state.exerciseDetailSheetClosing) return;
-  state.exerciseDetailSheetClosing = true;
-  const backdrop = currentContainer.querySelector('#exercise-detail-sheet-backdrop');
-  backdrop?.nextElementSibling?.classList.add('closing');
-  backdrop?.classList.add('closing');
-  pendingExerciseDetailSheetCloseTimeout = setTimeout(finalizeExerciseDetailSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  exerciseDetailSheetCloser.close();
 }
 
 function wireExerciseDetailSheetDrag() {
@@ -2424,9 +2413,7 @@ function wireExerciseDetailSheetDrag() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.exerciseDetailSheetClosing,
-    onDismiss: () => {
-      pendingExerciseDetailSheetCloseTimeout = setTimeout(finalizeExerciseDetailSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => exerciseDetailSheetCloser.dismissedByDrag(),
   });
 }
 
