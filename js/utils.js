@@ -391,3 +391,14 @@ export function renderPRBadge(type, { extraClasses = '' } = {}) {
     </span>
   `;
 }
+
+// Morphender Chevron/X-Icon für Dropdown-Pillen (Routine-Auswahl, Muskelfilter).
+export function renderDropdownIcon(open, closing) {
+  const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
+  return `
+    <span class="dropdown-chevron-icon ${stateClass} flex-shrink-0" aria-hidden="true">
+      <span class="bar bar-a"></span>
+      <span class="bar bar-b"></span>
+    </span>
+  `;
+}

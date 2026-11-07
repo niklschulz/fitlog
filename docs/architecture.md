@@ -25,7 +25,9 @@ fitlog/
 ├── js/
 │   ├── db.js              Dexie-Schema + alle Datenbank-Operationen (CRUD, Kaskaden)
 │   ├── sheet.js           Geteilte Bottom-Sheet-Mechanik (Body-Scroll-Sperre, Nav-z-index,
-│   │                       Drag-to-Dismiss) - kein State/Inhalt, s. ADR 0011
+│   │                       Drag-to-Dismiss, `createSheetCloser` für Schließen + Timeout) - kein State/Inhalt, s. ADR 0011
+│   ├── exerciseFilter.js  Reine Filterlogik der Übungslisten (Suche, Muskelgruppe)
+│   ├── exerciseSheetParts.js  Geteilte Bausteine der Übungs-Sheets (Hülle, Suchleiste, Muskelfilter)
 │   ├── actionSheet.js     Action Sheet (`showActionSheet()`): Bestätigungen statt `confirm()`, s. ADR 0029
 │   ├── exerciseCreateSheet.js  Neue-Übung-/Übung-bearbeiten-Sheet mit eigenem State, geteilt
 │   │                       zwischen Workout- und Statistik-Tab (s. unten)
@@ -142,6 +144,12 @@ Das Backend soll auf einem Raspberry Pi laufen, erreichbar über Tailscale (priv
 ## Geteiltes Neue-Übung-Sheet
 
 `js/exerciseCreateSheet.js` enthält Neue-Übung-/Übung-bearbeiten-Sheet samt eigenem State. Aufrufer (Workout-Tab, Statistik-Tab) übergeben Container, z-Ebene und einen `onSaved`-Callback und rufen in `unmount()` `unmountExerciseCreateSheet()` auf.
+
+## Sheet-Schließen und Übungs-Sheet-Bausteine
+
+Jedes Sheet/Popup schließt über `createSheetCloser()` (`js/sheet.js`): Der Closer hält das Timeout (`SHEET_CLOSE_ANIMATION_MS` 220 ms, Popups `POPUP_CLOSE_ANIMATION_MS` 150 ms, beide müssen zu `css/styles.css` passen), die View übergibt per Callback, was fachlich passiert (`setClosing`, `animate` per `paint()` oder `classList`, `finalize`). `unmount()` ruft `cancelClosers(...)`. Der Weg über Drag-to-Dismiss ist `dismissedByDrag()` (setzt nur das Flag, damit ein Backdrop-Tipp währenddessen nicht ein zweites Mal schließt). Ausnahme: das Kontextmenü des Detail-Sheets (`workout.js`) hat noch ein eigenes Timeout (Variante `immediate`). Neue Sheets/Popups nutzen den Closer; Tests in `tests/sheetCloser.test.js`.
+
+Die Übungs-Sheets in Workout- und Statistik-Tab teilen Hülle, Suchleiste, Muskelfilter-Pille und Teil-Repaint über `js/exerciseSheetParts.js` sowie die Filterregeln über `js/exerciseFilter.js`; Zeilen, Auswahl/Favorit und Öffnen/Schließen bleiben in der jeweiligen View.
 
 ## Backup (Export/Import)
 

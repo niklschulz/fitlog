@@ -2,14 +2,16 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
-## 2026-11-07 (Audit-Block 7, Schritt 1–2: gemeinsame Bausteine)
+## 2026-11-07 (Audit-Block 7, Schritt 1–5: gemeinsame Bausteine)
 
 ### Changed
 - Filterlogik der Übungslisten (Suche, Muskelgruppe) in neuer `js/exerciseFilter.js` (`filterExercises`), von Workout- und Statistik-Übungs-Sheet genutzt; `tests/exerciseFilter.test.js`.
-- Neuer Helfer `createSheetCloser()` in `js/sheet.js` (Schließen + Timeout + Abbruch in `unmount()`); erster Nutzer ist das Link-Sheet im Profil. `tests/sheetCloser.test.js`. `CACHE_NAME` auf `fitlog-v258`. Rollback-Punkt: Git-Tag `pre-bausteine-v257`.
+- Neuer Helfer `createSheetCloser()` in `js/sheet.js` (Schließen + Timeout + Abbruch in `unmount()`); erster Nutzer ist das Link-Sheet im Profil. `tests/sheetCloser.test.js`. `CACHE_NAME` auf `fitlog-v259`. Rollback-Punkt: Git-Tag `pre-bausteine-v257`.
+- Alle Sheets und Popups in `workout.js` (Kalender, Routinen-Sheet samt Menüs, Routinen-Picker, Roster-Menü, Übungs-Sheet, Muskelfilter, Detail-Sheet) und `statistics.js` (Muskelgruppen-Sheet, Übungs-Sheet, Muskelfilter) schließen über `createSheetCloser()`; `unmount()` ruft `cancelClosers()`. Neue Konstante `POPUP_CLOSE_ANIMATION_MS` (150 ms) ersetzt `ROUTINE_PICKER_CLOSE_ANIMATION_MS`/`FILTER_CLOSE_ANIMATION_MS`. Kontextmenü des Detail-Sheets bleibt vorerst bei eigenem Timeout.
+- Übungs-Sheet: Hülle, Suchleiste, Muskelfilter-Pille und Teil-Repaint kommen aus neuer `js/exerciseSheetParts.js` (vorher in beiden Views kopiert); `renderDropdownIcon` nach `js/utils.js`. Das Workout-Übungs-Sheet hat jetzt wie das der Statistik `role="dialog"`/`aria-label="Übungen"`. `workout.js` 2617 → 2416 Z., `statistics.js` 1196 → 1100 Z.
 
 ### Fixed
-- Link-Sheet: Nach Drag-zum-Schließen setzt das Sheet jetzt das `closing`-Flag; ein Tipp aufs Backdrop währenddessen löst kein zweites Schließen (doppeltes `unlockBodyScroll()`) mehr aus.
+- Alle Sheets mit Drag-zum-Schließen: Das `closing`-Flag wird gesetzt, ein Tipp aufs Backdrop währenddessen löst kein zweites Schließen (doppeltes `unlockBodyScroll()`) aus.
 
 ## 2026-11-06 (Audit-Block 6: Standardisierung im Code)
 

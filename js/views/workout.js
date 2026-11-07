@@ -21,7 +21,6 @@ import {
   getRoutineExercises,
   appendExerciseToRoutine,
   removeExerciseFromRoutine,
-  MUSCLE_GROUPS,
   MUSCLES,
   muscleGroupIdOf,
   todayISODate,
@@ -29,7 +28,7 @@ import {
   daysBetween,
   mondayOf,
 } from '../db.js';
-import { escapeHtml, renderMuscleFilterPopup, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
+import { escapeHtml, renderDropdownIcon, renderSetTimelineRow, renderSetValues, renderPRBadge, renderNote, TEXTLINK_ACTION, BTN_PRIMARY, DESTRUCTIVE_LINK, LIST_ROW } from '../utils.js';
 import {
   lockBodyScroll,
   unlockBodyScroll,
@@ -48,6 +47,14 @@ import { showActionSheet } from '../actionSheet.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
 import { openNoteSheet } from '../noteSheet.js';
 import { filterExercises } from '../exerciseFilter.js';
+import {
+  renderExerciseSheetShell,
+  renderExerciseSheetContentFrame,
+  repaintExerciseSheetContentInPlace as repaintSheetContent,
+  repaintExerciseSheetBodyInPlace as repaintSheetBody,
+  createMuscleFilterCloser,
+  wireExerciseSheetControls,
+} from '../exerciseSheetParts.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 
@@ -604,15 +611,7 @@ async function renderCalendarSheet() {
 // Nutzer-Interaktion zwangsläufig zu einem Schließen (Backdrop blockiert
 // den Rest der Seite), es gibt also keinen Zwischenzustand, in dem ein
 // erneutes Paint fälschlich eine Animation replayen würde.
-function renderDropdownIcon(open, closing) {
-  const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
-  return `
-    <span class="dropdown-chevron-icon ${stateClass} flex-shrink-0" aria-hidden="true">
-      <span class="bar bar-a"></span>
-      <span class="bar bar-b"></span>
-    </span>
-  `;
-}
+// (`renderDropdownIcon` liegt in js/utils.js, geteilt mit dem Muskelfilter.)
 
 // Dropdown-Pill, die den Routine-Picker als Overlay öffnet (verdrängt den
 // übrigen Inhalt nicht, s. wireEvents/Backdrop). Pfeil morpht bei
@@ -1468,18 +1467,7 @@ function closeRoutinePicker() {
   routinePickerCloser.close();
 }
 
-const exerciseSheetMuscleFilterCloser = createSheetCloser({
-  isOpen: () => state.exerciseSheetMuscleFilterOpen,
-  isClosing: () => state.exerciseSheetMuscleFilterClosing,
-  setClosing: () => { state.exerciseSheetMuscleFilterClosing = true; },
-  animate: () => repaintExerciseSheetContentInPlace(),
-  finalize: () => {
-    state.exerciseSheetMuscleFilterOpen = false;
-    state.exerciseSheetMuscleFilterClosing = false;
-    repaintExerciseSheetContentInPlace();
-  },
-  durationMs: POPUP_CLOSE_ANIMATION_MS,
-});
+const exerciseSheetMuscleFilterCloser = createMuscleFilterCloser(() => state, () => repaintExerciseSheetContentInPlace());
 
 function closeExerciseSheetMuscleFilter() {
   exerciseSheetMuscleFilterCloser.close();
@@ -1624,13 +1612,7 @@ function renderExerciseSheetBody() {
 }
 
 function renderExerciseSheetContent() {
-  return `
-    ${renderExerciseSheetSearchBar()}
-    ${renderExerciseSheetMuscleFilter()}
-    <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-2">
-      ${renderExerciseSheetBody()}
-    </div>
-  `;
+  return renderExerciseSheetContentFrame(state, renderExerciseSheetBody());
 }
 
 // Rein optische Bug-Fix-Historie (s. CHANGELOG): Backdrop und `.bottom-sheet`
@@ -1677,156 +1659,21 @@ function exerciseEditSheetZ() {
 }
 
 function renderExerciseSheet() {
-  const closing = state.exerciseSheetClosing;
-  const z = exerciseSheetZ();
-
-  return `
-    <div id="exercise-sheet-root">
-      <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing ? 'closing' : ''} fixed inset-0 bg-black/50" style="z-index: ${z.bg};"></div>
-      <div class="bottom-sheet ${closing ? 'closing' : ''} fixed left-0 right-0 bottom-0 bg-surface rounded-sheet flex flex-col" style="z-index: ${z.panel};">
-        <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
-          <button id="exercise-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Übungen schließen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-          <div id="exercise-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
-            <span class="text-card-title">Übungen</span>
-          </div>
-          <button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Übung erstellen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-        </div>
-        <div id="exercise-sheet-content" class="flex-1 min-h-0 flex flex-col">
-          ${renderExerciseSheetContent()}
-        </div>
-      </div>
-    </div>
-  `;
+  return renderExerciseSheetShell({
+    z: exerciseSheetZ(),
+    closing: state.exerciseSheetClosing,
+    contentHtml: renderExerciseSheetContent(),
+  });
 }
 
-// Ersetzt nur `#exercise-sheet-content` (s. Kommentar bei
-// renderExerciseSheet) - komplett synchron, liest wie renderExerciseSheet()
-// nur aus dem bereits geladenen exerciseSheetCache. Deckt alle
-// Sheet-internen Interaktionen ab (Suche, Muskel-Filter, Auswahl) - nur das
-// initiale Öffnen und das Schließen des gesamten Sheets laufen weiterhin
-// über das normale `paint()` (dort SOLL die Slide-Animation spielen).
+// Teil-Repaints, s. js/exerciseSheetParts.js (Content bzw. nur die Liste ersetzen,
+// Such-<input> bleibt unangetastet).
 function repaintExerciseSheetContentInPlace() {
-  const content = currentContainer?.querySelector('#exercise-sheet-content');
-  if (!content) return;
-  // `#exercise-sheet-body` ist der scrollende Container und wird hier als
-  // neuer DOM-Knoten erzeugt - ohne Zwischenspeichern springt die Liste bei
-  // jeder Auswahl/jedem Filter-Klick an den Anfang zurück.
-  const scrollTop = content.querySelector('#exercise-sheet-body')?.scrollTop ?? 0;
-  content.innerHTML = renderExerciseSheetContent();
-  const newBody = content.querySelector('#exercise-sheet-body');
-  if (newBody) newBody.scrollTop = scrollTop;
-  wireExerciseSheetContentEvents();
+  repaintSheetContent(currentContainer, renderExerciseSheetContent, wireExerciseSheetContentEvents);
 }
 
-// Ersetzt NUR `#exercise-sheet-body` - der engste mögliche Teilbaum, der bei
-// einer Sucheingabe tatsächlich betroffen ist (Suchfeld, Muskel-Filter und
-// Kopfzeile bleiben unangetastet). Entscheidend: Das Such-`<input>` selbst
-// liegt außerhalb von `#exercise-sheet-body` und wird hier nie berührt -
-// Fokus, Cursor-Position und iOS' natives Key-Repeat (Löschen-Taste
-// gedrückt halten) funktionieren dadurch komplett nativ, ganz ohne
-// manuelles `.focus()`/`setSelectionRange()`-Nachstellen wie zuvor.
 function repaintExerciseSheetBodyInPlace() {
-  const body = currentContainer?.querySelector('#exercise-sheet-body');
-  if (!body) return;
-  body.innerHTML = renderExerciseSheetBody();
-  wireExerciseSheetBodyEvents();
-}
-
-// Eigene, nicht scrollende Flex-Zone zwischen Kopfzeile und Liste - Lupe
-// als absolut positioniertes Icon links im Feld
-// (`pointer-events-none`, damit Klicks durchgereicht werden), sonst dasselbe
-// visuelle Muster wie andere Inputs (`rounded-btn`, `min-h-[44px]`), nur mit
-// angepasstem Innenabstand links statt der geteilten `INPUT`-Konstante.
-// Hintergrund bewusst `bg-white/8` statt des sonst üblichen `bg-base`: Das
-// Feld sitzt hier direkt auf der `bg-surface`-Sheet-Fläche, nicht wie sonst
-// innerhalb einer zusätzlichen Karte - `bg-base` (dunkler als `bg-surface`)
-// wäre dort nicht als "heller = Eingabefeld" lesbar. Ein halbtransparentes
-// Weiß hebt sich unabhängig vom exakten darunterliegenden Farbwert ab, s.
-// design-system.md "Input" für die etablierte Variante.
-function renderExerciseSheetSearchBar() {
-  return `
-    <div class="px-4 pb-2 flex-shrink-0">
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <circle cx="10.5" cy="10.5" r="6.5" />
-            <path d="M20 20l-4.7-4.7" />
-          </svg>
-        </span>
-        <input
-          id="exercise-sheet-search-input"
-          type="text"
-          inputmode="search"
-          autocomplete="off"
-          placeholder="Suche"
-          value="${escapeHtml(state.exerciseSheetSearch)}"
-          class="w-full bg-white/[0.08] rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]"
-        />
-      </div>
-    </div>
-  `;
-}
-
-// Dropdown-Pill für den Muskelgruppen-Filter - 1:1 dasselbe visuelle/
-// interaktive Muster wie die Routine-Auswahl oben im Roster
-// (`renderRoutineSection()`/`renderRoutinePicker()`), mit einer bewussten
-// Abweichung: Hintergrund `bg-white/[0.08]` statt `bg-surface`, damit der
-// geschlossene Button optisch zur Farbe des Suchfelds direkt darüber passt
-// (beide sitzen unmittelbar auf der `bg-surface`-Sheet-Fläche, s.
-// design-system.md "Input"). Sonst identisch: `rounded-btn`-Pille mit Label
-// + morphendem Chevron/X-Icon (`renderDropdownIcon()`, geteilt mit der
-// Routine-Auswahl), öffnet beim Tap ein `absolute` positioniertes Popup mit
-// Options-Liste (bleibt `bg-surface rounded-card` wie der Routine-Picker -
-// ein Popup-Menü, kein Eingabefeld, s. "Karte/Formular"-Stil) + eigenem,
-// bildschirmfüllendem Backdrop zum Schließen bei Klick außerhalb. Eigener
-// State (`exerciseSheetMuscleFilterOpen/-Closing`) statt Wiederverwendung
-// von `routinePickerOpen`, da beide unabhängig voneinander offen sein
-// können müssten (hier: nie gleichzeitig sichtbar, da unterschiedliche
-// Sheets/Views, aber konzeptionell getrennte Zustände).
-function renderExerciseSheetMuscleFilter() {
-  const selected = MUSCLE_GROUPS.find((m) => m.id === state.exerciseSheetMuscleFilterId);
-  const label = selected ? selected.name : 'Alle Muskelgruppen';
-  const visible = state.exerciseSheetMuscleFilterOpen;
-
-  return `
-    <div class="px-4 pb-4 flex-shrink-0">
-      <div class="relative">
-        <button id="exercise-sheet-muscle-filter-btn" type="button" class="tap-feedback w-full bg-white/[0.08] rounded-btn pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
-          <span class="text-card-title truncate">${escapeHtml(label)}</span>
-          ${renderDropdownIcon(state.exerciseSheetMuscleFilterOpen, state.exerciseSheetMuscleFilterClosing)}
-        </button>
-        ${visible ? renderExerciseSheetMuscleFilterPicker() : ''}
-      </div>
-    </div>
-  `;
-}
-
-// Abweichungen vom Routine-Picker-Vorbild (Nutzer-Wunsch): Hintergrund
-// optisch identisch zu Suchfeld/Filter-Button (s. Neunundfünfzigste
-// Iteration), aber als DECKENDE Hex-Farbe statt `bg-white/[0.08]` - anders
-// als das Suchfeld liegt dieses Popup über scrollbarem Listen-Inhalt
-// (`absolute` über der Übungsliste), ein halbtransparenter Hintergrund
-// ließe die Liste sichtbar durchscheinen. `#363636` = `rgba(255,255,255,
-// 0.08)` über `bg-surface` (`#252525`) gerechnet (Canvas-`globalCompositeOperation`
-// im Browser verifiziert) - optisch ununterscheidbar vom Suchfeld, aber
-// deckend (Token `bg-popup`, Markup in utils.js `renderMuscleFilterPopup`).
-// Zeilen-Buttons selbst bleiben transparent (kein eigener Hintergrund) - Nutzer-Entscheidung nach Live-Vorschau, sie sollen nicht
-// als abgesetzte Kästchen wirken, nur der Abstand trennt sie. Engster
-// Zeilenabstand (`gap-0`, mehrfach auf Nutzer-Wunsch verringert von `gap-1`
-// über `gap-0.5`) - hier nur einzeilige Einträge ohne Untertitel, anders als
-// die Routine-Optionen mit Name+Übungsanzahl. Kein `max-h`/Scroll: Die Liste
-// ist mit acht festen Einträgen (7 Muskelgruppen + "Alle") kurz genug, um
-// immer vollständig zu passen.
-function renderExerciseSheetMuscleFilterPicker() {
-  return renderMuscleFilterPopup(MUSCLE_GROUPS, state.exerciseSheetMuscleFilterId, state.exerciseSheetMuscleFilterClosing);
+  repaintSheetBody(currentContainer, renderExerciseSheetBody, wireExerciseSheetBodyEvents);
 }
 
 function renderExerciseSheetList(filteredExercises, inWorkoutIds, totalCount) {
@@ -1994,38 +1841,12 @@ function wireExerciseSheetEvents() {
 // `.bottom-sheet`/Kopfzeile unangetastet bleiben (keine erneute
 // Slide-Animation, s. Kommentar bei renderExerciseSheet).
 function wireExerciseSheetContentEvents() {
-  // Aktualisiert nur den Suchbegriff im State und rendert per
-  // repaintExerciseSheetBodyInPlace() ausschließlich `#exercise-sheet-body`
-  // neu - das Such-`<input>` selbst wird dabei nie angefasst, Fokus und
-  // Cursor-Position bleiben deshalb automatisch erhalten (kein manuelles
-  // Nachstellen mehr nötig, anders als beim vorherigen, zu breiten
-  // Content-Repaint, s. CHANGELOG).
-  const searchInput = currentContainer.querySelector('#exercise-sheet-search-input');
-  searchInput?.addEventListener('input', (e) => {
-    state.exerciseSheetSearch = e.target.value;
-    repaintExerciseSheetBodyInPlace();
+  wireExerciseSheetControls(currentContainer, {
+    state,
+    repaintBody: repaintExerciseSheetBodyInPlace,
+    repaintContent: repaintExerciseSheetContentInPlace,
+    closeFilter: closeExerciseSheetMuscleFilter,
   });
-
-  currentContainer.querySelector('#exercise-sheet-muscle-filter-btn')?.addEventListener('click', () => {
-    if (state.exerciseSheetMuscleFilterOpen) {
-      closeExerciseSheetMuscleFilter();
-    } else {
-      state.exerciseSheetMuscleFilterOpen = true;
-      repaintExerciseSheetContentInPlace();
-    }
-  });
-
-  currentContainer.querySelector('#exercise-sheet-muscle-filter-backdrop')?.addEventListener('click', () => {
-    closeExerciseSheetMuscleFilter();
-  });
-
-  currentContainer.querySelectorAll('.pick-muscle-filter-option-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      state.exerciseSheetMuscleFilterId = btn.dataset.muscle === '' ? null : btn.dataset.muscle;
-      closeExerciseSheetMuscleFilter();
-    });
-  });
-
   wireExerciseSheetBodyEvents();
 }
 
