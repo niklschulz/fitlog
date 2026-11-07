@@ -93,3 +93,32 @@ export function computePersonalBests(history, range, today) {
 
   return { rangeStart: start ?? firstDate, oneRm, weight, volume, reps };
 }
+
+/**
+ * Maximales Gewicht je Trainingstag im Zeitraum (Verlaufs-Diagramm der
+ * Übungs-Seite, ADR 0043).
+ *
+ * @param {Array} history  getExerciseSetHistory(): [{ date, sets }], neueste Tage zuerst
+ * @param {string} range   '3m' | '1j' | 'max'
+ * @param {string} today   ISO-Datum von heute
+ * @returns {{ date: string, value: number, reps: number }[]}  aufsteigend nach Datum;
+ *   `value` = höchstes Gewicht (> 0) des Tages, bei Gleichstand der Satz mit
+ *   mehr Wiederholungen (dieselbe Regel wie "Gewicht" in computePersonalBests).
+ *   Tage ohne gültigen Satz mit Gewicht > 0 liefern keinen Punkt.
+ */
+export function computeMaxWeightSeries(history, range, today) {
+  const start = getRangeStart(range, today);
+  const series = [];
+  for (const day of history) {
+    if (day.date > today || (start !== null && day.date < start)) continue;
+    let best = null;
+    for (const set of day.sets) {
+      if (!isValidSet(set) || set.weight <= 0) continue;
+      if (!best || set.weight > best.value || (set.weight === best.value && set.reps > best.reps)) {
+        best = { date: day.date, value: set.weight, reps: set.reps };
+      }
+    }
+    if (best) series.push(best);
+  }
+  return series.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
