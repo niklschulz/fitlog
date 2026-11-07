@@ -33,6 +33,14 @@ npm install
 npm test
 ```
 
+Zusätzlich prüft ein Repo-Check, was kein Datentest bemerkt: vergessenes `CACHE_NAME`-Hochzählen, veraltetes `css/tailwind.css` oder `js/vendor/dexie.min.js`, Infrastruktur-Details und lokale Pfade im öffentlichen Repo, tote Doku-Links, ADR-Nummerierung, native Dialoge und hartkodierte Farben. Vor jedem Commit/PR ausführen:
+
+```bash
+npm run check
+```
+
+Mit `-- --schnell` ohne den Tailwind-Build, mit `-- --mit-tests` zusätzlich `npm test`, mit `-- --basis=<git-ref>` gegen einen anderen Vergleichsstand als `origin/main`. Das Skript (`scripts/check-repo.js`) ist reines Dev-Werkzeug und nicht Teil der ausgelieferten App, s. [ADR 0040](docs/decisions/0040-repo-pruefskript.md).
+
 ## Deployment
 
 Push auf `main` → GitHub Pages deployt automatisch von der Repo-Root. Bei Änderungen an gecachten Dateien (alles außer reinen Inhaltsänderungen in der Datenbank) `CACHE_NAME` in [`sw.js`](sw.js) hochzählen, sonst bekommen Nutzer die alte Version aus dem Service-Worker-Cache weiter ausgeliefert.
