@@ -85,6 +85,9 @@ export function resetNavZIndex() {
 // passen - jedes View-Modul hält seinen eigenen Abschluss-Timeout danach.
 export const SHEET_CLOSE_ANIMATION_MS = 220;
 export const SHEET_DRAG_CLOSE_THRESHOLD_PX = 120;
+// Kleine Popups/Menüs (Dropdown-Pille, Kontextmenüs): muss zu
+// `.routine-picker-popup(.closing)` in css/styles.css passen.
+export const POPUP_CLOSE_ANIMATION_MS = 150;
 
 // Drag-to-Dismiss am Ziehgriff: Der Griff selbst wird per Pointer Events
 // (touch- und mausfähig) verfolgt, Sheet und Backdrop werden währenddessen
@@ -152,4 +155,51 @@ export function wireSheetDrag({ handle, sheetEl, backdropEl, isClosing, onDismis
 
   handle.addEventListener('pointerup', finishDrag);
   handle.addEventListener('pointercancel', finishDrag);
+}
+
+// Schließen-Lebenszyklus eines Sheets/Popups: Flag setzen, Animation starten,
+// nach `durationMs` aufräumen - und die Timeout-ID so halten, dass
+// unmount() sie abbrechen kann. Kennt weder paint() noch State oder DOM des
+// Aufrufers, alles Fachliche kommt als Callback:
+//  - setClosing(): nur das State-Flag setzen (kein Rendern)
+//  - animate():    Animation starten (paint() ODER classList.add('closing'))
+//  - finalize():   State zurücksetzen, unlockBodyScroll()/resetNavZIndex() usw.
+// `dismissedByDrag()` ist der Weg über wireSheetDrag(): Die Animation läuft
+// dort schon per Inline-Transition, deshalb nur Flag + Timeout (ein paint()
+// würde die Geste stören). Das Flag verhindert, dass ein Tipp auf den noch
+// klickbaren Backdrop in der Schließ-Zeit ein zweites Mal schließt (doppelter
+// Unlock bei gestapelten Sheets).
+export function createSheetCloser({ isOpen, isClosing, setClosing, animate, finalize, durationMs = SHEET_CLOSE_ANIMATION_MS }) {
+  let pending = null;
+
+  const schedule = () => {
+    pending = setTimeout(() => {
+      pending = null;
+      finalize();
+    }, durationMs);
+  };
+
+  return {
+    close() {
+      if (!isOpen() || isClosing() || pending) return;
+      setClosing();
+      animate();
+      schedule();
+    },
+    dismissedByDrag() {
+      if (pending) return;
+      setClosing();
+      schedule();
+    },
+    cancelPending() {
+      if (!pending) return;
+      clearTimeout(pending);
+      pending = null;
+    },
+  };
+}
+
+// Für unmount(): bricht die ausstehenden Timeouts mehrerer Closer ab.
+export function cancelClosers(...closers) {
+  closers.forEach((c) => c.cancelPending());
 }

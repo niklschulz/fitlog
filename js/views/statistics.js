@@ -9,12 +9,21 @@
 import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSCLES, MUSCLE_GROUPS, muscleGroupIdOf, todayISODate, addDays, mondayOf } from '../db.js';
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { formatDate, addMonths, yearMonthOf } from '../dates.js';
-import { escapeHtml, renderMuscleFilterPopup, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { filterExercises } from '../exerciseFilter.js';
+import {
+  renderExerciseSheetShell,
+  renderExerciseSheetContentFrame,
+  repaintExerciseSheetContentInPlace as repaintSheetContent,
+  repaintExerciseSheetBodyInPlace as repaintSheetBody,
+  createMuscleFilterCloser,
+  wireExerciseSheetControls,
+} from '../exerciseSheetParts.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
 import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
-import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
+import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, createSheetCloser, cancelClosers, POPUP_CLOSE_ANIMATION_MS } from '../sheet.js';
 
 // Anzahl der im Balkendiagramm gezeigten Wochen (inkl. aktueller Woche),
 // s. Markdown-Vorgabe "Default: letzte 8 Wochen".
@@ -54,18 +63,7 @@ export function unmount() {
   exerciseDetail.unmount();
   removePageLayer();
   unmountExerciseCreateSheet();
-  if (pendingMuscleGroupSheetCloseTimeout) {
-    clearTimeout(pendingMuscleGroupSheetCloseTimeout);
-    pendingMuscleGroupSheetCloseTimeout = null;
-  }
-  if (pendingExerciseSheetCloseTimeout) {
-    clearTimeout(pendingExerciseSheetCloseTimeout);
-    pendingExerciseSheetCloseTimeout = null;
-  }
-  if (pendingExerciseSheetMuscleFilterCloseTimeout) {
-    clearTimeout(pendingExerciseSheetMuscleFilterCloseTimeout);
-    pendingExerciseSheetMuscleFilterCloseTimeout = null;
-  }
+  cancelClosers(muscleGroupSheetCloser, exerciseSheetCloser, exerciseSheetMuscleFilterCloser);
   if (state.muscleGroupSheetId || state.exerciseSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
@@ -779,10 +777,7 @@ function openMuscleGroupSheet(muscleGroupId) {
 // Analog zu closeLinkSheet in profile.js: erst die Schließen-Animation
 // abspielen (muss zur Dauer von .bottom-sheet.closing in css/styles.css
 // passen), danach erst wirklich aus State/DOM entfernen.
-let pendingMuscleGroupSheetCloseTimeout = null;
-
 function finalizeMuscleGroupSheetClose() {
-  pendingMuscleGroupSheetCloseTimeout = null;
   state.muscleGroupSheetId = null;
   state.muscleGroupSheetClosing = false;
   unlockBodyScroll();
@@ -790,11 +785,16 @@ function finalizeMuscleGroupSheetClose() {
   paint();
 }
 
+const muscleGroupSheetCloser = createSheetCloser({
+  isOpen: () => !!state.muscleGroupSheetId,
+  isClosing: () => state.muscleGroupSheetClosing,
+  setClosing: () => { state.muscleGroupSheetClosing = true; },
+  animate: paint,
+  finalize: finalizeMuscleGroupSheetClose,
+});
+
 function closeMuscleGroupSheet() {
-  if (!state.muscleGroupSheetId || state.muscleGroupSheetClosing) return;
-  state.muscleGroupSheetClosing = true;
-  paint();
-  pendingMuscleGroupSheetCloseTimeout = setTimeout(finalizeMuscleGroupSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  muscleGroupSheetCloser.close();
 }
 
 function wireMuscleGroupSheet() {
@@ -807,10 +807,7 @@ function wireMuscleGroupSheet() {
     sheetEl: backdropEl.nextElementSibling,
     backdropEl,
     isClosing: () => state.muscleGroupSheetClosing,
-    onDismiss: () => {
-      state.muscleGroupSheetClosing = true;
-      pendingMuscleGroupSheetCloseTimeout = setTimeout(finalizeMuscleGroupSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => muscleGroupSheetCloser.dismissedByDrag(),
   });
 }
 
@@ -880,20 +877,16 @@ async function renderExercisesTab() {
 // würde bei jedem Tastendruck die Slide-Animation neu spielen bzw. das
 // Such-<input> neu erzeugt.
 let exerciseSheetCache = { allExercises: [], listedIds: new Set() };
-let pendingExerciseSheetCloseTimeout = null;
 // Favoriten haben sich geändert -> Liste im Reiter nach dem Schließen neu zeichnen
 let repaintListAfterSheetClose = false;
-let pendingExerciseSheetMuscleFilterCloseTimeout = null;
-const FILTER_CLOSE_ANIMATION_MS = 150;
 
 function renderExerciseSheetBody() {
   const { allExercises, listedIds } = exerciseSheetCache;
-  const query = state.exerciseSheetSearch.trim().toLowerCase();
-  let filtered = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
-  const groupId = state.exerciseSheetMuscleFilterId;
-  if (groupId) {
-    filtered = filtered.filter((ex) => (ex.primaryMuscleIds ?? []).some((id) => muscleGroupIdOf(id) === groupId));
-  }
+  const filtered = filterExercises(
+    allExercises,
+    { query: state.exerciseSheetSearch, muscleGroupId: state.exerciseSheetMuscleFilterId },
+    muscleGroupIdOf
+  );
   if (allExercises.length === 0) {
     return `<p class="text-body text-muted text-center py-12">Noch keine Übungen angelegt.</p>`;
   }
@@ -920,109 +913,31 @@ function renderExerciseSheetRow(exercise, isFavorite) {
   `;
 }
 
-function renderExerciseSheetMuscleFilter() {
-  const selected = MUSCLE_GROUPS.find((m) => m.id === state.exerciseSheetMuscleFilterId);
-  const label = selected ? selected.name : 'Alle Muskelgruppen';
-  const open = state.exerciseSheetMuscleFilterOpen;
-  const closing = state.exerciseSheetMuscleFilterClosing;
-  const stateClass = closing ? 'is-closing' : open ? 'is-open' : '';
-
-  return `
-    <div class="px-4 pb-4 flex-shrink-0">
-      <div class="relative">
-        <button id="exercise-sheet-muscle-filter-btn" type="button" class="tap-feedback w-full bg-white/[0.08] rounded-btn pl-4 pr-3 py-3 min-h-[44px] flex items-center justify-between gap-2">
-          <span class="text-card-title truncate">${escapeHtml(label)}</span>
-          <span class="dropdown-chevron-icon ${stateClass} flex-shrink-0" aria-hidden="true"><span class="bar bar-a"></span><span class="bar bar-b"></span></span>
-        </button>
-        ${
-          open
-            ? renderMuscleFilterPopup(MUSCLE_GROUPS, state.exerciseSheetMuscleFilterId, closing)
-            : ''
-        }
-      </div>
-    </div>
-  `;
-}
-
 function renderExerciseSheetContent() {
-  return `
-    <div class="px-4 pb-2 flex-shrink-0">
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-            <circle cx="10.5" cy="10.5" r="6.5" />
-            <path d="M20 20l-4.7-4.7" />
-          </svg>
-        </span>
-        <input id="exercise-sheet-search-input" type="text" inputmode="search" autocomplete="off" placeholder="Suche" value="${escapeHtml(state.exerciseSheetSearch)}" class="w-full bg-white/[0.08] rounded-btn py-3 pl-10 pr-3 text-ink min-h-[44px]" />
-      </div>
-    </div>
-    ${renderExerciseSheetMuscleFilter()}
-    <div id="exercise-sheet-body" class="bottom-sheet-scroll flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+112px)] flex flex-col gap-2">
-      ${renderExerciseSheetBody()}
-    </div>
-  `;
+  return renderExerciseSheetContentFrame(state, renderExerciseSheetBody());
 }
 
 function renderExerciseSheet() {
-  const closing = state.exerciseSheetClosing ? 'closing' : '';
-  return `
-    <div id="exercise-sheet-root">
-      <div id="exercise-sheet-backdrop" class="bottom-sheet-backdrop ${closing} fixed inset-0 z-50 bg-black/50"></div>
-      <div class="bottom-sheet ${closing} fixed left-0 right-0 bottom-0 z-[51] bg-surface rounded-sheet flex flex-col" role="dialog" aria-label="Übungen">
-        <div class="grid grid-cols-3 items-center px-4 pt-3 pb-5 flex-shrink-0">
-          <button id="exercise-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Übungen schließen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-          <div id="exercise-sheet-handle" class="justify-self-center flex items-center justify-center w-full py-3 min-h-[44px]" style="touch-action: none;">
-            <span class="text-card-title">Übungen</span>
-          </div>
-          <button id="exercise-sheet-new-btn" type="button" class="icon-btn-glass tap-feedback justify-self-end text-ink" aria-label="Neue Übung erstellen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-        </div>
-        <div id="exercise-sheet-content" class="flex-1 min-h-0 flex flex-col">
-          ${renderExerciseSheetContent()}
-        </div>
-      </div>
-    </div>
-  `;
+  return renderExerciseSheetShell({
+    z: { bg: 50, panel: 51 },
+    closing: state.exerciseSheetClosing,
+    contentHtml: renderExerciseSheetContent(),
+  });
 }
 
-// Ersetzt `#exercise-sheet-content` (Suchfeld, Filter, Liste, Commit-Leiste)
-// - Scroll-Position der Liste bleibt erhalten. Das Suchfeld selbst wird nur
-// bei Filter-/Auswahl-Änderungen neu erzeugt, nie beim Tippen.
+// Teil-Repaints, s. js/exerciseSheetParts.js
 function repaintExerciseSheetContentInPlace() {
-  const content = currentContainer?.querySelector('#exercise-sheet-content');
-  if (!content) return;
-  const scrollTop = content.querySelector('#exercise-sheet-body')?.scrollTop ?? 0;
-  content.innerHTML = renderExerciseSheetContent();
-  const body = content.querySelector('#exercise-sheet-body');
-  if (body) body.scrollTop = scrollTop;
-  wireExerciseSheetContentEvents();
+  repaintSheetContent(currentContainer, renderExerciseSheetContent, wireExerciseSheetContentEvents);
 }
 
 function repaintExerciseSheetBodyInPlace() {
-  const body = currentContainer?.querySelector('#exercise-sheet-body');
-  if (!body) return;
-  body.innerHTML = renderExerciseSheetBody();
-  wireExerciseSheetBodyEvents();
+  repaintSheetBody(currentContainer, renderExerciseSheetBody, wireExerciseSheetBodyEvents);
 }
 
+const exerciseSheetMuscleFilterCloser = createMuscleFilterCloser(() => state, () => repaintExerciseSheetContentInPlace());
+
 function closeExerciseSheetMuscleFilter() {
-  if (!state.exerciseSheetMuscleFilterOpen || state.exerciseSheetMuscleFilterClosing) return;
-  state.exerciseSheetMuscleFilterClosing = true;
-  repaintExerciseSheetContentInPlace();
-  pendingExerciseSheetMuscleFilterCloseTimeout = setTimeout(() => {
-    pendingExerciseSheetMuscleFilterCloseTimeout = null;
-    state.exerciseSheetMuscleFilterOpen = false;
-    state.exerciseSheetMuscleFilterClosing = false;
-    repaintExerciseSheetContentInPlace();
-  }, FILTER_CLOSE_ANIMATION_MS);
+  exerciseSheetMuscleFilterCloser.close();
 }
 
 async function openExerciseSheet() {
@@ -1044,7 +959,6 @@ async function openExerciseSheet() {
 }
 
 function finalizeExerciseSheetClose() {
-  pendingExerciseSheetCloseTimeout = null;
   state.exerciseSheetOpen = false;
   state.exerciseSheetClosing = false;
   unlockBodyScroll();
@@ -1056,13 +970,20 @@ function finalizeExerciseSheetClose() {
   }
 }
 
+const exerciseSheetCloser = createSheetCloser({
+  isOpen: () => state.exerciseSheetOpen,
+  isClosing: () => state.exerciseSheetClosing,
+  setClosing: () => { state.exerciseSheetClosing = true; },
+  animate: () => {
+    const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
+    backdrop?.classList.add('closing');
+    backdrop?.nextElementSibling?.classList.add('closing');
+  },
+  finalize: finalizeExerciseSheetClose,
+});
+
 function closeExerciseSheet() {
-  if (!state.exerciseSheetOpen || state.exerciseSheetClosing) return;
-  state.exerciseSheetClosing = true;
-  const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
-  backdrop?.classList.add('closing');
-  backdrop?.nextElementSibling?.classList.add('closing');
-  pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  exerciseSheetCloser.close();
 }
 
 function wireExerciseSheetEvents() {
@@ -1088,35 +1009,18 @@ function wireExerciseSheetEvents() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.exerciseSheetClosing,
-    onDismiss: () => {
-      pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => exerciseSheetCloser.dismissedByDrag(),
   });
   wireExerciseSheetContentEvents();
 }
 
 function wireExerciseSheetContentEvents() {
-  currentContainer.querySelector('#exercise-sheet-search-input')?.addEventListener('input', (e) => {
-    state.exerciseSheetSearch = e.target.value;
-    repaintExerciseSheetBodyInPlace();
+  wireExerciseSheetControls(currentContainer, {
+    state,
+    repaintBody: repaintExerciseSheetBodyInPlace,
+    repaintContent: repaintExerciseSheetContentInPlace,
+    closeFilter: closeExerciseSheetMuscleFilter,
   });
-
-  currentContainer.querySelector('#exercise-sheet-muscle-filter-btn')?.addEventListener('click', () => {
-    if (state.exerciseSheetMuscleFilterOpen) {
-      closeExerciseSheetMuscleFilter();
-    } else {
-      state.exerciseSheetMuscleFilterOpen = true;
-      repaintExerciseSheetContentInPlace();
-    }
-  });
-  currentContainer.querySelector('#exercise-sheet-muscle-filter-backdrop')?.addEventListener('click', closeExerciseSheetMuscleFilter);
-  currentContainer.querySelectorAll('.pick-muscle-filter-option-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      state.exerciseSheetMuscleFilterId = btn.dataset.muscle === '' ? null : btn.dataset.muscle;
-      closeExerciseSheetMuscleFilter();
-    });
-  });
-
   wireExerciseSheetBodyEvents();
 }
 
