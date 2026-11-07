@@ -17,6 +17,10 @@
 
 #view-container {
   min-height: 0;
+  /* Eigener Stacking-Context: Elemente mit z-index im Inhalt (z. B. die
+     Segmented-Tabs mit z-10) dürfen nicht über die Seiten-Ebene (#page-layer,
+     z-8) ragen, sonst bleiben ihre Beschriftungen auf Unterseiten stehen. */
+  isolation: isolate;
 }
 
 /* Scroll-Leiste app-weit ausgeblendet (Nutzer-Wunsch) - Scrollen funktioniert
