@@ -85,6 +85,9 @@ export function resetNavZIndex() {
 // passen - jedes View-Modul hält seinen eigenen Abschluss-Timeout danach.
 export const SHEET_CLOSE_ANIMATION_MS = 220;
 export const SHEET_DRAG_CLOSE_THRESHOLD_PX = 120;
+// Kleine Popups/Menüs (Dropdown-Pille, Kontextmenüs): muss zu
+// `.routine-picker-popup(.closing)` in css/styles.css passen.
+export const POPUP_CLOSE_ANIMATION_MS = 150;
 
 // Drag-to-Dismiss am Ziehgriff: Der Griff selbst wird per Pointer Events
 // (touch- und mausfähig) verfolgt, Sheet und Backdrop werden währenddessen
@@ -194,4 +197,9 @@ export function createSheetCloser({ isOpen, isClosing, setClosing, animate, fina
       pending = null;
     },
   };
+}
+
+// Für unmount(): bricht die ausstehenden Timeouts mehrerer Closer ab.
+export function cancelClosers(...closers) {
+  closers.forEach((c) => c.cancelPending());
 }

@@ -15,7 +15,7 @@ import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
 import { openExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
-import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
+import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, createSheetCloser, cancelClosers, POPUP_CLOSE_ANIMATION_MS } from '../sheet.js';
 
 // Anzahl der im Balkendiagramm gezeigten Wochen (inkl. aktueller Woche),
 // s. Markdown-Vorgabe "Default: letzte 8 Wochen".
@@ -55,18 +55,7 @@ export function unmount() {
   exerciseDetail.unmount();
   removePageLayer();
   unmountExerciseCreateSheet();
-  if (pendingMuscleGroupSheetCloseTimeout) {
-    clearTimeout(pendingMuscleGroupSheetCloseTimeout);
-    pendingMuscleGroupSheetCloseTimeout = null;
-  }
-  if (pendingExerciseSheetCloseTimeout) {
-    clearTimeout(pendingExerciseSheetCloseTimeout);
-    pendingExerciseSheetCloseTimeout = null;
-  }
-  if (pendingExerciseSheetMuscleFilterCloseTimeout) {
-    clearTimeout(pendingExerciseSheetMuscleFilterCloseTimeout);
-    pendingExerciseSheetMuscleFilterCloseTimeout = null;
-  }
+  cancelClosers(muscleGroupSheetCloser, exerciseSheetCloser, exerciseSheetMuscleFilterCloser);
   if (state.muscleGroupSheetId || state.exerciseSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
@@ -780,10 +769,7 @@ function openMuscleGroupSheet(muscleGroupId) {
 // Analog zu closeLinkSheet in profile.js: erst die Schließen-Animation
 // abspielen (muss zur Dauer von .bottom-sheet.closing in css/styles.css
 // passen), danach erst wirklich aus State/DOM entfernen.
-let pendingMuscleGroupSheetCloseTimeout = null;
-
 function finalizeMuscleGroupSheetClose() {
-  pendingMuscleGroupSheetCloseTimeout = null;
   state.muscleGroupSheetId = null;
   state.muscleGroupSheetClosing = false;
   unlockBodyScroll();
@@ -791,11 +777,16 @@ function finalizeMuscleGroupSheetClose() {
   paint();
 }
 
+const muscleGroupSheetCloser = createSheetCloser({
+  isOpen: () => !!state.muscleGroupSheetId,
+  isClosing: () => state.muscleGroupSheetClosing,
+  setClosing: () => { state.muscleGroupSheetClosing = true; },
+  animate: paint,
+  finalize: finalizeMuscleGroupSheetClose,
+});
+
 function closeMuscleGroupSheet() {
-  if (!state.muscleGroupSheetId || state.muscleGroupSheetClosing) return;
-  state.muscleGroupSheetClosing = true;
-  paint();
-  pendingMuscleGroupSheetCloseTimeout = setTimeout(finalizeMuscleGroupSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  muscleGroupSheetCloser.close();
 }
 
 function wireMuscleGroupSheet() {
@@ -808,10 +799,7 @@ function wireMuscleGroupSheet() {
     sheetEl: backdropEl.nextElementSibling,
     backdropEl,
     isClosing: () => state.muscleGroupSheetClosing,
-    onDismiss: () => {
-      state.muscleGroupSheetClosing = true;
-      pendingMuscleGroupSheetCloseTimeout = setTimeout(finalizeMuscleGroupSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => muscleGroupSheetCloser.dismissedByDrag(),
   });
 }
 
@@ -881,11 +869,8 @@ async function renderExercisesTab() {
 // würde bei jedem Tastendruck die Slide-Animation neu spielen bzw. das
 // Such-<input> neu erzeugt.
 let exerciseSheetCache = { allExercises: [], listedIds: new Set() };
-let pendingExerciseSheetCloseTimeout = null;
 // Favoriten haben sich geändert -> Liste im Reiter nach dem Schließen neu zeichnen
 let repaintListAfterSheetClose = false;
-let pendingExerciseSheetMuscleFilterCloseTimeout = null;
-const FILTER_CLOSE_ANIMATION_MS = 150;
 
 function renderExerciseSheetBody() {
   const { allExercises, listedIds } = exerciseSheetCache;
@@ -1013,16 +998,21 @@ function repaintExerciseSheetBodyInPlace() {
   wireExerciseSheetBodyEvents();
 }
 
-function closeExerciseSheetMuscleFilter() {
-  if (!state.exerciseSheetMuscleFilterOpen || state.exerciseSheetMuscleFilterClosing) return;
-  state.exerciseSheetMuscleFilterClosing = true;
-  repaintExerciseSheetContentInPlace();
-  pendingExerciseSheetMuscleFilterCloseTimeout = setTimeout(() => {
-    pendingExerciseSheetMuscleFilterCloseTimeout = null;
+const exerciseSheetMuscleFilterCloser = createSheetCloser({
+  isOpen: () => state.exerciseSheetMuscleFilterOpen,
+  isClosing: () => state.exerciseSheetMuscleFilterClosing,
+  setClosing: () => { state.exerciseSheetMuscleFilterClosing = true; },
+  animate: () => repaintExerciseSheetContentInPlace(),
+  finalize: () => {
     state.exerciseSheetMuscleFilterOpen = false;
     state.exerciseSheetMuscleFilterClosing = false;
     repaintExerciseSheetContentInPlace();
-  }, FILTER_CLOSE_ANIMATION_MS);
+  },
+  durationMs: POPUP_CLOSE_ANIMATION_MS,
+});
+
+function closeExerciseSheetMuscleFilter() {
+  exerciseSheetMuscleFilterCloser.close();
 }
 
 async function openExerciseSheet() {
@@ -1044,7 +1034,6 @@ async function openExerciseSheet() {
 }
 
 function finalizeExerciseSheetClose() {
-  pendingExerciseSheetCloseTimeout = null;
   state.exerciseSheetOpen = false;
   state.exerciseSheetClosing = false;
   unlockBodyScroll();
@@ -1056,13 +1045,20 @@ function finalizeExerciseSheetClose() {
   }
 }
 
+const exerciseSheetCloser = createSheetCloser({
+  isOpen: () => state.exerciseSheetOpen,
+  isClosing: () => state.exerciseSheetClosing,
+  setClosing: () => { state.exerciseSheetClosing = true; },
+  animate: () => {
+    const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
+    backdrop?.classList.add('closing');
+    backdrop?.nextElementSibling?.classList.add('closing');
+  },
+  finalize: finalizeExerciseSheetClose,
+});
+
 function closeExerciseSheet() {
-  if (!state.exerciseSheetOpen || state.exerciseSheetClosing) return;
-  state.exerciseSheetClosing = true;
-  const backdrop = currentContainer.querySelector('#exercise-sheet-backdrop');
-  backdrop?.classList.add('closing');
-  backdrop?.nextElementSibling?.classList.add('closing');
-  pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  exerciseSheetCloser.close();
 }
 
 function wireExerciseSheetEvents() {
@@ -1088,9 +1084,7 @@ function wireExerciseSheetEvents() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.exerciseSheetClosing,
-    onDismiss: () => {
-      pendingExerciseSheetCloseTimeout = setTimeout(finalizeExerciseSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => exerciseSheetCloser.dismissedByDrag(),
   });
   wireExerciseSheetContentEvents();
 }
