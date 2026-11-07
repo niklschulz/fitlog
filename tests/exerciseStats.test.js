@@ -2,7 +2,7 @@
 // Übung). Reine Funktionen, keine DB nötig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getRangeStart, computePersonalBests } from '../js/exerciseStats.js';
+import { getRangeStart, computePersonalBests, estimateOneRepMax } from '../js/exerciseStats.js';
 
 const day = (date, ...sets) => ({ date, sets: sets.map(([weight, reps]) => ({ weight, reps })) });
 // getExerciseSetHistory liefert die neuesten Tage zuerst
@@ -59,5 +59,32 @@ test('Ungültige Sätze und Gewicht 0 werden ignoriert, Reps zählen auch ohne G
 
 test('Ohne Daten: alles null', () => {
   const b = computePersonalBests([], 'max', '2026-10-03');
-  assert.deepEqual(b, { rangeStart: null, weight: null, volume: null, reps: null });
+  assert.deepEqual(b, { rangeStart: null, oneRm: null, weight: null, volume: null, reps: null });
+});
+
+test('estimateOneRepMax: Brzycki, 1 Rep = Gewicht, nur 1-10 Reps und Gewicht > 0', () => {
+  assert.equal(estimateOneRepMax(100, 1), 100);
+  assert.equal(estimateOneRepMax(100, 10), (100 * 36) / 27);
+  assert.equal(estimateOneRepMax(90, 8), (90 * 36) / 29);
+  assert.equal(estimateOneRepMax(80, 11), null);
+  assert.equal(estimateOneRepMax(80, 12), null);
+  assert.equal(estimateOneRepMax(0, 5), null);
+  assert.equal(estimateOneRepMax(80, 0), null);
+  assert.equal(estimateOneRepMax(NaN, 5), null);
+});
+
+test('1RM-Bestwert: höchster Schätzwert, Sätze über 10 Reps zählen nicht, Gleichstand = frühester', () => {
+  // 60x8 = 77,9; 62,5x6 = 72,6; 60x10 = 80; 50x15 ignoriert; 70x3 = 76,1 (2025)
+  const b = computePersonalBests(history, 'max', '2026-10-03');
+  assert.equal(b.oneRm.date, '2026-08-01');
+  assert.equal(b.oneRm.oneRm, 80);
+  const tie = [day('2026-10-02', [80, 5]), day('2026-10-01', [80, 5])];
+  assert.equal(computePersonalBests(tie, 'max', '2026-10-03').oneRm.date, '2026-10-01');
+  // Zeitraum 3M schließt 2025 aus
+  assert.equal(computePersonalBests(history, '3m', '2026-10-03').oneRm.oneRm, 80);
+});
+
+test('1RM-Bestwert: nur Sätze über 10 Reps oder Gewicht 0 → null', () => {
+  const h = [day('2026-10-01', [50, 12], [0, 5])];
+  assert.equal(computePersonalBests(h, 'max', '2026-10-03').oneRm, null);
 });

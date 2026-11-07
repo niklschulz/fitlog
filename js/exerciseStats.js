@@ -27,6 +27,15 @@ function isValidSet(set) {
   return Number.isFinite(set.weight) && set.weight >= 0 && Number.isFinite(set.reps) && set.reps > 0;
 }
 
+// 1RM-Schätzung nach Brzycki: Gewicht × 36 / (37 − Wiederholungen). Nur Sätze
+// mit 1 bis 10 Wiederholungen und Gewicht > 0 zählen - darüber wird die
+// Schätzung zu ungenau (ADR 0042). Bei 1 Rep = das Gewicht selbst.
+export const ONE_RM_MAX_REPS = 10;
+export function estimateOneRepMax(weight, reps) {
+  if (!Number.isFinite(weight) || weight <= 0 || !Number.isInteger(reps) || reps < 1 || reps > ONE_RM_MAX_REPS) return null;
+  return (weight * 36) / (37 - reps);
+}
+
 /**
  * Persönliche Bestwerte einer Übung im Zeitraum.
  *
@@ -34,12 +43,13 @@ function isValidSet(set) {
  *                         Tage zuerst, Sätze je Tag chronologisch
  * @param {string} range   '3m' | '1j' | 'max'
  * @param {string} today   ISO-Datum von heute
- * @returns {{ rangeStart: string|null, weight, volume, reps }}
+ * @returns {{ rangeStart: string|null, oneRm, weight, volume, reps }}
  *   `rangeStart`: erster Tag des Zeitraums (bei Max der erste Trainingstag
- *   mit gültigem Satz, `null` ohne Daten). `weight`/`volume`/`reps`: je
- *   `{ weight, reps, date, volume }` des besten Satzes oder `null`.
+ *   mit gültigem Satz, `null` ohne Daten). `oneRm`/`weight`/`volume`/`reps`: je
+ *   `{ weight, reps, date, volume }` (`oneRm` zusätzlich mit dem Schätzwert `oneRm`) des besten Satzes oder `null`.
  *
  * Bestwerte:
+ * - 1RM: höchster Brzycki-Schätzwert (Sätze mit 1-10 Reps, Gewicht > 0)
  * - Gewicht: höchstes Gewicht (> 0), bei Gleichstand mehr Wiederholungen
  * - Volumen: höchstes Gewicht × Wiederholungen eines einzelnen Satzes
  * - Reps: meiste Wiederholungen, bei Gleichstand höheres Gewicht
@@ -53,6 +63,7 @@ export function computePersonalBests(history, range, today) {
     .slice()
     .reverse(); // chronologisch aufsteigend
 
+  let oneRm = null;
   let weight = null;
   let volume = null;
   let reps = null;
@@ -64,6 +75,10 @@ export function computePersonalBests(history, range, today) {
       firstDate ??= day.date;
       const entry = { weight: set.weight, reps: set.reps, date: day.date, volume: set.weight * set.reps };
 
+      const estimate = estimateOneRepMax(entry.weight, entry.reps);
+      if (estimate !== null && (!oneRm || estimate > oneRm.oneRm)) {
+        oneRm = { ...entry, oneRm: estimate };
+      }
       if (entry.weight > 0 && (!weight || entry.weight > weight.weight || (entry.weight === weight.weight && entry.reps > weight.reps))) {
         weight = entry;
       }
@@ -76,5 +91,5 @@ export function computePersonalBests(history, range, today) {
     }
   }
 
-  return { rangeStart: start ?? firstDate, weight, volume, reps };
+  return { rangeStart: start ?? firstDate, oneRm, weight, volume, reps };
 }

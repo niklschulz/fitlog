@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-07 (1RM in den Persönlichen Bestwerten)
+
+### Added
+- Die 1RM-Zeile der Statistik-Übungs-Seite zeigt jetzt den besten geschätzten Wert im gewählten Zeitraum (Brzycki: Gewicht × 36 / (37 − Reps)). Es zählen Sätze mit 1–10 Wiederholungen und Gewicht > 0; Anzeige mit einer Nachkommastelle plus Datum, bei Gleichstand der früheste Satz. Kein 1RM-Badge an Sätzen. Entscheidungen: [ADR 0042](decisions/0042-einrm-brzycki.md). `CACHE_NAME` hochgezählt
+
 ## 2026-11-07 (Farben nur einmal anlegen)
 
 ### Changed

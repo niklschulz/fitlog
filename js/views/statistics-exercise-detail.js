@@ -107,8 +107,7 @@ async function paint({ tabsFromRect = null, rangeFromRect = null } = {}) {
 //
 // Tabelle nach Vorbild der Referenz-App: Überschrift links, Zeitraum rechts,
 // darunter eine Karte mit je einer Zeile pro Wert (Icon-Kreis, Name, rechts
-// Wert + Datum). 1RM bleibt vorerst leer ("–"), bis die Berechnung etabliert
-// ist. Berechnung: js/exerciseStats.js (computePersonalBests).
+// Wert + Datum). Berechnung: js/exerciseStats.js (computePersonalBests).
 const ICON_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"';
 const BEST_ICONS = {
   oneRm: `<svg ${ICON_ATTRS}><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4" /></svg>`,
@@ -119,6 +118,8 @@ const BEST_ICONS = {
 };
 
 const formatNumber = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+// 1RM ist eine Schätzung: eine Nachkommastelle (",0" entfällt)
+const formatOneRm = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 1 });
 
 // Das Jahr steht immer dabei (Nutzer-Vorgabe) - Zeiträume und Bestwerte
 // können über Jahre zurückreichen.
@@ -142,6 +143,7 @@ function renderBestRow(icon, label, best, valueText) {
 
 function renderPersonalBests(bests) {
   const periodLabel = bests.rangeStart ? `${formatDate(bests.rangeStart)} – ${formatDate(todayISODate())}` : '';
+  const o = bests.oneRm;
   const w = bests.weight;
   const v = bests.volume;
   const r = bests.reps;
@@ -152,7 +154,7 @@ function renderPersonalBests(bests) {
         <span class="text-label text-muted">${escapeHtml(periodLabel)}</span>
       </div>
       <div class="${CARD} !py-0 divide-y divide-divider">
-        ${renderBestRow(BEST_ICONS.oneRm, '1RM', null, '')}
+        ${renderBestRow(BEST_ICONS.oneRm, '1RM', o, o ? `${formatOneRm(o.oneRm)} kg` : '')}
         ${renderBestRow(BEST_ICONS.weight, 'Gewicht', w, w ? `${formatNumber(w.weight)} kg <span class="text-muted">(x${escapeHtml(w.reps)})</span>` : '')}
         ${renderBestRow(BEST_ICONS.volume, 'Volumen', v, v ? `${formatNumber(v.volume)} kg` : '')}
         ${renderBestRow(BEST_ICONS.reps, 'Reps', r, r ? `${escapeHtml(r.reps)} Reps <span class="text-muted">(${formatNumber(r.weight)} kg)</span>` : '')}

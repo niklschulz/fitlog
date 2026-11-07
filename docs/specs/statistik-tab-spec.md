@@ -60,4 +60,4 @@ Entscheidung: Extrahieren statt duplizieren. `renderSegmentedControl(tabs, activ
 
 ## Noch offen / folgt
 
-Die früher hier gelisteten Punkte „Inhalte der beiden Reiter“ und „Datenquelle(n), Interaktionen, Leerzustände“ sind umgesetzt (s. Status oben und `js/views/statistics.js`). Tatsächlich offen ist nur der 1RM in der Tabelle „Persönliche Bestwerte“ der Übungs-Seite: Er bleibt leer, bis die Berechnung festgelegt ist (Kommentar in `js/views/statistics-exercise-detail.js`); vorgemerkt in [features.md](../features.md#vorgemerkte-noch-nicht-spezifizierte-erweiterungen).
+Die früher hier gelisteten Punkte „Inhalte der beiden Reiter“ und „Datenquelle(n), Interaktionen, Leerzustände“ sind umgesetzt (s. Status oben und `js/views/statistics.js`). Der 1RM in der Tabelle „Persönliche Bestwerte“ ist umgesetzt, s. [ADR 0042](../decisions/0042-einrm-brzycki.md).
