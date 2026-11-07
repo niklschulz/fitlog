@@ -1327,7 +1327,7 @@ function renderExerciseRow(entry, name, sets, prs) {
     .join('');
   const isUnstarted = entry.startedAt === null;
   // Eine Notiz schützt den Eintrag wie erfasste Sätze vor dem Entfernen
-  // (s. docs/notizen-spec.md) - der "⋮"-Button entfällt, wer die Übung
+  // (s. ADR 0035) - der "⋮"-Button entfällt, wer die Übung
   // entfernen will, leert zuerst die Notiz. Umsortierbar bleibt sie, solange
   // sie unbegonnen ist.
   const canRemove = isUnstarted && !entry.note;
@@ -1858,7 +1858,7 @@ function wireExerciseSheetContentEvents() {
 // Entfernen ohne erfasste Sätze geht direkt (wie beim "⋮"-Kontextmenü, s.
 // removeExerciseFromWorkout); mit erfassten Sätzen fragt ein Action Sheet
 // (js/actionSheet.js, "Sätze und Übung entfernen" / "Abbrechen"; auch bei einer
-// reinen Notiz, s. docs/notizen-spec.md) nach, bei
+// reinen Notiz, s. ADR 0035) nach, bei
 // Abbrechen bleibt die Zeile abgehakt (s. ADR 0029). Im Routinen-Kontext ist
 // nur der lokale Entwurf betroffen (s. renderRoutinesSheetEditContent), das
 // Routinen-Sheet darunter wird direkt aktualisiert. Der Roster hinter dem Sheet wird beim Schließen per paint()
@@ -1897,7 +1897,7 @@ async function toggleExerciseFromSheet(id) {
     if (entry && (entry.startedAt !== null || setCount > 0 || entry.note)) {
       const name = exerciseSheetCache.allExercises.find((x) => x.id === id)?.name ?? 'Diese Übung';
       // Text nennt, was verloren geht: nur Notiz, nur Sätze oder beides
-      // (Notiz schützt den Eintrag wie Sätze, s. docs/notizen-spec.md).
+      // (Notiz schützt den Eintrag wie Sätze, s. ADR 0035).
       const hasSets = entry.startedAt !== null || setCount > 0;
       const confirmed = await showActionSheet({
         message: hasSets

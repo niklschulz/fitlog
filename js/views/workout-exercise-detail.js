@@ -296,7 +296,7 @@ export function renderExerciseHistory(history, prsMap) {
 }
 
 // `showNotes`: Die Statistik-Übungsseite zeigt bewusst keine Notizen
-// (s. docs/notizen-spec.md).
+// (s. ADR 0035).
 function renderHistoryTab(history, prsMap = prs, showNotes = true) {
   if (history.length === 0) {
     return `<p class="text-body text-muted text-center py-6">Noch kein Verlauf für diese Übung.</p>`;

@@ -356,7 +356,7 @@ test('resetStartedWithoutSets heilt begonnene Übungen ohne Sätze, lässt solch
   assert.notEqual(entries.find((e) => e.exerciseId === b.id).startedAt, null);
 });
 
-// --- Notizen pro Übung und Tag (docs/notizen-spec.md) ---
+// --- Notizen pro Übung und Tag (ADR 0035) ---
 
 test('setWorkoutExerciseNote setzt, überschreibt und trimmt; Leertext entfernt die Notiz, startedAt bleibt', async () => {
   const a = await createExercise('A');

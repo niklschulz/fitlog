@@ -3,7 +3,7 @@ import { escapeHtml } from './utils.js';
 import { formatDate } from './dates.js';
 import { lockBodyScroll, unlockBodyScroll, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from './sheet.js';
 
-// Notiz-Sheet (s. docs/notizen-spec.md): Bottom-Sheet mit einem Eingabefeld für
+// Notiz-Sheet (s. ADR 0035): Bottom-Sheet mit einem Eingabefeld für
 // die Notiz zu einer Übung an einem Workout-Tag. ✓ speichert und schließt,
 // ✕/Wegziehen/Tap auf den Hintergrund schließt ohne Rückfrage und verwirft
 // ungespeicherten Text. Eigener State statt View-State (wie

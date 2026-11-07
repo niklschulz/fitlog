@@ -252,7 +252,7 @@ export async function updateExercise(id, name, muscleAssignment) {
 // Dauerhafte Notiz zu einer Übung selbst (optionales Feld `note` am
 // `exercises`-Eintrag, s. ADR 0036) - NICHT zu verwechseln mit der Notiz zu
 // einer Übung an einem Workout-Tag (`setWorkoutExerciseNote()`, s.
-// notizen-spec.md). Funktioniert bewusst auch für Standard-Übungen
+// ADR 0035). Funktioniert bewusst auch für Standard-Übungen
 // (`isBuiltin`): updateExercise() sperrt deren Name/Muskeln, die Notiz ist
 // aber eine reine Nutzer-Anmerkung. seedBuiltinExercises() schreibt nur
 // Name/Muskeln/isBuiltin zurück und lässt `note` unangetastet. Leerer oder
@@ -539,7 +539,7 @@ export async function removeRoutineFromWorkout(workoutId) {
 }
 
 // Notiz für eine Übung an einem Workout-Tag setzen (optionales Feld `note` am
-// workoutExercises-Eintrag, s. docs/notizen-spec.md). Leerer/nur aus
+// workoutExercises-Eintrag, s. ADR 0035). Leerer/nur aus
 // Whitespace bestehender Text entfernt sie. Eine Notiz schützt den Eintrag
 // vor den Aufräum-Kaskaden (wie ein erfasster Satz), macht die Übung aber
 // nicht "begonnen" - startedAt bleibt unberührt.
@@ -740,7 +740,7 @@ export async function getExerciseSetHistory(exerciseId) {
     (setsByDate[date] ??= []).push(s);
   }
 
-  // Notiz dieser Übung pro Tag (workoutExercises.note, s. docs/notizen-spec.md)
+  // Notiz dieser Übung pro Tag (workoutExercises.note, s. ADR 0035)
   const entries = await db.workoutExercises.where('exerciseId').equals(exerciseId).toArray();
   const noteByWorkoutId = Object.fromEntries(entries.filter((e) => e.note).map((e) => [e.workoutId, e.note]));
   const noteByDate = {};

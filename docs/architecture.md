@@ -56,7 +56,7 @@ fitlog/
 │       ├── workout-exercise-detail.js    Sub-View: Übungs-Detailseite im Workout-Tab (s. View-Pattern unten)
 │       └── statistics-exercise-detail.js Sub-View: Übungs-Seite im Statistik-Tab (Reiter Statistik/Verlauf/Info)
 ├── tests/                  `npm test`: db, backup, pr, exerciseStats, muscleStats, dates, escapeHtml (+ setup.js), s. "Tests" unten
-├── docs/                   Architektur, Features, Design-System, Changelog, ADRs (`decisions/`), Specs (`specs/`)
+├── docs/                   Architektur, Features, Design-System, Changelog, ADRs (`decisions/`)
 ├── drafts/                 UI-Entwürfe, nicht Teil der ausgelieferten App
 ├── icons/                  App-Icons (generiert, s. unten)
 └── .github/dependabot.yml  Dependabot-Konfiguration, s. ADR 0033
