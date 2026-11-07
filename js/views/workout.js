@@ -44,6 +44,7 @@ import * as exerciseDetail from './workout-exercise-detail.js';
 import { showActionSheet } from '../actionSheet.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
 import { openNoteSheet } from '../noteSheet.js';
+import { filterExercises } from '../exerciseFilter.js';
 import { renderExerciseInfo } from '../exerciseInfo.js';
 import { openExerciseCreateSheet as openSharedExerciseCreateSheet, unmountExerciseCreateSheet } from '../exerciseCreateSheet.js';
 
@@ -1628,23 +1629,13 @@ async function loadExerciseSheetCache() {
 function renderExerciseSheetBody() {
   const { allExercises, inWorkoutIds } = exerciseSheetCache;
 
-  const query = state.exerciseSheetSearch.trim().toLowerCase();
-  let filteredExercises = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
-
-  // Muskelgruppen-Filter: trifft, wenn EIN BELIEBIGER primärer Muskel der
-  // Übung zur gewählten Gruppe gehört (nicht mehr genau einer, s. ADR 0022 -
-  // eine Übung kann jetzt mehrere primäre Muskeln haben). Weiterhin nicht
-  // zusätzlich sekundär (s. ADR 0020 - seit der Aufteilung in einzelne
-  // Muskeln pro Gruppe wäre "sekundär trifft auch" zu weit gefasst, z. B.
-  // würde ein "Arme"-Filter sonst auch reine Rücken-Übungen mit Bizeps als
-  // sekundärem Muskel zeigen). Übungen ohne Zuordnung (`primaryMuscleIds`
-  // leer/`undefined`) fallen bei aktivem Filter automatisch raus.
-  const muscleFilterId = state.exerciseSheetMuscleFilterId;
-  if (muscleFilterId) {
-    filteredExercises = filteredExercises.filter((ex) =>
-      (ex.primaryMuscleIds ?? []).some((id) => muscleGroupIdOf(id) === muscleFilterId)
-    );
-  }
+  // Filterregeln (Suche, Muskelgruppe über ALLE primären Muskeln, ADR 0020/0022):
+  // js/exerciseFilter.js
+  const filteredExercises = filterExercises(
+    allExercises,
+    { query: state.exerciseSheetSearch, muscleGroupId: state.exerciseSheetMuscleFilterId },
+    muscleGroupIdOf
+  );
 
   return renderExerciseSheetList(filteredExercises, inWorkoutIds, allExercises.length);
 }

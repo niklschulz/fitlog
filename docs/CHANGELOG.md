@@ -2,6 +2,15 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-07 (Audit-Block 7, Schritt 1–2: gemeinsame Bausteine)
+
+### Changed
+- Filterlogik der Übungslisten (Suche, Muskelgruppe) in neuer `js/exerciseFilter.js` (`filterExercises`), von Workout- und Statistik-Übungs-Sheet genutzt; `tests/exerciseFilter.test.js`.
+- Neuer Helfer `createSheetCloser()` in `js/sheet.js` (Schließen + Timeout + Abbruch in `unmount()`); erster Nutzer ist das Link-Sheet im Profil. `tests/sheetCloser.test.js`. `CACHE_NAME` auf `fitlog-v258`. Rollback-Punkt: Git-Tag `pre-bausteine-v257`.
+
+### Fixed
+- Link-Sheet: Nach Drag-zum-Schließen setzt das Sheet jetzt das `closing`-Flag; ein Tipp aufs Backdrop währenddessen löst kein zweites Schließen (doppeltes `unlockBodyScroll()`) mehr aus.
+
 ## 2026-11-06 (Audit-Block 6: Standardisierung im Code)
 
 ### Changed

@@ -5,7 +5,7 @@ import { escapeHtml, BTN_PRIMARY, BTN_SECONDARY, INPUT, CARD } from '../utils.js
 import { db, toISODate } from '../db.js';
 import { formatDateDotted } from '../dates.js';
 import { buildBackup, parseBackup, summarizeBackup, replaceAllData, BackupError } from '../backup.js';
-import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, SHEET_CLOSE_ANIMATION_MS } from '../sheet.js';
+import { lockBodyScroll, unlockBodyScroll, raiseNavAboveSheet, resetNavZIndex, wireSheetDrag, createSheetCloser } from '../sheet.js';
 
 let currentContainer = null;
 let state = {
@@ -36,10 +36,7 @@ export function render(container) {
 // raiseNavAboveSheet()-Aufruf, der beim Tab-Wechsel ausgeglichen werden
 // muss, s. js/sheet.js.
 export function unmount() {
-  if (pendingLinkSheetCloseTimeout) {
-    clearTimeout(pendingLinkSheetCloseTimeout);
-    pendingLinkSheetCloseTimeout = null;
-  }
+  linkSheetCloser.cancelPending();
   if (state.linkSheetOpen) {
     unlockBodyScroll();
     resetNavZIndex();
@@ -351,10 +348,7 @@ function openLinkSheet() {
 // Analog zu closeCalendarSheet in workout.js: erst die Schließen-Animation
 // abspielen (muss zur Dauer von .bottom-sheet.closing in css/styles.css
 // passen), danach erst wirklich aus State/DOM entfernen.
-let pendingLinkSheetCloseTimeout = null;
-
 function finalizeLinkSheetClose() {
-  pendingLinkSheetCloseTimeout = null;
   state.linkSheetOpen = false;
   state.linkSheetClosing = false;
   unlockBodyScroll();
@@ -362,11 +356,16 @@ function finalizeLinkSheetClose() {
   paint();
 }
 
+const linkSheetCloser = createSheetCloser({
+  isOpen: () => state.linkSheetOpen,
+  isClosing: () => state.linkSheetClosing,
+  setClosing: () => { state.linkSheetClosing = true; },
+  animate: paint,
+  finalize: finalizeLinkSheetClose,
+});
+
 function closeLinkSheet() {
-  if (!state.linkSheetOpen || state.linkSheetClosing) return;
-  state.linkSheetClosing = true;
-  paint();
-  pendingLinkSheetCloseTimeout = setTimeout(finalizeLinkSheetClose, SHEET_CLOSE_ANIMATION_MS);
+  linkSheetCloser.close();
 }
 
 function wireLinkSheetDrag() {
@@ -376,9 +375,7 @@ function wireLinkSheetDrag() {
     sheetEl: backdropEl?.nextElementSibling ?? null,
     backdropEl,
     isClosing: () => state.linkSheetClosing,
-    onDismiss: () => {
-      pendingLinkSheetCloseTimeout = setTimeout(finalizeLinkSheetClose, SHEET_CLOSE_ANIMATION_MS);
-    },
+    onDismiss: () => linkSheetCloser.dismissedByDrag(),
   });
 }
 

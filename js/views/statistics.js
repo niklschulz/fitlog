@@ -10,6 +10,7 @@ import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSC
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { formatDate, addMonths, yearMonthOf } from '../dates.js';
 import { escapeHtml, renderMuscleFilterPopup, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { filterExercises } from '../exerciseFilter.js';
 import { getSettings, saveSettings } from '../settings.js';
 import * as exerciseDetail from './statistics-exercise-detail.js';
 import { openPage, removePageLayer } from '../swipeBack.js';
@@ -888,12 +889,11 @@ const FILTER_CLOSE_ANIMATION_MS = 150;
 
 function renderExerciseSheetBody() {
   const { allExercises, listedIds } = exerciseSheetCache;
-  const query = state.exerciseSheetSearch.trim().toLowerCase();
-  let filtered = query ? allExercises.filter((ex) => ex.name.toLowerCase().includes(query)) : allExercises;
-  const groupId = state.exerciseSheetMuscleFilterId;
-  if (groupId) {
-    filtered = filtered.filter((ex) => (ex.primaryMuscleIds ?? []).some((id) => muscleGroupIdOf(id) === groupId));
-  }
+  const filtered = filterExercises(
+    allExercises,
+    { query: state.exerciseSheetSearch, muscleGroupId: state.exerciseSheetMuscleFilterId },
+    muscleGroupIdOf
+  );
   if (allExercises.length === 0) {
     return `<p class="text-body text-muted text-center py-12">Noch keine Übungen angelegt.</p>`;
   }
