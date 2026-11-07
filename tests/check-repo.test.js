@@ -292,6 +292,17 @@ test('scanHexColors: JS-Strings zählen, Kommentare, Entities und CSS-Selektoren
   assert.deepEqual(scanHexColors(css, 'css/styles.css').map((f) => f.line), [2, 3]);
 });
 
+test('scanHexColors: rgb()/rgba() mit festen Zahlen zählen, Weiß/Schwarz und Variablen nicht', () => {
+  const css = [
+    '.a { background: rgba(37, 37, 37, 0.55); }',
+    '.b { background: rgb(var(--rgb-surface) / 0.55); }',
+    '.c { border: 1px solid rgba(255, 255, 255, 0.12); }',
+    '.d { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }',
+    '.e { color: rgb(181 235 152 / 0.7); }',
+  ].join('\n');
+  assert.deepEqual(scanHexColors(css, 'css/styles.css').map((f) => f.line), [1, 5]);
+});
+
 test('scanHexColors: Allowlist nimmt einen Wert aus (Groß-/Kleinschreibung egal)', () => {
   const css = '.x { color: #B5EB98; }';
   assert.equal(scanHexColors(css, 'css/styles.css', { allowlist: [{ value: '#b5eb98', reason: 'Test' }] }).length, 0);

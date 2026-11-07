@@ -92,9 +92,9 @@ input[type="number"]::-webkit-outer-spin-button {
   height: 140px;
   background: linear-gradient(
     to bottom,
-    rgba(18, 18, 18, 0) 0%,
-    rgba(18, 18, 18, 0.55) 60%,
-    rgba(18, 18, 18, 0.85) 100%
+    rgb(var(--rgb-base) / 0) 0%,
+    rgb(var(--rgb-base) / 0.55) 60%,
+    rgb(var(--rgb-base) / 0.85) 100%
   );
   pointer-events: none; /* darf Taps auf Nav/Inhalt nicht blockieren */
   z-index: 10;
@@ -121,9 +121,9 @@ input[type="number"]::-webkit-outer-spin-button {
   height: calc(env(safe-area-inset-top) + 140px);
   background: linear-gradient(
     to bottom,
-    rgba(18, 18, 18, 0.7) 0,
-    rgba(18, 18, 18, 0.7) calc(100% - 32px),
-    rgba(18, 18, 18, 0) 100%
+    rgb(var(--rgb-base) / 0.7) 0,
+    rgb(var(--rgb-base) / 0.7) calc(100% - 32px),
+    rgb(var(--rgb-base) / 0) 100%
   );
   pointer-events: none;
   z-index: 10;
@@ -132,7 +132,7 @@ input[type="number"]::-webkit-outer-spin-button {
 /* Liquid-Glass-Anmutung der Bottom-Nav (Blur + Transparenz, kein
    SVG-Verzerrungsfilter - wird von Safari/iOS ohnehin nicht dargestellt). */
 #bottom-nav {
-  background: rgba(37, 37, 37, 0.55); /* halbtransparente Variante von bg-surface (#252525) */
+  background: rgb(var(--rgb-surface) / 0.55); /* halbtransparente Variante von bg-surface */
   -webkit-backdrop-filter: blur(20px) saturate(160%); /* zwingend für Safari/iOS */
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -161,7 +161,7 @@ input[type="number"]::-webkit-outer-spin-button {
   bottom: 6px;
   left: 6px;
   border-radius: 9999px;
-  background-color: rgba(42, 42, 42, 0.6); /* identisch zur vorherigen .nav-btn.active-Farbe */
+  background-color: rgb(var(--rgb-raised) / 0.6); /* identisch zur vorherigen .nav-btn.active-Farbe */
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   will-change: left, width, backdrop-filter;
@@ -200,7 +200,7 @@ input[type="number"]::-webkit-outer-spin-button {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: rgba(37, 37, 37, 0.55); /* halbtransparente Variante von bg-surface (#252525) */
+  background: rgb(var(--rgb-surface) / 0.55); /* halbtransparente Variante von bg-surface */
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -223,21 +223,21 @@ input[type="number"]::-webkit-outer-spin-button {
    kombinierbar. Hier übernimmt eine einzige Datei/Kaskade Normal- und
    :disabled-Zustand vollständig, ohne dieses Wettrennen zu riskieren. */
 .icon-btn-glass-accent {
-  background: rgba(181, 235, 152, 0.72);
-  border-color: rgba(181, 235, 152, 0.85);
-  color: #E5F3DE; /* leicht grün eingefärbtes Weiß - Mischung aus ink (#F5F5F5) und accent (#B5EB98) */
+  background: rgb(var(--rgb-accent) / 0.72);
+  border-color: rgb(var(--rgb-accent) / 0.85);
+  color: var(--color-accent-soft); /* leicht grün eingefärbtes Weiß - Mischung aus ink und accent */
   transition: opacity 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
 .icon-btn-glass-accent:disabled {
-  background: rgba(37, 37, 37, 0.55);
+  background: rgb(var(--rgb-surface) / 0.55);
   border-color: rgba(255, 255, 255, 0.12);
-  color: #F5F5F5;
+  color: var(--color-ink);
   opacity: 0.35;
 }
 
 .nav-btn.active {
-  color: #B5EB98; /* accent - Hintergrund kommt jetzt von #nav-indicator, s. dort */
+  color: var(--color-accent); /* Hintergrund kommt von #nav-indicator, s. dort */
 }
 
 /* Kurzes Tap-Feedback, da kein haptisches Feedback über Web-APIs verfügbar ist */
@@ -254,7 +254,7 @@ input[type="number"]::-webkit-outer-spin-button {
    das Roster-Kontextmenü im Workout-Tab (s. dort), kein neuer Standard für
    Popups allgemein. */
 .popup-glass {
-  background: rgba(37, 37, 37, 0.55);
+  background: rgb(var(--rgb-surface) / 0.55);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -317,7 +317,7 @@ input[type="number"]::-webkit-outer-spin-button {
   height: 1.75px;
   margin-top: -0.875px;
   border-radius: 1px;
-  background: #9B9BA1; /* muted */
+  background: var(--color-muted);
 }
 
 .dropdown-chevron-icon .bar-a {
@@ -554,6 +554,6 @@ textarea,
    <textarea>, Platzhalter deshalb per CSS. */
 .note-sheet-input:empty::before {
   content: attr(data-placeholder);
-  color: #9B9BA1; /* muted */
+  color: var(--color-muted);
   pointer-events: none;
 }
