@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-07 (Fix: Reiter-Beschriftungen auf Übungs-Unterseite)
+
+### Fixed
+- Statistik-Tab: Beim Öffnen einer Übung blieben die Beschriftungen der Reiter (Übersicht/Übungen) über der Unterseite stehen, weil die Segmented-Tabs (`z-10`) über der Seiten-Ebene (`z-8`) lagen. `#view-container` bildet jetzt einen eigenen Stacking-Context (`isolation: isolate`). `CACHE_NAME` auf `fitlog-v260`.
+
 ## 2026-11-07 (Audit-Block 7, Schritt 1–5: gemeinsame Bausteine)
 
 ### Changed
