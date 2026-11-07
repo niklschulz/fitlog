@@ -34,7 +34,8 @@ fitlog/
 │   ├── noteSheet.js       Notiz-Sheet (Notiz pro Übung und Tag), s. ADR 0035
 │   ├── exerciseInfo.js    Übungs-Infos (primäre/sekundäre Muskeln), eine Quelle für Übungs-Detail-Sheet
 │   │                       und Info-Reiter der Statistik-Übungs-Seite
-│   ├── exerciseStats.js   Reine Berechnungen für eine Übung (Zeitraum, persönliche Bestwerte), ohne DOM/Dexie
+│   ├── exerciseStats.js   Reine Berechnungen für eine Übung (Zeitraum, persönliche Bestwerte, Maximalgewicht je Tag), ohne DOM/Dexie
+│   ├── lineChart.js       Gemeinsame Liniendiagramm-Bausteine (Y-Achse, Zeit-Achse, Labels, Markup), ohne DOM/Dexie, s. ADR 0043
 │   ├── swipeBack.js       Seiten-Ebene `#page-layer` und Wisch-Zurück-Geste für Unterseiten, s. ADR 0037-0039
 │   ├── reorder.js         Umsortieren per Gedrückthalten + Verschieben (Pointer Events,
 │   │                       Auto-Scroll) - kein State/Inhalt, meldet nur (von, nach)
@@ -55,7 +56,7 @@ fitlog/
 │       ├── workout.js, statistics.js, profile.js
 │       ├── workout-exercise-detail.js    Sub-View: Übungs-Detailseite im Workout-Tab (s. View-Pattern unten)
 │       └── statistics-exercise-detail.js Sub-View: Übungs-Seite im Statistik-Tab (Reiter Statistik/Verlauf/Info)
-├── tests/                  `npm test`: db, backup, pr, exerciseStats, muscleStats, dates, escapeHtml (+ setup.js), s. "Tests" unten
+├── tests/                  `npm test`: db, backup, pr, exerciseStats, lineChart, muscleStats, dates, escapeHtml (+ setup.js), s. "Tests" unten
 ├── docs/                   Architektur, Features, Design-System, Changelog, ADRs (`decisions/`)
 ├── drafts/                 UI-Entwürfe, nicht Teil der ausgelieferten App
 ├── icons/                  App-Icons (generiert, s. unten)
@@ -162,7 +163,8 @@ Die Übungs-Sheets in Workout- und Statistik-Tab teilen Hülle, Suchleiste, Musk
 - `db.test.js` — heikle Funktionen in `js/db.js` (Löschkaskaden, Routine-Wechsel, Tages-Workout-Eindeutigkeit, Notizen)
 - `backup.test.js` — Export/Import (Round-Trip, Validierung, Import schlägt fehl ohne den Bestand zu ändern)
 - `pr.test.js` — PR-Berechnung (`js/pr.js`)
-- `exerciseStats.test.js` — Zeitraum und persönliche Bestwerte (`js/exerciseStats.js`)
+- `exerciseStats.test.js` — Zeitraum, persönliche Bestwerte und Maximalgewicht-Serie (`js/exerciseStats.js`)
+- `lineChart.test.js` — Achsen, Labels, Zeit-Achse, Punkt-Auswahl (`js/lineChart.js`)
 - `muscleStats.test.js` — Frequenz/Sätze pro Muskel (`js/muscleStats.js`)
 
 `tests/setup.js` stellt `Dexie` und die IndexedDB-Fälschung bereit. Die Oberfläche ist nicht abgedeckt und wird weiterhin manuell im Browser geprüft.

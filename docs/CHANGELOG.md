@@ -2,6 +2,14 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-07 (Verlaufs-Diagramm auf der Statistik-Übungsseite)
+
+### Added
+- Statistik-Übungs-Seite, Reiter „Statistik“: neue Diagramm-Karte über den Bestwerten mit dem Verlauf des **Maximalen Gewichts** (ein Punkt pro Trainingstag, zeitlich proportional, Zeitraum 3M/1J/Max wie der Reiter der Seite). Tippen oder Wischen wählt einen Punkt, die Kopfzeile zeigt Gewicht, Wiederholungen und Datum. Darunter eine scrollbare Größen-Leiste (vorerst ein Chip). `computeMaxWeightSeries()` in `js/exerciseStats.js`, Tests in `tests/exerciseStats.test.js`. Entscheidungen: [ADR 0043](decisions/0043-verlaufs-diagramm-und-gemeinsame-linien-komponente.md)
+
+### Changed
+- Neue gemeinsame Bausteine `js/lineChart.js` (Y-Achse, Label-Auswahl, Markup, Zeit-Achse); das Volumen-Chart im Übersicht-Reiter nutzt sie, Optik und Berechnung unverändert. Neue Datumsvariante `dayMonthShort` in `js/dates.js`, Tests in `tests/lineChart.test.js`. `css/tailwind.css` neu gebaut, `CACHE_NAME` auf `fitlog-v266`
+
 ## 2026-11-07 (Specs aus dem Repo entfernt)
 
 ### Removed

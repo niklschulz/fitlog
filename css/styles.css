@@ -557,3 +557,35 @@ textarea,
   color: var(--color-muted);
   pointer-events: none;
 }
+
+/* Verlaufs-Diagramm der Übungs-Seite (js/lineChart.js, ADR 0043): Datenpunkte
+   als runde HTML-Elemente über dem gestreckten SVG, Hilfslinie am
+   ausgewählten Punkt. Die Plot-Fläche nimmt horizontale Wisch-Gesten selbst
+   entgegen (Punkt-Auswahl), vertikales Scrollen der Seite bleibt erhalten. */
+.chart-plot-interactive {
+  touch-action: pan-y;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.chart-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--color-accent-muted);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.chart-dot.is-selected {
+  width: 12px;
+  height: 12px;
+  background: var(--color-accent);
+}
+.chart-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(var(--rgb-ink) / 0.15);
+  pointer-events: none;
+}

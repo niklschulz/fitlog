@@ -2,7 +2,7 @@
 // Übung). Reine Funktionen, keine DB nötig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getRangeStart, computePersonalBests, estimateOneRepMax } from '../js/exerciseStats.js';
+import { getRangeStart, computePersonalBests, computeMaxWeightSeries, estimateOneRepMax } from '../js/exerciseStats.js';
 
 const day = (date, ...sets) => ({ date, sets: sets.map(([weight, reps]) => ({ weight, reps })) });
 // getExerciseSetHistory liefert die neuesten Tage zuerst
@@ -87,4 +87,36 @@ test('1RM-Bestwert: höchster Schätzwert, Sätze über 10 Reps zählen nicht, G
 test('1RM-Bestwert: nur Sätze über 10 Reps oder Gewicht 0 → null', () => {
   const h = [day('2026-10-01', [50, 12], [0, 5])];
   assert.equal(computePersonalBests(h, 'max', '2026-10-03').oneRm, null);
+});
+
+test('computeMaxWeightSeries: ein Punkt pro Tag, aufsteigend, höchstes Gewicht (Gleichstand: mehr Reps)', () => {
+  const h = [
+    day('2026-10-03', [60, 8], [62.5, 6], [62.5, 8]),
+    day('2026-08-01', [60, 10], [50, 15]),
+    day('2025-12-01', [70, 3]),
+  ];
+  assert.deepEqual(computeMaxWeightSeries(h, 'max', '2026-10-03'), [
+    { date: '2025-12-01', value: 70, reps: 3 },
+    { date: '2026-08-01', value: 60, reps: 10 },
+    { date: '2026-10-03', value: 62.5, reps: 8 },
+  ]);
+});
+
+test('computeMaxWeightSeries: Zeitraumgrenzen, Zukunft, ungültige Sätze, leere Historie', () => {
+  const h = [
+    day('2026-10-10', [99, 1]), // Zukunft
+    day('2026-10-03', [0, 12], [60, 0]), // nur ungültig / Gewicht 0
+    day('2026-07-03', [55, 5]), // genau am Grenztag (3M ab 2026-07-03)
+    day('2026-07-02', [80, 5]), // einen Tag davor
+  ];
+  assert.deepEqual(computeMaxWeightSeries(h, '3m', '2026-10-03'), [{ date: '2026-07-03', value: 55, reps: 5 }]);
+  assert.deepEqual(computeMaxWeightSeries([], 'max', '2026-10-03'), []);
+});
+
+test('computeMaxWeightSeries: Maximum der Serie = Bestwert "Gewicht"', () => {
+  for (const range of ['3m', '1j', 'max']) {
+    const series = computeMaxWeightSeries(history, range, '2026-10-03');
+    const best = computePersonalBests(history, range, '2026-10-03').weight;
+    assert.equal(Math.max(...series.map((p) => p.value)), best.weight);
+  }
 });

@@ -18,6 +18,7 @@ test('formatDate: je Variante ein Beispiel (Sonntag, 1. November 2026)', () => {
   assert.equal(formatDate('2026-11', 'monthYearLong'), 'November 2026');
   assert.equal(formatDate(day, 'weekdayDayMonthShort'), 'So., 1. Nov.');
   assert.equal(formatDate(day, 'dayMonthShortYear'), '1. Nov. 2026');
+  assert.equal(formatDate(day, 'dayMonthShort'), '1. Nov.');
   assert.equal(formatDate(day, 'weekdayDayMonthShortYear'), 'So., 1. Nov. 2026');
   assert.equal(formatDate(day, 'fullLong'), 'Sonntag, 01. November 2026');
 });

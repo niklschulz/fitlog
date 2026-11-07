@@ -21,6 +21,7 @@ const DATE_FORMATS = {
   monthShort: { month: 'short' }, // "Nov"
   monthYearLong: { month: 'long', year: 'numeric' }, // "November 2026"
   weekdayDayMonthShort: { weekday: 'short', day: 'numeric', month: 'short' }, // "Sa., 1. Nov."
+  dayMonthShort: { day: 'numeric', month: 'short' }, // "1. Nov."
   dayMonthShortYear: { day: 'numeric', month: 'short', year: 'numeric' }, // "1. Nov. 2026"
   weekdayDayMonthShortYear: { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }, // "Sa., 1. Nov. 2026"
   fullLong: { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }, // "Sonntag, 01. November 2026"

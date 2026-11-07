@@ -8,7 +8,8 @@
 // statistics.js übergibt nur die Übungs-ID und einen onBack-Callback.
 import { db, getExerciseSetHistory, getPRsForExercises, todayISODate } from '../db.js';
 import { escapeHtml, renderSegmentedControl, renderRangeControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, renderPRIcon, CARD } from '../utils.js';
-import { computePersonalBests } from '../exerciseStats.js';
+import { computePersonalBests, computeMaxWeightSeries } from '../exerciseStats.js';
+import { buildYAxis, buildTimeAxis, renderLineChart, renderChartDots, nearestIndexByX } from '../lineChart.js';
 import { formatDate as formatDateVariant } from '../dates.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
 import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
@@ -22,7 +23,16 @@ const state = {
   // Zeitraum für ALLE Statistiken dieser Übung ('3m' | '1j' | 'max'), bleibt
   // beim Reiter-Wechsel erhalten, startet bei jedem Öffnen neu auf 3M
   range: '3m',
+  // Größe im Verlaufs-Diagramm (Schlüssel aus CHART_METRICS) und der darin
+  // ausgewählte Punkt (`null` = letzter Punkt); beides wird bei Zeitraum- oder
+  // Größen-Wechsel bzw. beim Öffnen zurückgesetzt
+  metric: 'maxWeight',
+  selectedIndex: null,
 };
+
+// Daten der aktuell gezeichneten Diagramm-Karte, damit die Punkt-Auswahl
+// (wireEvents) Kopfzeile und Hervorhebung ohne neues paint() aktualisieren kann.
+let chartView = null;
 
 // Wie renderEpoch in workout-exercise-detail.js: verhindert, dass ein noch
 // laufender paint() nach Zurück-Tap oder Tab-Wechsel einen fremden Container
@@ -39,6 +49,8 @@ export async function render(container, { exerciseId, onBack: onBackCallback, re
   state.exerciseId = exerciseId;
   state.activeTab = 'stats';
   state.range = '3m';
+  state.metric = 'maxWeight';
+  state.selectedIndex = null;
   await paint();
 }
 
@@ -60,6 +72,7 @@ async function paint({ tabsFromRect = null, rangeFromRect = null } = {}) {
   }
 
   let tabHtml = '';
+  chartView = null;
   if (state.activeTab === 'history') {
     const [history, prs] = await Promise.all([getExerciseSetHistory(exercise.id), getPRsForExercises([exercise.id])]);
     tabHtml = renderExerciseHistory(history, prs);
@@ -68,8 +81,11 @@ async function paint({ tabsFromRect = null, rangeFromRect = null } = {}) {
   } else {
     const history = await getExerciseSetHistory(exercise.id);
     const bests = computePersonalBests(history, state.range, todayISODate());
+    const metric = CHART_METRICS.find((m) => m.key === state.metric) ?? CHART_METRICS[0];
+    const series = metric.series(history, state.range, todayISODate());
     tabHtml = `
       <div class="flex justify-end">${renderRangeControl('stat-range-control', state.range)}</div>
+      ${renderMetricChart(metric, series)}
       ${renderPersonalBests(bests)}
     `;
   }
@@ -101,6 +117,111 @@ async function paint({ tabsFromRect = null, rangeFromRect = null } = {}) {
   positionSegmentedIndicator(currentContainer.querySelector('#stat-detail-tabs'), { fromRect: tabsFromRect });
   positionSegmentedIndicator(currentContainer.querySelector('#stat-range-control'), { fromRect: rangeFromRect });
   wireEvents();
+}
+
+// --- Verlaufs-Diagramm einer Größe ---
+//
+// Karte über den Bestwerten (ADR 0043): Kopfzeile mit Wert + Datum des
+// ausgewählten (Standard: letzten) Punkts, Liniendiagramm mit Einzelpunkten
+// (Tippen/Wischen wählt einen Punkt) und darunter die Größen-Leiste. Weitere
+// Größen später nur als zusätzlicher Eintrag in CHART_METRICS: jede liefert
+// `[{ date, value, reps? }]`. Diagramm-Markup und Achsen: js/lineChart.js.
+const CHART_METRICS = [
+  { key: 'maxWeight', label: 'Maximales Gewicht', unit: 'kg', series: computeMaxWeightSeries },
+];
+
+// Y-Ticks und Kopfzahl: bis zu zwei Nachkommastellen (2,5-kg-Scheiben), ",0" entfällt
+const formatTick = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+
+function renderChartHeader(metric, point) {
+  if (!point) return '';
+  const reps = point.reps ? ` <span class="text-muted text-body font-normal">(x${escapeHtml(point.reps)})</span>` : '';
+  return `
+    <span class="text-kpi text-ink whitespace-nowrap">${formatNumber(point.value)} <span class="text-muted text-body font-normal">${metric.unit}</span>${reps}</span>
+    <span class="text-label uppercase text-muted whitespace-nowrap">${escapeHtml(formatDate(point.date))}</span>
+  `;
+}
+
+function renderMetricChips() {
+  return `
+    <div id="stat-metric-chips" class="flex gap-2 overflow-x-auto" role="group" aria-label="Größe">
+      ${CHART_METRICS.map((m) => {
+        const active = m.key === state.metric;
+        return `<button type="button" data-metric="${m.key}" aria-pressed="${active}" class="metric-chip tap-feedback shrink-0 whitespace-nowrap rounded-btn px-4 py-3 text-body ${
+          active ? 'bg-highlight text-ink' : 'text-muted'
+        }">${escapeHtml(m.label)}</button>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderMetricChart(metric, series) {
+  const chips = renderMetricChips();
+  if (series.length === 0) {
+    return `
+      <div class="${CARD} flex flex-col gap-4">
+        <p class="text-body text-muted text-center py-6">Keine Daten im Zeitraum.</p>
+        ${chips}
+      </div>
+    `;
+  }
+  const { xPcts, labels } = buildTimeAxis(series.map((p) => p.date), state.range);
+  const points = series.map((p, i) => ({ xPct: xPcts[i], value: p.value }));
+  const yAxis = buildYAxis(
+    points.map((p) => p.value),
+    // Ein einzelner/gleicher Wert steht mittig: Bereich Wert ± 10 %, mindestens ± 1
+    { flatHalfSpan: (v) => Math.max(1, v * 0.1) }
+  );
+  const selected = state.selectedIndex ?? series.length - 1;
+  chartView = { metric, series, xPcts };
+  const last = series[series.length - 1];
+  const ariaLabel = `${metric.label}, ${series.length} ${series.length === 1 ? 'Trainingstag' : 'Trainingstage'}, zuletzt ${formatNumber(last.value)} ${metric.unit} am ${formatDate(last.date)}`;
+  return `
+    <div class="${CARD} flex flex-col gap-4">
+      <div id="stat-chart-header" class="flex flex-col gap-1">${renderChartHeader(metric, series[selected])}</div>
+      <div class="border-t border-divider"></div>
+      ${renderLineChart({
+        points,
+        yAxis,
+        tickLabel: formatTick,
+        labels,
+        rootAttrs: `role="img" aria-label="${escapeHtml(ariaLabel)}"`,
+        plotClass: 'chart-plot-interactive',
+        plotAttrs: 'id="stat-chart-plot"',
+        overlayHtml: renderChartDots(points, yAxis, selected),
+      })}
+      ${chips}
+    </div>
+  `;
+}
+
+// Punkt auswählen: nur Kopfzeile und Hervorhebung ändern, kein neues paint()
+function selectChartPoint(index) {
+  if (!chartView || index < 0 || index === state.selectedIndex) return;
+  state.selectedIndex = index;
+  const { metric, series, xPcts } = chartView;
+  currentContainer.querySelector('#stat-chart-header').innerHTML = renderChartHeader(metric, series[index]);
+  currentContainer.querySelectorAll('#stat-chart-plot .chart-dot').forEach((dot, i) => dot.classList.toggle('is-selected', i === index));
+  const guide = currentContainer.querySelector('#stat-chart-plot .chart-guide');
+  guide.style.left = `${xPcts[index]}%`;
+  guide.style.display = '';
+}
+
+function wireChartSelection() {
+  const plot = currentContainer.querySelector('#stat-chart-plot');
+  if (!plot || !chartView) return;
+  const select = (e) => {
+    const rect = plot.getBoundingClientRect();
+    if (rect.width === 0) return;
+    selectChartPoint(nearestIndexByX(chartView.xPcts, ((e.clientX - rect.left) / rect.width) * 100));
+  };
+  plot.addEventListener('pointerdown', (e) => {
+    plot.setPointerCapture?.(e.pointerId);
+    select(e);
+  });
+  plot.addEventListener('pointermove', (e) => {
+    if (plot.hasPointerCapture?.(e.pointerId)) select(e);
+  });
 }
 
 // --- Persönliche Bestwerte ---
@@ -164,6 +285,15 @@ function renderPersonalBests(bests) {
 }
 
 function wireEvents() {
+  wireChartSelection();
+  currentContainer.querySelectorAll('#stat-metric-chips .metric-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (state.metric === btn.dataset.metric) return;
+      state.metric = btn.dataset.metric;
+      state.selectedIndex = null;
+      paint();
+    });
+  });
   currentContainer.querySelector('#stat-detail-back-btn')?.addEventListener('click', () => triggerBack(() => onBack()));
   currentContainer.querySelectorAll('#stat-detail-tabs .segmented-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -178,6 +308,7 @@ function wireEvents() {
       if (state.range === btn.dataset.tab) return;
       const fromRect = measureSegmentedIndicatorRect(currentContainer.querySelector('#stat-range-control'));
       state.range = btn.dataset.tab;
+      state.selectedIndex = null;
       paint({ rangeFromRect: fromRect });
     });
   });

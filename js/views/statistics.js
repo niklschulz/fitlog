@@ -10,6 +10,7 @@ import { db, getTrainedDates, getWeeklyTrainingVolumes, getMuscleStatsData, MUSC
 import { getStatsRange, computeMuscleStats } from '../muscleStats.js';
 import { formatDate, addMonths, yearMonthOf } from '../dates.js';
 import { escapeHtml, renderRangeControl, renderSegmentedControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, CARD, LIST_ROW, TEXTLINK_ACTION } from '../utils.js';
+import { buildYAxis, pickLabelIndices, layoutAxisLabels, leftWithEdgeMargin, renderLineChart } from '../lineChart.js';
 import { filterExercises } from '../exerciseFilter.js';
 import {
   renderExerciseSheetShell,
@@ -258,19 +259,6 @@ function renderChart(buckets, weeklyGoal) {
 // anwendbar, alle Sätze zählen. Sobald ein solches Feld existiert, muss
 // getWeeklyTrainingVolumes() (js/db.js) entsprechend gefiltert werden.
 
-// Rundet einen rohen Tick-Schritt auf einen "schönen" Wert (1/2/5 × 10^n) -
-// vermeidet krumme Y-Achsen-Beschriftungen wie "1234". `minStep` erzwingt
-// eine Untergrenze (z. B. 1000, s. Aufrufer) - gefahrlos per Math.max
-// kombinierbar, da ein sinnvoll gewähltes `minStep` (Zehnerpotenz × 1/2/5)
-// selbst bereits ein "schöner" Wert ist.
-function niceTickStep(rawStep, minStep = 0) {
-  if (rawStep <= 0) return minStep || 1;
-  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
-  const residual = rawStep / magnitude;
-  const niceResidual = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
-  return Math.max(niceResidual * magnitude, minStep);
-}
-
 // "4800" -> "4,8k" (deutsches Dezimalkomma), sonst unverändert.
 function formatVolumeTick(value) {
   if (value >= 1000) return `${(Math.round(value / 100) / 10).toString().replace('.', ',')}k`;
@@ -410,137 +398,37 @@ function formatChangeSinceLabel(weekStart, tabKey) {
   return `seit ${tabKey === '3m' ? formatWeekAxisLabel(weekStart) : formatMonthAxisLabel(monthOfWeek(weekStart), '1j')}`;
 }
 
-// Liniendiagramm ohne Chart-Library (kein Build-Schritt, s. CLAUDE.md) - Y-
-// Achse/Gitterlinien als absolut positionierte Elemente (Prozent-Position
-// aus dem Werte-Bereich berechnet, die Skala beginnt bewusst nicht bei 0,
-// sondern ist auf den tatsächlichen Wertebereich gezoomt, damit
-// Schwankungen sichtbar bleiben). Verbindungslinie (der gleitende
-// Durchschnitt) als native SVG-`<polyline>` mit `preserveAspectRatio="none"`
-// (füllt die volle Kartenbreite). Zeigt NUR den gleitenden Durchschnitt -
-// die ursprünglich zusätzlich eingezeichneten Rohwert-Punkte wurden auf
-// Nutzer-Wunsch entfernt (weniger Wirrwarr, die Linie allein transportiert
-// den Trend bereits ausreichend); der Werte-Bereich für die Y-Achse
-// berücksichtigt entsprechend auch nur noch die MA-Werte, nicht mehr die
-// Rohwerte. Farbe über `text-accent` + `stroke="currentColor"` statt eines
-// Hex-Werts direkt im SVG-Attribut - bleibt dadurch automatisch mit dem
-// zentralen `accent`-Design-Token synchron (s. index.html), auch wenn
-// dessen Wert sich künftig wieder ändert. `vector-effect="non-scaling-
-// stroke"` verhindert unterschiedlich dicke Liniensegmente (Nutzer-
-// Bugreport): Ohne dieses Attribut skaliert `stroke-width` mit der nicht
-// seitenverhältnistreuen `viewBox`-Streckung (`preserveAspectRatio="none"`)
-// mit, wodurch steilere Segmente dünner/dicker wirken als flachere - mit
-// dem Attribut bleibt die Strichdicke unabhängig vom Liniensegment-Winkel
-// konstant in echten Bildschirm-Pixeln. Zusätzlich zu den aus `ticks`
-// berechneten Gitterlinien eine feste Grundlinie am unteren Rand (`bottom-0`,
-// nicht über `ticks` erzeugt): Da die Y-Domäne auf den tatsächlichen
-// Wertebereich gezoomt ist (nicht bei 0 beginnend), landet ein "schöner"
-// niceTickStep()-Wert nur zufällig exakt am unteren Rand - ohne diese Zeile
-// stünde direkt über der x-Achsen-Beschriftung mal eine Linie, mal keine, je
-// nach Zufall (Nutzer-Vorgabe: soll wie beim Balkendiagramm darüber immer da
-// sein).
+// Liniendiagramm des Gleitenden Durchschnitts: Markup und Achsen-Mechanik
+// (gezoomte Y-Achse, Grundlinie, non-scaling-stroke) kommen aus
+// js/lineChart.js (ADR 0043), hier nur die volumenspezifischen Teile. Zeigt
+// NUR den gleitenden Durchschnitt - Rohwert-Punkte wurden auf Nutzer-Wunsch
+// entfernt (ADR 0026), der Werte-Bereich der Y-Achse berücksichtigt nur die
+// MA-Werte.
 function renderVolumeChart(stats) {
   const { periods, ma, tabKey } = stats;
-  const maValues = ma.filter((v) => v != null);
 
-  const rawMin = Math.min(...maValues);
-  const rawMax = Math.max(...maValues);
-  const range = rawMax - rawMin || rawMax || 1;
-  const pad = range * 0.15;
-  const domainMin = Math.max(0, rawMin - pad);
-  const domainMax = rawMax + pad;
-  const span = domainMax - domainMin || 1;
-  const topPct = (v) => ((domainMax - v) / span) * 100;
+  // MA-Linie durchgängig über ALLE Perioden (auch leere) - nur Segmente mit
+  // bekanntem Wert werden gezeichnet (ganz am linken Rand, bevor die erste
+  // trainierte Periode je stattfand, gibt es noch keinen MA-Wert). Wochen
+  // sind gleichmäßig nach Index verteilt.
   const xPct = (i) => (periods.length > 1 ? (i / (periods.length - 1)) * 100 : 50);
+  const points = ma.map((value, i) => (value == null ? null : { xPct: xPct(i), value })).filter(Boolean);
 
-  // Ab 1000 kg zeigt formatVolumeTick() die "k"-Kurzform ("4k") - ohne
-  // Untergrenze könnte der rohe Schritt dabei z. B. 500 ergeben (Nutzer-
-  // Bugreport: "4,5k" statt einer ganzen Zahl), da die Y-Domäne auf den
-  // tatsächlichen Wertebereich gezoomt ist und der Schritt dadurch auch bei
-  // großen Absolutwerten klein ausfallen kann. `minStep: 1000` erzwingt
-  // dort ausschließlich ganze Tausender-Schritte (1k/2k/5k/10k/...).
-  const tickStep = niceTickStep((domainMax - domainMin) / 4, domainMax >= 1000 ? 1000 : 0);
-  const ticks = [];
-  for (let v = Math.ceil(domainMin / tickStep) * tickStep; v <= domainMax; v += tickStep) ticks.push(v);
-
-  // MA-Linie durchgängig über ALLE Perioden (auch leere, s. o.) - nur
-  // Segmente mit bekanntem Wert werden überhaupt gezeichnet (ganz am
-  // linken Rand, bevor die erste trainierte Periode je stattfand, gibt es
-  // noch keinen MA-Wert, s. computeMovingAverage()).
-  const linePoints = ma
-    .map((v, i) => (v == null ? null : `${xPct(i)},${topPct(v)}`))
-    .filter(Boolean)
-    .join(' ');
-
-  // Höchstens 4 X-Achsen-Beschriftungen statt einer pro Slot - bei mehr
-  // überlappen sich die Beschriftungen auf der schmalen Kartenbreite (s.
-  // Browser-Verifikation beim ursprünglichen Tages-Diagramm). Bei wenigen
-  // Perioden (<= 6, passen ohne Kollisionsrisiko nebeneinander) werden
-  // stattdessen ALLE gezeigt - sonst erzeugt die gleichmäßige Verteilung von
-  // z. B. 4 Labels auf 5 Perioden zwangsläufig eine Lücke MITTEN in der
-  // Reihe (0,1,3,4 statt 0,1,2,3,4 - Index 2 fällt bei der Rundung heraus),
-  // was wie eine fehlende Woche/ein fehlender Monat wirkt statt wie
-  // bewusstes Verdichten (Nutzer-Bugreport: "KW37 fehlt").
-  const labelCount = periods.length <= 6 ? periods.length : 4;
-  const labelIndices = [...new Set(Array.from({ length: labelCount }, (_, i) => Math.round((i / (labelCount - 1 || 1)) * (periods.length - 1))))];
-  const axisLabelOf = (p) => volumeAxisLabel(p.weekStart, tabKey);
-  // Aufeinanderfolgende Duplikate entfernen (z. B. zwei Monate desselben
-  // Jahres im Max-Reiter, dessen Format nur die Jahreszahl zeigt - beide
-  // ergäben "2026") - nur die jeweils erste Beschriftung eines Werts bleibt
-  // stehen. `labelIndices` ist chronologisch aufsteigend sortiert (Set
-  // erhält die Einfügereihenfolge), ein Vergleich mit dem Vorgänger reicht.
-  const dedupedLabelIndices = labelIndices.filter(
-    (idx, pos) => pos === 0 || axisLabelOf(periods[idx]) !== axisLabelOf(periods[labelIndices[pos - 1]])
+  // Ab 1000 kg zeigt formatVolumeTick() die "k"-Kurzform - ohne Untergrenze
+  // könnte der Schritt dabei z. B. 500 ergeben ("4,5k" statt einer ganzen
+  // Zahl); `minStep: 1000` erzwingt dort ganze Tausender-Schritte.
+  const yAxis = buildYAxis(
+    points.map((p) => p.value),
+    { minStepFor: (domainMax) => (domainMax >= 1000 ? 1000 : 0) }
   );
 
-  // Eigene, von den Datenpunkten (xPct, s. o.) UNABHÄNGIGE Positions-Skala
-  // nur für die Beschriftungen: reserviert an jedem Rand eine Marge, innerhalb
-  // derer JEDES Label zentriert sitzt (immer translateX(-50%), kein
-  // Sonderfall mehr fürs erste/letzte Label). Vorher waren erstes/letztes
-  // Label kantenbündig (0%/100%, Text wuchs nach innen) und die übrigen an
-  // ihrer echten xPct-Position zentriert - bei vollständig gezeigten
-  // Perioden (s. o.) ergab das trotz gleichmäßig verteilter Perioden
-  // ungleichmäßige Lücken (außen eng, innen weit auseinander, Nutzer-
-  // Bugreport). Die Marge (8 %, rund 24px bei typischer Kartenbreite) ist
-  // großzügig genug für die breiteste vorkommende Beschriftung ("Sep 26"),
-  // ohne über den Kartenrand hinauszuragen (16px Karten-Padding als
-  // zusätzlicher Puffer, s. `CARD` in utils.js).
-  const AXIS_LABEL_EDGE_MARGIN_PCT = 8;
-  const labelPct = (i) =>
-    periods.length > 1 ? AXIS_LABEL_EDGE_MARGIN_PCT + (i / (periods.length - 1)) * (100 - 2 * AXIS_LABEL_EDGE_MARGIN_PCT) : 50;
+  // Beschriftungen auf der Rand-Marge-Skala, unabhängig von den Datenpunkten
+  const labels = layoutAxisLabels(
+    pickLabelIndices(periods.length).map((i) => ({ pos: i, text: volumeAxisLabel(periods[i].weekStart, tabKey) })),
+    (i) => (periods.length > 1 ? leftWithEdgeMargin(xPct(i)) : 50)
+  );
 
-  return `
-    <div class="flex flex-col gap-2">
-      <div class="flex gap-2">
-        <div class="w-8 shrink-0 relative h-40">
-          ${ticks.map((t) => `<span class="absolute left-0 text-label text-muted" style="top:${topPct(t)}%; transform: translateY(-50%);">${formatVolumeTick(t)}</span>`).join('')}
-        </div>
-        <div class="flex-1 relative h-40">
-          ${ticks.map((t) => `<div class="absolute left-0 right-0 border-t border-dotted border-white/15" style="top:${topPct(t)}%"></div>`).join('')}
-          <div class="absolute left-0 right-0 bottom-0 border-t border-dotted border-white/15"></div>
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full text-accent">
-            <polyline points="${linePoints}" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" />
-          </svg>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <div class="w-8 shrink-0"></div>
-        <div class="flex-1 relative h-4">
-          ${dedupedLabelIndices
-            .map((i) => {
-              // Genau EIN übrig gebliebenes Label (z. B. "2026" im Max-
-              // Reiter, wenn die gesamte Zeitspanne noch unter einem Jahr
-              // liegt, s. o.) steht mittig statt an seiner ursprünglichen,
-              // chronologischen Position - es repräsentiert dann die
-              // gesamte sichtbare Achse, nicht nur einen einzelnen
-              // Zeitpunkt darin (Nutzer-Vorgabe).
-              const left = dedupedLabelIndices.length === 1 ? 50 : labelPct(i);
-              return `<span class="absolute text-label text-muted whitespace-nowrap" style="left:${left}%; transform: translateX(-50%);">${axisLabelOf(periods[i])}</span>`;
-            })
-            .join('')}
-        </div>
-      </div>
-    </div>
-  `;
+  return renderLineChart({ points, yAxis, tickLabel: formatVolumeTick, labels });
 }
 
 // Zeitraum-Reiter (3M/1J/Max): renderRangeControl() in utils.js (geteilt mit der

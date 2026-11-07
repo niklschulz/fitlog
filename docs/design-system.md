@@ -104,7 +104,8 @@ Konstanten aus `js/utils.js` werden in Templates interpoliert (`${BTN_PRIMARY}`)
 - **Notiz:** `renderNote()` / `renderNoteIcon()` in `js/utils.js`; Eingabe im Notiz-Sheet (`js/noteSheet.js`)
 - **Bestwerte-Tabelle / Frequenz-Tabelle:** `CARD` mit Zeilen (`min-h-[56px]`, `divide-divider`), Icon-Kreis `w-10 h-10 bg-white/[0.08]`, Name `text-card-title`, Wert `text-body`, Datum `text-label uppercase text-muted`, fehlender Wert "–". Code: `js/views/statistics.js`, `js/views/statistics-exercise-detail.js`
 - **Balkendiagramm** (Workouts pro Woche): reines HTML/CSS, kein Chart-Framework. Aktuelle Woche `bg-accent`, übrige `bg-accent-muted`; gepunktete Gitterlinien `border-white/15`; X-Achse zweizeilig "KW" / ISO-Wochennummer
-- **Liniendiagramm** (Volumen): SVG-`<polyline>` mit `preserveAspectRatio="none"`, Y-Achse auf den Wertebereich gezoomt, gleiche Achsenspaltenbreite wie das Balkendiagramm (bündige Plot-Flächen), nur die geglättete Linie, keine Einzelpunkte. Beide Diagramme sind keine generischen Komponenten
+- **Liniendiagramm** (Volumen, Verlauf einer Größe): gemeinsame Bausteine in `js/lineChart.js` ([ADR 0043](decisions/0043-verlaufs-diagramm-und-gemeinsame-linien-komponente.md)): SVG-`<polyline>` mit `preserveAspectRatio="none"` und `vector-effect="non-scaling-stroke"`, Y-Achse auf den Wertebereich gezoomt (`w-8`-Spalte, gleiche Breite wie das Balkendiagramm, bündige Plot-Flächen), gepunktete Gitterlinien und feste Grundlinie, höchstens 4 X-Beschriftungen. Volumen: nur die geglättete Linie. Verlauf: zusätzlich Einzelpunkte (`.chart-dot`, runde HTML-Elemente, ausgewählter Punkt `.is-selected` in `accent`) und senkrechte Hilfslinie `.chart-guide`, Plot-Fläche `.chart-plot-interactive` (`touch-action: pan-y`)
+- **Größen-Chips** (unter dem Verlaufs-Diagramm): horizontal scrollbare Reihe, Chip `rounded-btn px-4 py-3 text-body`, aktiv `bg-highlight text-ink`, sonst `text-muted`
 
 ## Bewegung
 
