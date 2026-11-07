@@ -2,6 +2,12 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-07 (Farben nur einmal anlegen)
+
+### Changed
+- Die Farbliste in `tailwind.config.js` ist jetzt die einzige Quelle: Ein Plugin erzeugt daraus `--color-<name>` und `--rgb-<name>` als CSS-Variablen. Alle Hex-/`rgba()`-Kopien in `css/styles.css` (Verläufe, Glas-Effekte, Nav, Platzhalter) sowie in `js/reorder.js` und `js/swipeBack.js` verwenden sie bzw. `black`. Neues Token `accent-soft` (`#E5F3DE`). Optik unverändert. Begründung: [ADR 0041](decisions/0041-farben-als-css-variablen.md)
+- `npm run check` (Prüfung 10) meldet auch `rgb()`/`rgba()` mit festen Zahlen, außer reinem Weiß/Schwarz. `CACHE_NAME` hochgezählt
+
 ## 2026-11-07 (Fix: Reiter-Hinterlegung beim Zurückwischen)
 
 ### Fixed

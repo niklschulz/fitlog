@@ -26,7 +26,8 @@ Visuelle Prinzipien (Farben, Formen, Abstände, Typografie) sind eigenständig e
 
 Regeln:
 - **Keine Trennlinien als Abgrenzung.** Abgrenzung läuft über Hintergrundkontrast; Inputs sind `bg-base` auf `bg-surface`-Karten. Ausnahmen: `border-divider` in Statistik-Karten und der Kreis `border-2 border-accent` für den heutigen Tag im großen Kalender.
-- Hartkodierte Hex-Werte nur in `css/styles.css` für Glas-Effekte (z. B. `rgba(37, 37, 37, 0.55)` = halbtransparentes `bg-surface`).
+- **Farben stehen nur einmal, in `tailwind.config.js`.** Der Build erzeugt daraus pro Farbe zwei CSS-Variablen (ADR 0041): `--color-<name>` (Hex, für JS und einfache CSS-Werte) und `--rgb-<name>` (`r g b`, für Transparenz in CSS). Beispiel: `background: rgb(var(--rgb-surface) / 0.55)` (halbtransparentes `bg-surface`), `color: var(--color-muted)`. Keine Hex- oder `rgba()`-Kopien in `css/styles.css` oder `js/`. Ausnahme: reines Weiß und Schwarz für neutrale Overlays und Schatten (`rgba(255, 255, 255, 0.12)`, `rgba(0, 0, 0, 0.35)`).
+- `text-accent-soft` (`#E5F3DE`): leicht grün getöntes Weiß für Icon/Text auf Glas-Akzent-Buttons; bisher nur als `var(--color-accent-soft)` in `css/styles.css` im Einsatz.
 
 ## Typografie
 

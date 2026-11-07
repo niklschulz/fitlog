@@ -147,7 +147,7 @@ function makeDim(rect, z, opacity) {
   const dim = document.createElement('div');
   dim.setAttribute('aria-hidden', 'true');
   dim.style.cssText =
-    `position:fixed;left:0;top:${rect.top}px;width:100%;height:${rect.height}px;background:#000;` +
+    `position:fixed;left:0;top:${rect.top}px;width:100%;height:${rect.height}px;background:black;` +
     `pointer-events:none;z-index:${z};opacity:${opacity};will-change:opacity;`;
   document.body.appendChild(dim);
   return dim;

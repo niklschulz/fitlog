@@ -500,6 +500,13 @@ export function scanHexColors(text, file, { allowlist = HEX_ALLOWLIST } = {}) {
       if (allowlist.some((a) => a.value === m[0].toLowerCase())) continue;
       out.push(finding(WARNUNG, file, i + 1, `hartkodierte Farbe ${m[0]} (Token in tailwind.config.js verwenden)`));
     }
+    // rgb()/rgba() mit festen Zahlen: nur reines Weiß/Schwarz (neutrale Overlays, Schatten) ist erlaubt;
+    // Token-Farben stehen als CSS-Variable da (`rgb(var(--rgb-surface) / 0.55)`).
+    for (const m of line.matchAll(/\brgba?\(\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*[, ]\s*(\d{1,3})/g)) {
+      const channels = [m[1], m[2], m[3]].map(Number);
+      if (channels.every((c) => c === 0) || channels.every((c) => c === 255)) continue;
+      out.push(finding(WARNUNG, file, i + 1, `hartkodierte Farbe ${m[0]}) (CSS-Variable --rgb-<token> verwenden)`));
+    }
   });
   return out;
 }
