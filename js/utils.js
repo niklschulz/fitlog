@@ -294,6 +294,22 @@ export function positionSegmentedIndicator(container, { fromRect = null } = {}) 
   // rAF verschiebt die Messung auf den nächsten Frame, nachdem der Browser
   // zwischenzeitlich aufgelaufene Mikrotasks (inkl. Tailwinds Stylesheet-
   // Update) abgearbeitet hat.
+  // Zusätzlich sofort setzen (Tailwind ist vorkompiliert, die Messung ist
+  // daher schon synchron korrekt): Sonst fehlt dem Indikator bis zum nächsten
+  // Frame Position und Breite, und ein in dieser Lücke geklontes Abbild der
+  // Seite (Zurückwischen, js/swipeBack.js) zeigt die Hinterlegung nicht.
+  const place = () => {
+    const wrapper = container.querySelector('.segmented-control');
+    const indicator = wrapper?.querySelector('.segmented-control-indicator');
+    const activeBtn = wrapper?.querySelector('.segmented-tab[data-active="true"]');
+    if (!wrapper || !indicator || !activeBtn) return;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    indicator.style.left = `${btnRect.left - wrapperRect.left}px`;
+    indicator.style.width = `${btnRect.width}px`;
+  };
+  place();
+
   requestAnimationFrame(() => {
     const wrapper = container.querySelector('.segmented-control');
     const indicator = wrapper?.querySelector('.segmented-control-indicator');

@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-07 (Fix: Reiter-Hinterlegung beim Zurückwischen)
+
+### Fixed
+- Statistik-Tab: Beim Zurückwischen von einer Übungsseite fehlte die hellgraue Hinterlegung des aktiven Reiters, bis die Animation zu Ende war. `positionSegmentedIndicator()` (`js/utils.js`) setzte Position/Breite erst im nächsten Frame, das nach `refreshUnder()` geklonte Abbild (`js/swipeBack.js`) lag genau in dieser Lücke. Der Indikator wird jetzt zusätzlich sofort positioniert. `CACHE_NAME` auf `fitlog-v262`.
+
 ## 2026-11-07 (Fix: Reiter-Beschriftungen auf Übungs-Unterseite)
 
 ### Fixed
