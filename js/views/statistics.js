@@ -196,8 +196,8 @@ function renderChart(buckets, weeklyGoal) {
   return `
     <div class="flex flex-col gap-2">
       <div class="flex gap-2">
-        <div class="w-8 shrink-0 flex flex-col justify-between h-40 pb-px">
-          ${ticks.map((v) => `<span class="text-label text-muted">${v}</span>`).join('')}
+        <div class="w-8 shrink-0 relative h-40">
+          ${ticks.map((v, i) => `<span class="absolute left-0 text-label text-muted" style="top:${(i / (ticks.length - 1)) * 100}%; transform: translateY(-50%);">${v}</span>`).join('')}
         </div>
         <div class="flex-1 relative h-40">
           <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">

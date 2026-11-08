@@ -122,3 +122,33 @@ export function computeMaxWeightSeries(history, range, today) {
   }
   return series.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
+
+/**
+ * Maximale Wiederholungen je Trainingstag im Zeitraum (zweite Größe im
+ * Verlaufs-Diagramm, ADR 0043).
+ *
+ * @param {Array} history  getExerciseSetHistory(): [{ date, sets }], neueste Tage zuerst
+ * @param {string} range   '3m' | '1j' | 'max'
+ * @param {string} today   ISO-Datum von heute
+ * @returns {{ date: string, value: number, weight: number }[]}  aufsteigend nach Datum;
+ *   `value` = Wiederholungen des Einzelsatzes mit den meisten Wiederholungen des
+ *   Tages (keine Summe über den Tag), bei Gleichstand der Satz mit dem höheren
+ *   Gewicht (dieselbe Regel wie "Reps" in computePersonalBests). Sätze ohne
+ *   Zusatzgewicht (Gewicht 0, z. B. Klimmzüge) zählen mit.
+ */
+export function computeMaxRepsSeries(history, range, today) {
+  const start = getRangeStart(range, today);
+  const series = [];
+  for (const day of history) {
+    if (day.date > today || (start !== null && day.date < start)) continue;
+    let best = null;
+    for (const set of day.sets) {
+      if (!isValidSet(set)) continue;
+      if (!best || set.reps > best.value || (set.reps === best.value && set.weight > best.weight)) {
+        best = { date: day.date, value: set.reps, weight: set.weight };
+      }
+    }
+    if (best) series.push(best);
+  }
+  return series.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}

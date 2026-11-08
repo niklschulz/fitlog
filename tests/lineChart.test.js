@@ -22,23 +22,24 @@ test('niceTickStep: 1/2/5 × 10^n und Untergrenze', () => {
   assert.equal(niceTickStep(0), 1);
 });
 
-test('buildYAxis: Polster, Ticks im Bereich, topPct oben/unten', () => {
-  const a = buildYAxis([80, 90]);
-  assert.ok(Math.abs(a.domainMin - 78.5) < 1e-9);
-  assert.ok(Math.abs(a.domainMax - 91.5) < 1e-9);
-  assert.ok(a.ticks.length >= 2 && a.ticks.every((t) => t >= a.domainMin && t <= a.domainMax));
-  assert.ok(Math.abs(a.topPct(a.domainMax)) < 1e-9);
-  assert.ok(Math.abs(a.topPct(a.domainMin) - 100) < 1e-9);
+test('buildYAxis: kleinster Tick auf der Grundlinie, größter am oberen Rand, alle Werte im Bereich', () => {
+  for (const values of [[80, 90], [92.5, 107.5, 112.5], [4200, 4800], [0.4, 3.1]]) {
+    const a = buildYAxis(values);
+    assert.equal(a.domainMin, a.ticks[0]);
+    assert.equal(a.domainMax, a.ticks.at(-1));
+    assert.ok(Math.abs(a.topPct(a.ticks[0]) - 100) < 1e-9);
+    assert.ok(Math.abs(a.topPct(a.ticks.at(-1))) < 1e-9);
+    assert.ok(a.domainMin <= Math.min(...values) && a.domainMax >= Math.max(...values));
+  }
 });
 
-test('buildYAxis: gleiche Werte werden mit flatHalfSpan zentriert, ohne bleibt die Volumen-Regel', () => {
-  const flat = buildYAxis([60, 60], { flatHalfSpan: (v) => Math.max(1, v * 0.1) });
-  assert.equal(flat.domainMin, 54);
-  assert.equal(flat.domainMax, 66);
-  assert.equal(flat.topPct(60), 50);
-  const small = buildYAxis([5], { flatHalfSpan: (v) => Math.max(1, v * 0.1) });
-  assert.equal(small.domainMin, 4);
-  assert.equal(small.domainMax, 6);
+test('buildYAxis: gleiche Werte stehen mittig (Wert ± 10 %, mindestens ± 1) und liegen zwischen den Ticks', () => {
+  const flat = buildYAxis([60, 60]);
+  assert.ok(flat.domainMin < 60 && flat.domainMax > 60);
+  assert.equal(flat.ticks[0], flat.domainMin);
+  assert.equal(flat.ticks.at(-1), flat.domainMax);
+  const small = buildYAxis([5]);
+  assert.ok(small.domainMin <= 4 && small.domainMax >= 6);
   const volume = buildYAxis([4000, 4000]);
   assert.ok(volume.domainMax > 4000 && volume.domainMin < 4000);
 });

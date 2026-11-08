@@ -8,8 +8,8 @@
 // statistics.js übergibt nur die Übungs-ID und einen onBack-Callback.
 import { db, getExerciseSetHistory, getPRsForExercises, todayISODate } from '../db.js';
 import { escapeHtml, renderSegmentedControl, renderRangeControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, renderPRIcon, CARD } from '../utils.js';
-import { computePersonalBests, computeMaxWeightSeries } from '../exerciseStats.js';
-import { buildYAxis, buildTimeAxis, renderLineChart, renderChartDots, nearestIndexByX } from '../lineChart.js';
+import { computePersonalBests, computeMaxWeightSeries, computeMaxRepsSeries } from '../exerciseStats.js';
+import { buildYAxis, buildTimeAxis, renderLineChart, renderChartGuide, nearestIndexByX } from '../lineChart.js';
 import { formatDate as formatDateVariant } from '../dates.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
 import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
@@ -125,9 +125,27 @@ async function paint({ tabsFromRect = null, rangeFromRect = null } = {}) {
 // ausgewählten (Standard: letzten) Punkts, Liniendiagramm mit Einzelpunkten
 // (Tippen/Wischen wählt einen Punkt) und darunter die Größen-Leiste. Weitere
 // Größen später nur als zusätzlicher Eintrag in CHART_METRICS: jede liefert
-// `[{ date, value, reps? }]`. Diagramm-Markup und Achsen: js/lineChart.js.
+// `[{ date, value, ... }]`. Diagramm-Markup und Achsen: js/lineChart.js.
+// `detail(point)`: Zusatz hinter der Kopfzahl (HTML), `minStep`: Untergrenze
+// des Y-Tick-Schritts (Reps: ganze Zahlen).
+const detailSpan = (text) => ` <span class="text-muted text-body font-normal">(${escapeHtml(text)})</span>`;
 const CHART_METRICS = [
-  { key: 'maxWeight', label: 'Maximales Gewicht', unit: 'kg', series: computeMaxWeightSeries },
+  {
+    key: 'maxWeight',
+    label: 'Maximales Gewicht',
+    unit: 'kg',
+    series: computeMaxWeightSeries,
+    detail: (p) => (p.reps ? detailSpan(`x${p.reps}`) : ''),
+    minStep: 0,
+  },
+  {
+    key: 'maxReps',
+    label: 'Maximale Reps',
+    unit: 'Reps',
+    series: computeMaxRepsSeries,
+    detail: (p) => detailSpan(`${formatNumber(p.weight)} kg`),
+    minStep: 1,
+  },
 ];
 
 // Y-Ticks und Kopfzahl: bis zu zwei Nachkommastellen (2,5-kg-Scheiben), ",0" entfällt
@@ -135,9 +153,8 @@ const formatTick = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 2 }
 
 function renderChartHeader(metric, point) {
   if (!point) return '';
-  const reps = point.reps ? ` <span class="text-muted text-body font-normal">(x${escapeHtml(point.reps)})</span>` : '';
   return `
-    <span class="text-kpi text-ink whitespace-nowrap">${formatNumber(point.value)} <span class="text-muted text-body font-normal">${metric.unit}</span>${reps}</span>
+    <span class="text-kpi text-ink whitespace-nowrap">${formatNumber(point.value)} <span class="text-muted text-body font-normal">${metric.unit}</span>${metric.detail(point)}</span>
     <span class="text-label uppercase text-muted whitespace-nowrap">${escapeHtml(formatDate(point.date))}</span>
   `;
 }
@@ -147,8 +164,8 @@ function renderMetricChips() {
     <div id="stat-metric-chips" class="flex gap-2 overflow-x-auto" role="group" aria-label="Größe">
       ${CHART_METRICS.map((m) => {
         const active = m.key === state.metric;
-        return `<button type="button" data-metric="${m.key}" aria-pressed="${active}" class="metric-chip tap-feedback shrink-0 whitespace-nowrap rounded-btn px-4 py-3 text-body ${
-          active ? 'bg-highlight text-ink' : 'text-muted'
+        return `<button type="button" data-metric="${m.key}" aria-pressed="${active}" class="metric-chip tap-feedback shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-body ${
+          active ? 'bg-accent text-base' : 'bg-white/[0.08] text-ink'
         }">${escapeHtml(m.label)}</button>`;
       }).join('')}
     </div>
@@ -169,8 +186,7 @@ function renderMetricChart(metric, series) {
   const points = series.map((p, i) => ({ xPct: xPcts[i], value: p.value }));
   const yAxis = buildYAxis(
     points.map((p) => p.value),
-    // Ein einzelner/gleicher Wert steht mittig: Bereich Wert ± 10 %, mindestens ± 1
-    { flatHalfSpan: (v) => Math.max(1, v * 0.1) }
+    { minStepFor: () => metric.minStep }
   );
   const selected = state.selectedIndex ?? series.length - 1;
   chartView = { metric, series, xPcts };
@@ -188,20 +204,19 @@ function renderMetricChart(metric, series) {
         rootAttrs: `role="img" aria-label="${escapeHtml(ariaLabel)}"`,
         plotClass: 'chart-plot-interactive',
         plotAttrs: 'id="stat-chart-plot"',
-        overlayHtml: renderChartDots(points, yAxis, selected),
+        overlayHtml: renderChartGuide(points, selected),
       })}
       ${chips}
     </div>
   `;
 }
 
-// Punkt auswählen: nur Kopfzeile und Hervorhebung ändern, kein neues paint()
+// Punkt auswählen: nur Kopfzeile und Hilfslinie ändern, kein neues paint()
 function selectChartPoint(index) {
   if (!chartView || index < 0 || index === state.selectedIndex) return;
   state.selectedIndex = index;
   const { metric, series, xPcts } = chartView;
   currentContainer.querySelector('#stat-chart-header').innerHTML = renderChartHeader(metric, series[index]);
-  currentContainer.querySelectorAll('#stat-chart-plot .chart-dot').forEach((dot, i) => dot.classList.toggle('is-selected', i === index));
   const guide = currentContainer.querySelector('#stat-chart-plot .chart-guide');
   guide.style.left = `${xPcts[index]}%`;
   guide.style.display = '';

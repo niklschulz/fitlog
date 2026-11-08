@@ -2,7 +2,7 @@
 // Übung). Reine Funktionen, keine DB nötig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getRangeStart, computePersonalBests, computeMaxWeightSeries, estimateOneRepMax } from '../js/exerciseStats.js';
+import { getRangeStart, computePersonalBests, computeMaxWeightSeries, computeMaxRepsSeries, estimateOneRepMax } from '../js/exerciseStats.js';
 
 const day = (date, ...sets) => ({ date, sets: sets.map(([weight, reps]) => ({ weight, reps })) });
 // getExerciseSetHistory liefert die neuesten Tage zuerst
@@ -119,4 +119,17 @@ test('computeMaxWeightSeries: Maximum der Serie = Bestwert "Gewicht"', () => {
     const best = computePersonalBests(history, range, '2026-10-03').weight;
     assert.equal(Math.max(...series.map((p) => p.value)), best.weight);
   }
+});
+
+test('computeMaxRepsSeries: ein Punkt pro Tag, meiste Reps im Einzelsatz (keine Summe), Gleichstand: höheres Gewicht, Gewicht 0 zählt', () => {
+  const h = [
+    { date: '2026-10-03', sets: [{ weight: 0, reps: 8 }, { weight: 0, reps: 10 }, { weight: 0, reps: 6 }] },
+    { date: '2026-10-01', sets: [{ weight: 50, reps: 10 }, { weight: 60, reps: 10 }, { weight: 40, reps: 9 }, { weight: 70, reps: 0 }] },
+  ];
+  assert.deepEqual(computeMaxRepsSeries(h, 'max', '2026-10-03'), [
+    { date: '2026-10-01', value: 10, weight: 60 },
+    { date: '2026-10-03', value: 10, weight: 0 },
+  ]);
+  // Zukunft und Tage ohne gültigen Satz erscheinen nicht
+  assert.deepEqual(computeMaxRepsSeries([{ date: '2026-10-05', sets: [{ weight: 10, reps: 5 }] }, { date: '2026-10-02', sets: [] }], 'max', '2026-10-03'), []);
 });

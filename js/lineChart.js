@@ -21,39 +21,37 @@ export function niceTickStep(rawStep, minStep = 0) {
 /**
  * Y-Achse, gezoomt auf den Wertebereich (beginnt bewusst nicht bei 0).
  *
+ * Konvention für ALLE Diagramme (design-system.md): Der kleinste Tick liegt
+ * genau auf der Grundlinie (X-Achse), der größte am oberen Plot-Rand direkt
+ * unter der Trennlinie der Karte. Kein Polster - die Domäne wird auf ganze
+ * Tick-Schritte nach unten/oben erweitert, alle Werte bleiben im Bereich.
+ *
  * @param {number[]} values  mindestens ein Wert
  * @param {object} [opts]
- * @param {number} [opts.padRatio=0.15]  Polster oben/unten als Anteil des Bereichs
  * @param {(domainMax:number)=>number} [opts.minStepFor]  Untergrenze des Tick-Schritts
- * @param {(value:number)=>number} [opts.flatHalfSpan]  halbe Domänenbreite, wenn alle
- *   Werte gleich sind (zentriert den Wert); ohne diese Option gilt die Volumen-Regel
  * @returns {{ domainMin, domainMax, topPct: (v:number)=>number, ticks: number[] }}
  */
-export function buildYAxis(values, { padRatio = 0.15, minStepFor = () => 0, flatHalfSpan = null } = {}) {
+export function buildYAxis(values, { minStepFor = () => 0 } = {}) {
   const rawMin = Math.min(...values);
   const rawMax = Math.max(...values);
-  let domainMin;
-  let domainMax;
-  if (rawMax === rawMin && flatHalfSpan) {
-    const half = flatHalfSpan(rawMax);
-    domainMin = rawMax - half;
-    domainMax = rawMax + half;
-  } else {
-    const range = rawMax - rawMin || rawMax || 1;
-    const pad = range * padRatio;
-    domainMin = Math.max(0, rawMin - pad);
-    domainMax = rawMax + pad;
-  }
-  const span = domainMax - domainMin || 1;
-  const topPct = (v) => ((domainMax - v) / span) * 100;
+  // Alle Werte gleich: Wert ± 10 % (mindestens ± 1), damit er mittig steht
+  const half = rawMax === rawMin ? Math.max(1, rawMax * 0.1) : 0;
+  const lowest = rawMin - half;
+  const highest = rawMax + half;
 
-  const tickStep = niceTickStep((domainMax - domainMin) / 4, minStepFor(domainMax));
-  const ticks = [];
-  // Ganzzahliges Vielfaches statt Aufaddieren: vermeidet Gleitkomma-Drift bei
+  const tickStep = niceTickStep((highest - lowest) / 4, minStepFor(highest));
+  // Ganzzahlige Vielfache statt Aufaddieren: vermeidet Gleitkomma-Drift bei
   // Dezimal-Schritten (0,1 / 0,5)
-  for (let i = Math.ceil(domainMin / tickStep); i * tickStep <= domainMax; i++) {
-    ticks.push(Math.round(i * tickStep * 1e9) / 1e9);
-  }
+  const round = (n) => Math.round(n * 1e9) / 1e9;
+  const lo = Math.floor(round(lowest / tickStep));
+  let hi = Math.ceil(round(highest / tickStep));
+  if (hi <= lo) hi = lo + 1;
+  const ticks = [];
+  for (let i = lo; i <= hi; i++) ticks.push(round(i * tickStep));
+  const domainMin = ticks[0];
+  const domainMax = ticks[ticks.length - 1];
+  const span = domainMax - domainMin;
+  const topPct = (v) => ((domainMax - v) / span) * 100;
   return { domainMin, domainMax, topPct, ticks };
 }
 
@@ -160,20 +158,12 @@ export function buildTimeAxis(dates, range) {
 const GRIDLINE = 'border-t border-dotted border-white/15';
 
 /**
- * Datenpunkte als runde HTML-Elemente über dem SVG (ein `<circle>` würde durch
- * `preserveAspectRatio="none"` zur Ellipse verzerrt). Plus senkrechte
- * Hilfslinie am ausgewählten Punkt. Styles: `.chart-dot` / `.chart-guide` in
- * css/styles.css.
+ * Senkrechte Hilfslinie am ausgewählten Punkt (keine Einzelpunkte, nur die
+ * Linie, s. ADR 0043 Nachtrag). Style: `.chart-guide` in css/styles.css.
  */
-export function renderChartDots(points, yAxis, selectedIndex) {
-  const dots = points
-    .map(
-      (p, i) =>
-        `<span class="chart-dot${i === selectedIndex ? ' is-selected' : ''}" data-index="${i}" style="left:${p.xPct}%; top:${yAxis.topPct(p.value)}%;"></span>`
-    )
-    .join('');
+export function renderChartGuide(points, selectedIndex) {
   const guideLeft = points[selectedIndex]?.xPct ?? 0;
-  return `<span class="chart-guide" style="left:${guideLeft}%;${selectedIndex == null || selectedIndex < 0 ? ' display:none;' : ''}"></span>${dots}`;
+  return `<span class="chart-guide" style="left:${guideLeft}%;${selectedIndex == null || selectedIndex < 0 ? ' display:none;' : ''}"></span>`;
 }
 
 /**
@@ -190,7 +180,7 @@ export function renderChartDots(points, yAxis, selectedIndex) {
  * @param {string} [o.rootAttrs]  Zusatz-Attribute am Wurzelelement (z. B. role/aria-label)
  * @param {string} [o.plotAttrs]  Zusatz-Attribute an der Plot-Fläche (z. B. data-*, Klassen via plotClass)
  * @param {string} [o.plotClass]  Zusatz-Klassen an der Plot-Fläche
- * @param {string} [o.overlayHtml]  Markup über der Linie (z. B. renderChartDots())
+ * @param {string} [o.overlayHtml]  Markup über der Linie (z. B. renderChartGuide())
  */
 export function renderLineChart({ points, yAxis, tickLabel, labels, rootAttrs = '', plotAttrs = '', plotClass = '', overlayHtml = '' }) {
   const { ticks, topPct } = yAxis;
