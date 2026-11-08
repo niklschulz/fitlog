@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-08 (Fix: Info-Button auf der Übungs-Detailseite)
+
+### Fixed
+- Übungs-Detailseite (Workout-Tab): Der i-Button öffnete das Übungs-Detail-Sheet unsichtbar, und nach dem Zurückgehen ließ sich die Workout-Übersicht nicht mehr scrollen. Ursache: `isolation: isolate` auf `#view-container` (seit v260) schloss alle dort eingefügten Sheets in einen Stacking-Context unterhalb der Seiten-Ebene (`#page-layer`, z-8) ein. Das Sheet war damit verdeckt, blieb offen und hielt die Scroll-Sperre (`lockBodyScroll()`). Betroffen war auch das Notiz-Sheet der Detailseite. Die Isolation sitzt jetzt je `.segmented-control` statt am ganzen Container (löst weiter das Problem der Reiter-Beschriftungen aus v260). `CACHE_NAME` auf `fitlog-v270`.
+
 ## 2026-11-08 (Verlaufs-Diagramm ohne Einzelpunkte)
 
 ### Added

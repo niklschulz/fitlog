@@ -17,9 +17,13 @@
 
 #view-container {
   min-height: 0;
-  /* Eigener Stacking-Context: Elemente mit z-index im Inhalt (z. B. die
-     Segmented-Tabs mit z-10) dürfen nicht über die Seiten-Ebene (#page-layer,
-     z-8) ragen, sonst bleiben ihre Beschriftungen auf Unterseiten stehen. */
+}
+
+/* Eigener Stacking-Context je Segmented-Control: Die Tab-Buttons (z-10)
+   dürfen nicht über die Seiten-Ebene (#page-layer, z-8) ragen. Bewusst NICHT
+   am ganzen #view-container: Sheets liegen im Container und müssen aus ihm
+   heraus über die Seiten-Ebene (z-50+) reichen. */
+.segmented-control {
   isolation: isolate;
 }
 
