@@ -173,7 +173,7 @@ function renderChartHeader(metric, point) {
 
 function renderMetricChips() {
   return `
-    <div id="stat-metric-chips" class="flex gap-2 overflow-x-auto" role="group" aria-label="Größe">
+    <div id="stat-metric-chips" class="flex gap-2 overflow-x-auto py-2" role="group" aria-label="Größe">
       ${CHART_METRICS.map((m) => {
         const active = m.key === state.metric;
         return `<button type="button" data-metric="${m.key}" aria-pressed="${active}" class="metric-chip tap-feedback shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-body ${
