@@ -8,7 +8,7 @@
 // statistics.js übergibt nur die Übungs-ID und einen onBack-Callback.
 import { db, getExerciseSetHistory, getPRsForExercises, todayISODate } from '../db.js';
 import { escapeHtml, renderSegmentedControl, renderRangeControl, positionSegmentedIndicator, measureSegmentedIndicatorRect, renderPRIcon, CARD } from '../utils.js';
-import { computePersonalBests, computeMaxWeightSeries, computeMaxRepsSeries } from '../exerciseStats.js';
+import { computePersonalBests, computeMaxWeightSeries, computeMaxRepsSeries, computeOneRmSeries } from '../exerciseStats.js';
 import { buildYAxis, buildTimeAxis, renderLineChart, renderChartGuide, nearestIndexByX } from '../lineChart.js';
 import { formatDate as formatDateVariant } from '../dates.js';
 import { renderExerciseHistory } from './workout-exercise-detail.js';
@@ -127,7 +127,8 @@ async function paint({ tabsFromRect = null, rangeFromRect = null } = {}) {
 // Größen später nur als zusätzlicher Eintrag in CHART_METRICS: jede liefert
 // `[{ date, value, ... }]`. Diagramm-Markup und Achsen: js/lineChart.js.
 // `detail(point)`: Zusatz hinter der Kopfzahl (HTML), `minStep`: Untergrenze
-// des Y-Tick-Schritts (Reps: ganze Zahlen).
+// des Y-Tick-Schritts (Reps/1RM: ganze Zahlen), `format(n)`: Format der
+// Kopfzahl (lazy, die Formatierer stehen weiter unten in der Datei).
 const detailSpan = (text) => ` <span class="text-muted text-body font-normal">(${escapeHtml(text)})</span>`;
 const CHART_METRICS = [
   {
@@ -137,6 +138,16 @@ const CHART_METRICS = [
     series: computeMaxWeightSeries,
     detail: (p) => (p.reps ? detailSpan(`x${p.reps}`) : ''),
     minStep: 0,
+    format: (n) => formatNumber(n),
+  },
+  {
+    key: 'oneRm',
+    label: '1RM',
+    unit: 'kg',
+    series: computeOneRmSeries,
+    detail: () => '',
+    minStep: 1,
+    format: (n) => formatOneRm(n),
   },
   {
     key: 'maxReps',
@@ -145,6 +156,7 @@ const CHART_METRICS = [
     series: computeMaxRepsSeries,
     detail: (p) => detailSpan(`${formatNumber(p.weight)} kg`),
     minStep: 1,
+    format: (n) => formatNumber(n),
   },
 ];
 
@@ -154,7 +166,7 @@ const formatTick = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 2 }
 function renderChartHeader(metric, point) {
   if (!point) return '';
   return `
-    <span class="text-kpi text-ink whitespace-nowrap">${formatNumber(point.value)} <span class="text-muted text-body font-normal">${metric.unit}</span>${metric.detail(point)}</span>
+    <span class="text-kpi text-ink whitespace-nowrap">${metric.format(point.value)} <span class="text-muted text-body font-normal">${metric.unit}</span>${metric.detail(point)}</span>
     <span class="text-label uppercase text-muted whitespace-nowrap">${escapeHtml(formatDate(point.date))}</span>
   `;
 }
@@ -191,7 +203,7 @@ function renderMetricChart(metric, series) {
   const selected = state.selectedIndex ?? series.length - 1;
   chartView = { metric, series, xPcts };
   const last = series[series.length - 1];
-  const ariaLabel = `${metric.label}, ${series.length} ${series.length === 1 ? 'Trainingstag' : 'Trainingstage'}, zuletzt ${formatNumber(last.value)} ${metric.unit} am ${formatDate(last.date)}`;
+  const ariaLabel = `${metric.label}, ${series.length} ${series.length === 1 ? 'Trainingstag' : 'Trainingstage'}, zuletzt ${metric.format(last.value)} ${metric.unit} am ${formatDate(last.date)}`;
   return `
     <div class="${CARD} flex flex-col gap-4">
       <div id="stat-chart-header" class="flex flex-col gap-1">${renderChartHeader(metric, series[selected])}</div>

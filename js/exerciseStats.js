@@ -152,3 +152,31 @@ export function computeMaxRepsSeries(history, range, today) {
   }
   return series.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
+
+/**
+ * Geschätzter 1RM je Trainingstag im Zeitraum (dritte Größe im
+ * Verlaufs-Diagramm, ADR 0043/0042).
+ *
+ * @param {Array} history  getExerciseSetHistory(): [{ date, sets }], neueste Tage zuerst
+ * @param {string} range   '3m' | '1j' | 'max'
+ * @param {string} today   ISO-Datum von heute
+ * @returns {{ date: string, value: number }[]}  aufsteigend nach Datum; `value` =
+ *   höchster Brzycki-Schätzwert (estimateOneRepMax) aller Sätze des Tages, also
+ *   dieselbe Regel wie "1RM" in computePersonalBests. Tage ohne gültigen Satz
+ *   (1-10 Reps, Gewicht > 0) liefern keinen Punkt.
+ */
+export function computeOneRmSeries(history, range, today) {
+  const start = getRangeStart(range, today);
+  const series = [];
+  for (const day of history) {
+    if (day.date > today || (start !== null && day.date < start)) continue;
+    let best = null;
+    for (const set of day.sets) {
+      if (!isValidSet(set)) continue;
+      const estimate = estimateOneRepMax(set.weight, set.reps);
+      if (estimate !== null && (best === null || estimate > best.value)) best = { date: day.date, value: estimate };
+    }
+    if (best) series.push(best);
+  }
+  return series.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}

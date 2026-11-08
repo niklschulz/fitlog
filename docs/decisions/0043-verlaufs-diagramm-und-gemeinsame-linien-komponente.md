@@ -32,3 +32,7 @@ Der kleinste Y-Tick liegt genau auf der Grundlinie (X-Achse), der größte am ob
 ## Nachtrag 2026-11-08: zweite Größe „Maximale Reps“
 
 Neben „Maximales Gewicht“ gibt es den Chip **Maximale Reps** (`computeMaxRepsSeries()` in `js/exerciseStats.js`). Wert je Trainingstag = Wiederholungen des Einzelsatzes mit den meisten Wiederholungen (keine Summe über den Tag), bei Gleichstand der Satz mit dem höheren Gewicht (wie „Reps“ in den Bestwerten). Sätze ohne Zusatzgewicht (Gewicht 0, z. B. Klimmzüge) zählen mit, anders als beim Maximalen Gewicht. Kopfzeile: „10 Reps (110 kg)“. Y-Achse: ganze Zahlen (`minStep: 1` im Eintrag von `CHART_METRICS`), sonst gilt die Achsen-Konvention. Ein Wechsel des Chips setzt die Auswahl auf den letzten Punkt zurück. Jede Größe in `CHART_METRICS` bringt jetzt `detail(point)` (Zusatz hinter der Kopfzahl) und `minStep` mit.
+
+## Nachtrag 2026-11-08: dritte Größe „1RM“, Reihenfolge der Chips
+
+Neuer Chip **1RM** (`computeOneRmSeries()` in `js/exerciseStats.js`): Wert je Trainingstag = höchster Brzycki-Schätzwert aller Sätze des Tages (Sätze mit 1 bis 10 Wiederholungen und Gewicht über 0, [ADR 0042](0042-einrm-brzycki.md)), also dieselbe Regel wie der Bestwert „1RM“. Tage ohne gültigen Satz erscheinen nicht. Kopfzeile: nur der Schätzwert mit einer Nachkommastelle und „kg“, ohne Klammer, darunter das Datum. Y-Achse: ganze Zahlen (`minStep: 1`). Reihenfolge der Chips: Maximales Gewicht, 1RM, Maximale Reps. `CHART_METRICS`-Einträge haben dazu `format(n)` für die Kopfzahl.

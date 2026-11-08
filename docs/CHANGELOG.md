@@ -5,6 +5,7 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ## 2026-11-08 (Verlaufs-Diagramm ohne Einzelpunkte)
 
 ### Added
+- Statistik-Übungs-Seite: dritter Größen-Chip **1RM** im Verlaufs-Diagramm (bester Brzycki-Schätzwert je Trainingstag, Kopfzeile nur Wert mit einer Nachkommastelle + Datum, ganzzahlige Y-Achse). Reihenfolge der Chips: Maximales Gewicht, 1RM, Maximale Reps. `computeOneRmSeries()` in `js/exerciseStats.js`, Test ergänzt; ADR 0043 mit Nachtrag. `CACHE_NAME` auf v268.
 - Statistik-Übungs-Seite: zweiter Größen-Chip **Maximale Reps** im Verlaufs-Diagramm (Einzelsatz mit den meisten Wiederholungen je Trainingstag, Gleichstand: höheres Gewicht, Gewicht 0 zählt mit; Kopfzeile "10 Reps (110 kg)", ganzzahlige Y-Achse). `computeMaxRepsSeries()` in `js/exerciseStats.js`, Test ergänzt; ADR 0043 mit Nachtrag.
 
 ### Changed

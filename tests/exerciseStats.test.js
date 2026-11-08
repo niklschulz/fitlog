@@ -2,7 +2,7 @@
 // Übung). Reine Funktionen, keine DB nötig.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getRangeStart, computePersonalBests, computeMaxWeightSeries, computeMaxRepsSeries, estimateOneRepMax } from '../js/exerciseStats.js';
+import { getRangeStart, computePersonalBests, computeMaxWeightSeries, computeMaxRepsSeries, computeOneRmSeries, estimateOneRepMax } from '../js/exerciseStats.js';
 
 const day = (date, ...sets) => ({ date, sets: sets.map(([weight, reps]) => ({ weight, reps })) });
 // getExerciseSetHistory liefert die neuesten Tage zuerst
@@ -132,4 +132,17 @@ test('computeMaxRepsSeries: ein Punkt pro Tag, meiste Reps im Einzelsatz (keine 
   ]);
   // Zukunft und Tage ohne gültigen Satz erscheinen nicht
   assert.deepEqual(computeMaxRepsSeries([{ date: '2026-10-05', sets: [{ weight: 10, reps: 5 }] }, { date: '2026-10-02', sets: [] }], 'max', '2026-10-03'), []);
+});
+
+test('computeOneRmSeries: ein Punkt pro Tag, bester Brzycki-Schätzwert, nur 1-10 Reps und Gewicht > 0', () => {
+  const h = [
+    { date: '2026-10-03', sets: [{ weight: 0, reps: 10 }, { weight: 50, reps: 15 }] }, // kein gültiger Satz
+    { date: '2026-10-02', sets: [{ weight: 100, reps: 1 }, { weight: 80, reps: 8 }] },
+    { date: '2026-10-01', sets: [{ weight: 60, reps: 10 }, { weight: 70, reps: 5 }] },
+  ];
+  const s = computeOneRmSeries(h, 'max', '2026-10-03');
+  assert.equal(s.length, 2);
+  assert.deepEqual(s.map((p) => p.date), ['2026-10-01', '2026-10-02']);
+  assert.equal(s[0].value, estimateOneRepMax(60, 10)); // 80 schlägt 70 × 5 (78,75)
+  assert.equal(s[1].value, Math.max(estimateOneRepMax(100, 1), estimateOneRepMax(80, 8)));
 });
