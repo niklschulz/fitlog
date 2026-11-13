@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-13 (Fix: Ruckeln beim Öffnen der Tastatur im Scheiben-Rechner)
+
+### Fixed
+- Scheiben-Rechner: Beim Öffnen und Schließen der iOS-Tastatur ruckelte das Sheet. Auswertung einer iPhone-Bildschirmaufnahme Bild für Bild: Beim Fokus setzte der Schätzwert-Fallback (40 % Fensterhöhe) den unteren Abstand sofort und das Feld wurde gescrollt, das Sheet sprang nach oben, fiel mit dem ersten Visual-Viewport-Ereignis (noch Höhe 0) wieder zurück und folgte erst dann der einfahrenden Tastatur. Beim Schließen sprang der Abstand ebenfalls sofort auf 0, während die Tastatur noch sichtbar war. Jetzt folgt der Abstand ausschließlich den Visual-Viewport-Ereignissen der Tastatur-Animation (im Test gleichmäßige Schritte ohne Sprung bei Fokus und Blur). Der Schätzwert gilt erst 700 ms nach dem Fokus und nur, wenn bis dahin gar keine Tastaturhöhe gemeldet wurde. Das Stangenfeld wird erst nach Ende der Animation (250 ms Ruhe) und nur bei Bedarf gescrollt. `CACHE_NAME` auf `fitlog-v280`.
+
 ## 2026-11-13 (Fix: Tastatur im Scheiben-Rechner)
 
 ### Fixed

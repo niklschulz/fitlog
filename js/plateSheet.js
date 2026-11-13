@@ -322,35 +322,68 @@ export function openPlateSheet({ container: containerEl, onApply }) {
   // Tastatur (Stangen-Textfeld): iOS überdeckt nur den unteren Teil des
   // Layout-Viewports. Das Sheet bleibt am unteren Rand verankert, sein
   // Innenabstand unten wächst um die Tastaturhöhe; da das Sheet dadurch höher
-  // als der Bildschirm werden kann, ist der Inhalt scrollbar und das
-  // Stangenfeld wird in den sichtbaren Bereich gescrollt. Die Höhe kommt aus
-  // der Visual-Viewport-API; meldet sie bei fokussiertem Feld nichts (auf
-  // iOS beobachtet), gilt auf Touch-Geräten ein Schätzwert.
+  // als der Bildschirm werden kann, ist der Inhalt scrollbar. Wichtig für ein
+  // ruckelfreies Ein-/Ausfahren (Bild-für-Bild-Auswertung einer iPhone-
+  // Aufnahme, s. ADR 0044): Der Abstand folgt NUR den Visual-Viewport-
+  // Ereignissen, die iOS während der Tastatur-Animation schickt - kein
+  // sofortiges Setzen beim Fokus/Blur (das ließ das Sheet erst nach oben
+  // springen und wieder zurückfallen) und kein Scrollen während der
+  // Animation. Das Stangenfeld wird erst gescrollt, wenn sich die Tastatur
+  // beruhigt hat, und nur, wenn es nicht schon sichtbar ist. Meldet iOS auch
+  // 700 ms nach dem Fokus keine Tastaturhöhe, gilt auf Touch-Geräten ein
+  // Schätzwert.
   const barInput = container.querySelector('#plate-bar-input');
   const vv = window.visualViewport;
   const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  let keyboardTimers = [];
-  const clearKeyboardTimers = () => {
-    keyboardTimers.forEach(clearTimeout);
-    keyboardTimers = [];
+  let timers = [];
+  let fallbackArmed = false;
+  let settleTimer = null;
+  const clearTimers = () => {
+    timers.forEach(clearTimeout);
+    timers = [];
+    clearTimeout(settleTimer);
+    settleTimer = null;
   };
-  const applyKeyboardInset = ({ reveal = false } = {}) => {
-    if (!panel || !open) return;
-    const focused = document.activeElement === barInput;
-    let keyboard = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
-    if (!keyboard && focused && coarse) keyboard = Math.round(window.innerHeight * 0.4);
-    panel.style.paddingBottom = keyboard ? `${keyboard}px` : 'env(safe-area-inset-bottom)';
-    if (keyboard && reveal) barInput.closest('label')?.scrollIntoView({ block: 'center' });
+  const measuredKeyboard = () => (vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0);
+  const applyKeyboardInset = () => {
+    if (!panel || !open) return 0;
+    let keyboard = measuredKeyboard();
+    if (!keyboard && fallbackArmed && document.activeElement === barInput) keyboard = Math.round(window.innerHeight * 0.4);
+    const value = keyboard ? `${keyboard}px` : 'env(safe-area-inset-bottom)';
+    if (panel.style.paddingBottom !== value) panel.style.paddingBottom = value;
+    return keyboard;
   };
-  const scheduleKeyboardInset = (reveal) => {
-    clearKeyboardTimers();
-    // Die Tastatur fährt animiert ein: mehrfach nachmessen.
-    keyboardTimers = [0, 150, 400, 800].map((ms) => setTimeout(() => applyKeyboardInset({ reveal }), ms));
+  // Erst nach der Animation: Feld nur dann in den sichtbaren Bereich scrollen,
+  // wenn es nicht ohnehin zu sehen ist.
+  const scheduleReveal = () => {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      if (document.activeElement === barInput && applyKeyboardInset()) {
+        barInput.closest('label')?.scrollIntoView({ block: 'nearest' });
+      }
+    }, 250);
   };
-  barInput?.addEventListener('focus', () => scheduleKeyboardInset(true));
-  barInput?.addEventListener('blur', () => scheduleKeyboardInset(false));
+  barInput?.addEventListener('focus', () => {
+    fallbackArmed = false;
+    timers.push(
+      setTimeout(() => {
+        fallbackArmed = coarse;
+        applyKeyboardInset();
+        scheduleReveal();
+      }, 700)
+    );
+  });
+  barInput?.addEventListener('blur', () => {
+    fallbackArmed = false;
+    // Kein sofortiges Zurücksetzen: Die Resize-Ereignisse der ausfahrenden
+    // Tastatur führen den Abstand mit. Nur zur Sicherheit am Ende abgleichen.
+    timers.push(setTimeout(applyKeyboardInset, 900));
+  });
   if (vv) {
-    const onViewportResize = () => applyKeyboardInset({ reveal: document.activeElement === barInput });
+    const onViewportResize = () => {
+      applyKeyboardInset();
+      if (document.activeElement === barInput) scheduleReveal();
+    };
     // Verschiebt iOS die Seite trotzdem (Tastatur schiebt den Viewport),
     // wird sie zurückgesetzt, damit die Kopfzeile des Sheets sichtbar bleibt.
     const onViewportScroll = () => {
@@ -362,10 +395,10 @@ export function openPlateSheet({ container: containerEl, onApply }) {
     removeViewportListener = () => {
       vv.removeEventListener('resize', onViewportResize);
       vv.removeEventListener('scroll', onViewportScroll);
-      clearKeyboardTimers();
+      clearTimers();
     };
   } else {
-    removeViewportListener = clearKeyboardTimers;
+    removeViewportListener = clearTimers;
   }
 
   container.querySelector('#plate-bar')?.addEventListener('click', (e) => {
