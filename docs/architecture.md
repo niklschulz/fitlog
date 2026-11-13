@@ -32,6 +32,8 @@ fitlog/
 │   ├── exerciseCreateSheet.js  Neue-Übung-/Übung-bearbeiten-Sheet mit eigenem State, geteilt
 │   │                       zwischen Workout- und Statistik-Tab (s. unten)
 │   ├── noteSheet.js       Notiz-Sheet (Notiz pro Übung und Tag), s. ADR 0035
+│   ├── plateSheet.js      Scheiben-Rechner-Sheet (Langhantel), s. ADR 0044
+│   ├── plates.js          Reine Rechenlogik des Scheiben-Rechners (Gesamtgewicht, Limit, Eingabe-Prüfung), ohne DOM/Dexie
 │   ├── exerciseInfo.js    Übungs-Infos (primäre/sekundäre Muskeln), eine Quelle für Übungs-Detail-Sheet
 │   │                       und Info-Reiter der Statistik-Übungs-Seite
 │   ├── exerciseStats.js   Reine Berechnungen für eine Übung (Zeitraum, persönliche Bestwerte, Maximalgewicht je Tag), ohne DOM/Dexie

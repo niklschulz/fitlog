@@ -11,6 +11,9 @@ const DEFAULTS = {
   weeklyGoal: 5,
   // Statistik-Tab, Reiter "Übungen": vom Nutzer ausgewählte Übungen (IDs)
   statsExerciseIds: [],
+  // Scheiben-Rechner (js/plateSheet.js, ADR 0044): zuletzt eingegebenes
+  // Stangengewicht in kg (Start 20 = Olympia-Stange).
+  plateBarWeight: 20,
 };
 
 export function getSettings() {

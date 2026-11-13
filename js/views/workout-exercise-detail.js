@@ -15,10 +15,12 @@ import {
   measureSegmentedIndicatorRect,
   renderNote,
   renderNoteIcon,
+  renderPlateIcon,
   BTN_SECONDARY,
   CARD,
 } from '../utils.js';
 import { openNoteSheet, unmountNoteSheet } from '../noteSheet.js';
+import { openPlateSheet, unmountPlateSheet } from '../plateSheet.js';
 import { formatDate } from '../dates.js';
 import { getSettings } from '../settings.js';
 import { wireSwipeBack, unwireSwipeBack, triggerBack } from '../swipeBack.js';
@@ -79,6 +81,7 @@ export function unmount() {
   renderEpoch++;
   unwireSwipeBack();
   unmountNoteSheet();
+  unmountPlateSheet();
 }
 
 // Von workout.js nach Bearbeiten/Löschen der Übung über das Info-Sheet
@@ -253,8 +256,9 @@ function renderTodayTab(sets, formWeight, formReps, routineLabel, note, exercise
           ${renderStepperRow('reps', 'Reps', formReps)}
         </div>
         <div class="flex gap-3">
-          <button id="detail-save-btn" type="button" class="tap-feedback flex-[4] min-w-0 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Ändern' : 'Speichern'}</button>
+          <button id="detail-save-btn" type="button" class="tap-feedback flex-[3] min-w-0 ${BTN_SECONDARY} py-3 min-h-[44px]">${editing ? 'Ändern' : 'Speichern'}</button>
           <button id="detail-delete-btn" type="button" ${editing ? '' : 'disabled'} class="tap-feedback flex-[3] min-w-0 ${BTN_SECONDARY} py-3 min-h-[44px] ${editing ? '' : 'opacity-40 pointer-events-none'}">Löschen</button>
+          <button id="detail-plates-btn" type="button" class="tap-feedback flex-1 min-w-[44px] ${BTN_SECONDARY} py-3 min-h-[44px] flex items-center justify-center" aria-label="Scheiben-Rechner">${renderPlateIcon('w-5 h-5')}</button>
           <button id="detail-note-btn" type="button" class="tap-feedback flex-1 min-w-[44px] ${BTN_SECONDARY} py-3 min-h-[44px] flex items-center justify-center" aria-label="Notiz">${renderNoteIcon('w-5 h-5')}</button>
         </div>
         ${routineLabel ? `<p class="text-label text-muted uppercase">Routine: ${escapeHtml(routineLabel)}</p>` : ''}
@@ -374,6 +378,22 @@ function wireEvents() {
     row.addEventListener('click', () => {
       state.selectedSetId = null;
       paint();
+    });
+  });
+
+  currentContainer.querySelector('#detail-plates-btn')?.addEventListener('click', () => {
+    openPlateSheet({
+      // Direkt an <body>: #view-container ist ein eigener Stacking-Context
+      // (isolation: isolate) unterhalb der Seiten-Ebene (#page-layer, z-8),
+      // ein Sheet darin läge hinter der Detailseite.
+      container: document.body,
+      // Reine Rechenhilfe (ADR 0044): trägt nur das Gewicht ins Feld ein,
+      // gespeichert wird weiterhin über "Speichern"/"Ändern". Kein paint()
+      // - das würde das Formular aus der Datenbank neu füllen.
+      onApply: (kg) => {
+        const input = currentContainer?.querySelector('#detail-weight-input');
+        if (input) input.value = String(kg);
+      },
     });
   });
 

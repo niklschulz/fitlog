@@ -17,6 +17,13 @@ const colors = {
   divider: '#1A1A1A',
   ink: '#F5F5F5',
   muted: '#9B9BA1',
+  // Scheiben-Rechner (js/plateSheet.js, ADR 0044): olympische Scheibenfarben
+  'plate-red': '#D23B3B', // 25 kg
+  'plate-blue': '#2F6FD6', // 20 kg
+  'plate-yellow': '#E8C62E', // 15 kg
+  'plate-green': '#2FA24F', // 10 kg
+  'plate-white': '#F2F2F2', // 5 kg
+  'plate-black': '#1E1E1E', // 2,5 und 1,25 kg
 };
 
 // Pro Farbe `--color-<name>: #hex` (z. B. für JS: `var(--color-highlight)`) und
