@@ -383,10 +383,9 @@ function wireEvents() {
 
   currentContainer.querySelector('#detail-plates-btn')?.addEventListener('click', () => {
     openPlateSheet({
-      // Direkt an <body>: #view-container ist ein eigener Stacking-Context
-      // (isolation: isolate) unterhalb der Seiten-Ebene (#page-layer, z-8),
-      // ein Sheet darin läge hinter der Detailseite.
-      container: document.body,
+      // Wie das Notiz-Sheet: im Container der Übersicht (über der Seiten-
+      // Ebene, die einen eigenen Stapelkontext bildet), nicht in der Ebene.
+      container: document.getElementById('view-container'),
       // Reine Rechenhilfe (ADR 0044): trägt nur das Gewicht ins Feld ein,
       // gespeichert wird weiterhin über "Speichern"/"Ändern". Kein paint()
       // - das würde das Formular aus der Datenbank neu füllen.

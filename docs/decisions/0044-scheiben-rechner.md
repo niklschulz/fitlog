@@ -20,7 +20,6 @@ Beim Erfassen eines Satzes gab es für das Gewicht nur den 1-kg-Stepper und die 
 - **Stangengewicht:** kleines Textfeld im Sheet, Start 20 kg, Komma oder Punkt, gültig sind Werte über 0 bis 50 kg (sonst gilt der letzte gültige Wert). Wird es geändert, merkt es sich die App dauerhaft (`plateBarWeight` in den Einstellungen, `localStorage`).
 - **Zustand:** Scheiben beider Seiten, Seiten-Schalter und aktive Seite bleiben beim erneuten Öffnen erhalten, solange die Übungsseite offen ist; beim Verlassen der Seite (`unmount()`) startet das Sheet wieder leer. Eine leere Stange ist gültig, ✓ trägt dann das Stangengewicht ein.
 - **Umsetzung:** Rechenlogik in `js/plates.js` (reine Funktionen, Tests in `tests/plates.test.js`), Sheet in `js/plateSheet.js` (nutzt `createSheetCloser`, `wireSheetDrag` und die Tastatur-Behandlung wie `noteSheet.js`), Einbindung in `js/views/workout-exercise-detail.js`.
-- **Anhängen an `<body>`:** Das Sheet wird an `document.body` gehängt, nicht an `#view-container`. Der Container ist ein eigener Stacking-Context (`isolation: isolate`) unterhalb der Seiten-Ebene `#page-layer` (z-8, an `<body>`); ein Sheet darin läge hinter der Detailseite und wäre nicht sichtbar.
 
 ## Konsequenzen
 

@@ -8,7 +8,12 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 - Übungs-Detailseite, Reiter „aktueller Tag“: neuer Icon-Button (Hantelscheibe) neben dem Notiz-Button öffnet den **Scheiben-Rechner** ([ADR 0044](decisions/0044-scheiben-rechner.md)): Bottom-Sheet mit Langhantel-Grafik (beide Seiten, olympische Scheibenfarben, Karte mit fester Größe), Gesamtgewicht unter der Überschrift, Schalter „Ungleich beladen“ (Standard aus; an = Seiten einzeln beladen, aktive Seite per Tipp auf die Grafik wählen), Scheiben 1,25 / 2,5 / 5 / 10 / 15 / 20 / 25 kg zum Antippen, maximal 8 pro Seite, Textfeld für das Stangengewicht (Start 20 kg, wird nach einer Änderung gemerkt) und „Leeren“. ✓ trägt das Gesamtgewicht ins Gewichtsfeld ein, das Sheet ist nur eine Rechenhilfe ohne Kopplung ans Feld. Neu: `js/plateSheet.js`, `js/plates.js` (Tests in `tests/plates.test.js`), `renderBarbellIcon()` in `js/utils.js`, Einstellung `plateBarWeight` in `js/settings.js`, Farb-Tokens `plate-*` in `tailwind.config.js`.
 
 ### Changed
-- Der Speichern-Button der Übungs-Detailseite ist etwas schmaler (`flex-[3]` statt `flex-[4]`), damit der neue Button in die Zeile passt. `css/tailwind.css` neu gebaut, `CACHE_NAME` auf `fitlog-v277`, `js/plateSheet.js` und `js/plates.js` in der App-Shell.
+- Der Speichern-Button der Übungs-Detailseite ist etwas schmaler (`flex-[3]` statt `flex-[4]`), damit der neue Button in die Zeile passt. `css/tailwind.css` neu gebaut, `CACHE_NAME` auf `fitlog-v278`, `js/plateSheet.js` und `js/plates.js` in der App-Shell.
+
+## 2026-11-08 (Fix: Info-Button auf der Übungs-Detailseite)
+
+### Fixed
+- Übungs-Detailseite (Workout-Tab): Der i-Button öffnete das Übungs-Detail-Sheet unsichtbar, und nach dem Zurückgehen ließ sich die Workout-Übersicht nicht mehr scrollen. Ursache: `isolation: isolate` auf `#view-container` (seit v260) schloss alle dort eingefügten Sheets in einen Stacking-Context unterhalb der Seiten-Ebene (`#page-layer`, z-8) ein. Das Sheet war damit verdeckt, blieb offen und hielt die Scroll-Sperre (`lockBodyScroll()`). Betroffen war auch das Notiz-Sheet der Detailseite. Die Isolation sitzt jetzt je `.segmented-control` statt am ganzen Container (löst weiter das Problem der Reiter-Beschriftungen aus v260). `CACHE_NAME` auf `fitlog-v270`.
 
 ## 2026-11-08 (Verlaufs-Diagramm ohne Einzelpunkte)
 

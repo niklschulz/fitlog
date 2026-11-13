@@ -302,7 +302,7 @@ const closer = createSheetCloser({
   },
 });
 
-// `container`: Element, an das das Sheet angehängt wird (`document.body`, s.
+// `container`: Element, an das das Sheet angehängt wird (`#view-container`, s.
 // Aufruf in workout-exercise-detail.js). `onApply(kg)` läuft beim ✓ mit dem
 // Gesamtgewicht, noch bevor das Sheet zugeht.
 export function openPlateSheet({ container: containerEl, onApply }) {
