@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-13 (Fix: Tastatur im Scheiben-Rechner)
+
+### Fixed
+- Scheiben-Rechner: Beim Tippen ins Stangenfeld verdeckte die iOS-Tastatur das Sheet samt Stangenfeld, der untere Innenabstand wuchs nicht mit. Das Sheet ist jetzt in der Höhe auf den Bildschirm begrenzt, sein Inhalt scrollbar, der Innenabstand folgt der Tastaturhöhe aus der Visual-Viewport-API und das Stangenfeld wird in den sichtbaren Bereich gescrollt. Meldet iOS bei fokussiertem Feld keine Tastaturhöhe, gilt auf Touch-Geräten ein Schätzwert (40 % der Fensterhöhe). `CACHE_NAME` auf `fitlog-v279`.
+
 ## 2026-11-13 (Scheiben-Rechner)
 
 ### Added

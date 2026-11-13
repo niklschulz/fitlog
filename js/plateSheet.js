@@ -170,7 +170,7 @@ function renderPlateButtons() {
 function renderSheet() {
   return `
     <div id="plate-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 bg-black/50" style="z-index: 52;"></div>
-    <div id="plate-sheet-panel" class="bottom-sheet fixed left-0 right-0 bottom-0 bg-base rounded-sheet flex flex-col" style="z-index: 53; top: auto; padding-bottom: env(safe-area-inset-bottom);">
+    <div id="plate-sheet-panel" class="bottom-sheet fixed left-0 right-0 bottom-0 bg-base rounded-sheet flex flex-col" style="z-index: 53; top: auto; max-height: calc(100dvh - env(safe-area-inset-top) - 8px); padding-bottom: env(safe-area-inset-bottom);">
       <div class="grid grid-cols-[44px_1fr_44px] items-center px-4 pt-3 pb-3 flex-shrink-0">
         <button id="plate-sheet-close-btn" type="button" class="icon-btn-glass tap-feedback justify-self-start text-ink" aria-label="Schließen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
@@ -184,7 +184,7 @@ function renderSheet() {
           </svg>
         </button>
       </div>
-      <div class="px-4 pb-5 flex flex-col gap-4">
+      <div id="plate-sheet-body" class="bottom-sheet-scroll px-4 pb-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
         <div class="flex flex-col gap-3">
           <h2 class="text-screen-title">Scheiben-Rechner</h2>
           <div class="flex flex-col gap-1">
@@ -321,24 +321,51 @@ export function openPlateSheet({ container: containerEl, onApply }) {
 
   // Tastatur (Stangen-Textfeld): iOS überdeckt nur den unteren Teil des
   // Layout-Viewports. Das Sheet bleibt am unteren Rand verankert, sein
-  // Innenabstand unten wächst um die Tastaturhöhe (gleiche Technik wie
-  // noteSheet.js).
+  // Innenabstand unten wächst um die Tastaturhöhe; da das Sheet dadurch höher
+  // als der Bildschirm werden kann, ist der Inhalt scrollbar und das
+  // Stangenfeld wird in den sichtbaren Bereich gescrollt. Die Höhe kommt aus
+  // der Visual-Viewport-API; meldet sie bei fokussiertem Feld nichts (auf
+  // iOS beobachtet), gilt auf Touch-Geräten ein Schätzwert.
+  const barInput = container.querySelector('#plate-bar-input');
   const vv = window.visualViewport;
-  if (vv && panel) {
-    const update = () => {
-      const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      panel.style.paddingBottom = keyboard ? `${keyboard}px` : 'env(safe-area-inset-bottom)';
-    };
+  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  let keyboardTimers = [];
+  const clearKeyboardTimers = () => {
+    keyboardTimers.forEach(clearTimeout);
+    keyboardTimers = [];
+  };
+  const applyKeyboardInset = ({ reveal = false } = {}) => {
+    if (!panel || !open) return;
+    const focused = document.activeElement === barInput;
+    let keyboard = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+    if (!keyboard && focused && coarse) keyboard = Math.round(window.innerHeight * 0.4);
+    panel.style.paddingBottom = keyboard ? `${keyboard}px` : 'env(safe-area-inset-bottom)';
+    if (keyboard && reveal) barInput.closest('label')?.scrollIntoView({ block: 'center' });
+  };
+  const scheduleKeyboardInset = (reveal) => {
+    clearKeyboardTimers();
+    // Die Tastatur fährt animiert ein: mehrfach nachmessen.
+    keyboardTimers = [0, 150, 400, 800].map((ms) => setTimeout(() => applyKeyboardInset({ reveal }), ms));
+  };
+  barInput?.addEventListener('focus', () => scheduleKeyboardInset(true));
+  barInput?.addEventListener('blur', () => scheduleKeyboardInset(false));
+  if (vv) {
+    const onViewportResize = () => applyKeyboardInset({ reveal: document.activeElement === barInput });
+    // Verschiebt iOS die Seite trotzdem (Tastatur schiebt den Viewport),
+    // wird sie zurückgesetzt, damit die Kopfzeile des Sheets sichtbar bleibt.
     const onViewportScroll = () => {
       if (window.scrollY !== 0 || vv.pageTop !== 0) window.scrollTo(0, 0);
-      update();
+      applyKeyboardInset();
     };
-    vv.addEventListener('resize', update);
+    vv.addEventListener('resize', onViewportResize);
     vv.addEventListener('scroll', onViewportScroll);
     removeViewportListener = () => {
-      vv.removeEventListener('resize', update);
+      vv.removeEventListener('resize', onViewportResize);
       vv.removeEventListener('scroll', onViewportScroll);
+      clearKeyboardTimers();
     };
+  } else {
+    removeViewportListener = clearKeyboardTimers;
   }
 
   container.querySelector('#plate-bar')?.addEventListener('click', (e) => {
@@ -373,7 +400,6 @@ export function openPlateSheet({ container: containerEl, onApply }) {
     updateDynamic();
   });
 
-  const barInput = container.querySelector('#plate-bar-input');
   // Live mitrechnen, solange der Text gültig ist; gemerkt wird erst beim
   // Verlassen des Felds (change).
   barInput?.addEventListener('input', () => {
