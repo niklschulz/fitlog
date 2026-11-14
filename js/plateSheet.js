@@ -28,7 +28,6 @@ import {
 let container = null;
 let open = false;
 let closing = false;
-let removeViewportListener = null;
 // Scheiben je Seite, schwerste zuerst. Bei `synced` sind beide Listen gleich.
 let plates = { left: [], right: [] };
 let synced = true;
@@ -73,8 +72,6 @@ export function unmountPlateSheet() {
   if (open) {
     open = false;
     closing = false;
-    removeViewportListener?.();
-    removeViewportListener = null;
     unlockBodyScroll();
   }
   plates = { left: [], right: [] };
@@ -187,9 +184,15 @@ function renderSheet() {
       <div id="plate-sheet-body" class="bottom-sheet-scroll px-4 pb-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
         <div class="flex flex-col gap-3">
           <h2 class="text-screen-title">Scheiben-Rechner</h2>
-          <div class="flex flex-col gap-1">
-            <span class="text-label uppercase text-muted">Gesamtgewicht</span>
-            <span id="plate-total" class="text-kpi"></span>
+          <div class="flex items-end justify-between gap-3">
+            <div class="flex flex-col gap-1">
+              <span class="text-label uppercase text-muted">Gesamtgewicht</span>
+              <span id="plate-total" class="text-kpi"></span>
+            </div>
+            <label class="flex items-center gap-3">
+              <span class="text-label uppercase text-muted">Stange (kg)</span>
+              <input id="plate-bar-input" type="text" inputmode="decimal" autocomplete="off" value="${formatKg(barWeight)}" class="w-16 text-center bg-surface rounded-btn py-2 text-ink" style="font-size: 16px;" />
+            </label>
           </div>
         </div>
 
@@ -199,11 +202,7 @@ function renderSheet() {
         </div>
 
         <div class="grid grid-cols-4 gap-3 items-center">
-          <label class="col-span-3 flex items-center justify-end gap-3">
-            <span class="text-label uppercase text-muted">Stange (kg)</span>
-            <input id="plate-bar-input" type="text" inputmode="decimal" autocomplete="off" value="${formatKg(barWeight)}" class="w-16 text-center bg-surface rounded-btn py-2 text-ink" style="font-size: 16px;" />
-          </label>
-          <button id="plate-clear-btn" type="button" class="tap-feedback w-full bg-surface rounded-btn px-3 py-2 min-h-[40px] text-body text-ink disabled:pointer-events-none">Leeren</button>
+          <button id="plate-clear-btn" type="button" class="col-start-4 tap-feedback w-full bg-surface rounded-btn px-3 py-2 min-h-[40px] text-body text-ink disabled:pointer-events-none">Leeren</button>
         </div>
 
         <div id="plate-buttons" class="grid grid-cols-4 gap-3">${renderPlateButtons()}</div>
@@ -293,8 +292,6 @@ const closer = createSheetCloser({
   finalize: () => {
     open = false;
     closing = false;
-    removeViewportListener?.();
-    removeViewportListener = null;
     unlockBodyScroll();
     const backdrop = container?.querySelector('#plate-sheet-backdrop');
     backdrop?.nextElementSibling?.remove();
@@ -319,87 +316,12 @@ export function openPlateSheet({ container: containerEl, onApply }) {
   const panel = container.querySelector('#plate-sheet-panel');
   const backdropEl = container.querySelector('#plate-sheet-backdrop');
 
-  // Tastatur (Stangen-Textfeld): iOS überdeckt nur den unteren Teil des
-  // Layout-Viewports. Das Sheet bleibt am unteren Rand verankert, sein
-  // Innenabstand unten wächst um die Tastaturhöhe; da das Sheet dadurch höher
-  // als der Bildschirm werden kann, ist der Inhalt scrollbar. Wichtig für ein
-  // ruckelfreies Ein-/Ausfahren (Bild-für-Bild-Auswertung einer iPhone-
-  // Aufnahme, s. ADR 0044): Der Abstand folgt NUR den Visual-Viewport-
-  // Ereignissen, die iOS während der Tastatur-Animation schickt - kein
-  // sofortiges Setzen beim Fokus/Blur (das ließ das Sheet erst nach oben
-  // springen und wieder zurückfallen) und kein Scrollen während der
-  // Animation. Das Stangenfeld wird erst gescrollt, wenn sich die Tastatur
-  // beruhigt hat, und nur, wenn es nicht schon sichtbar ist. Meldet iOS auch
-  // 700 ms nach dem Fokus keine Tastaturhöhe, gilt auf Touch-Geräten ein
-  // Schätzwert.
+  // Keine Tastatur-Anpassung nötig (s. ADR 0045): Das Stangenfeld liegt neben
+  // dem Gesamtgewicht im oberen Teil des Sheets und damit auch ohne Verschieben
+  // über der Tastatur. iOS scrollt die Seite nur, wenn ein fokussiertes Feld
+  // verdeckt würde; hier bleibt alles an seinem Platz, die Tastatur fährt
+  // einfach über den unteren Teil.
   const barInput = container.querySelector('#plate-bar-input');
-  const vv = window.visualViewport;
-  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  let timers = [];
-  let fallbackArmed = false;
-  let settleTimer = null;
-  const clearTimers = () => {
-    timers.forEach(clearTimeout);
-    timers = [];
-    clearTimeout(settleTimer);
-    settleTimer = null;
-  };
-  const measuredKeyboard = () => (vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0);
-  const applyKeyboardInset = () => {
-    if (!panel || !open) return 0;
-    let keyboard = measuredKeyboard();
-    if (!keyboard && fallbackArmed && document.activeElement === barInput) keyboard = Math.round(window.innerHeight * 0.4);
-    const value = keyboard ? `${keyboard}px` : 'env(safe-area-inset-bottom)';
-    if (panel.style.paddingBottom !== value) panel.style.paddingBottom = value;
-    return keyboard;
-  };
-  // Erst nach der Animation: Feld nur dann in den sichtbaren Bereich scrollen,
-  // wenn es nicht ohnehin zu sehen ist.
-  const scheduleReveal = () => {
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      if (document.activeElement === barInput && applyKeyboardInset()) {
-        barInput.closest('label')?.scrollIntoView({ block: 'nearest' });
-      }
-    }, 250);
-  };
-  barInput?.addEventListener('focus', () => {
-    fallbackArmed = false;
-    timers.push(
-      setTimeout(() => {
-        fallbackArmed = coarse;
-        applyKeyboardInset();
-        scheduleReveal();
-      }, 700)
-    );
-  });
-  barInput?.addEventListener('blur', () => {
-    fallbackArmed = false;
-    // Kein sofortiges Zurücksetzen: Die Resize-Ereignisse der ausfahrenden
-    // Tastatur führen den Abstand mit. Nur zur Sicherheit am Ende abgleichen.
-    timers.push(setTimeout(applyKeyboardInset, 900));
-  });
-  if (vv) {
-    const onViewportResize = () => {
-      applyKeyboardInset();
-      if (document.activeElement === barInput) scheduleReveal();
-    };
-    // Verschiebt iOS die Seite trotzdem (Tastatur schiebt den Viewport),
-    // wird sie zurückgesetzt, damit die Kopfzeile des Sheets sichtbar bleibt.
-    const onViewportScroll = () => {
-      if (window.scrollY !== 0 || vv.pageTop !== 0) window.scrollTo(0, 0);
-      applyKeyboardInset();
-    };
-    vv.addEventListener('resize', onViewportResize);
-    vv.addEventListener('scroll', onViewportScroll);
-    removeViewportListener = () => {
-      vv.removeEventListener('resize', onViewportResize);
-      vv.removeEventListener('scroll', onViewportScroll);
-      clearTimers();
-    };
-  } else {
-    removeViewportListener = clearTimers;
-  }
 
   container.querySelector('#plate-bar')?.addEventListener('click', (e) => {
     const group = e.target.closest('[data-plate]');
