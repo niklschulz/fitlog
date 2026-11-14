@@ -77,10 +77,16 @@ test('parseBarWeight: Komma und Punkt, Leerzeichen', () => {
 });
 
 test('parseBarWeight: ungültige Eingaben → null', () => {
-  for (const bad of ['', '  ', 'abc', '0', '-5', String(MAX_BAR_WEIGHT + 1), 'NaN', 'Infinity']) {
+  for (const bad of ['', '  ', 'abc', '-5', String(MAX_BAR_WEIGHT + 1), 'NaN', 'Infinity']) {
     assert.equal(parseBarWeight(bad), null, `"${bad}"`);
   }
   assert.equal(parseBarWeight(String(MAX_BAR_WEIGHT)), MAX_BAR_WEIGHT);
+});
+
+test('parseBarWeight: 0 kg ist gültig (keine Stange)', () => {
+  assert.equal(parseBarWeight('0'), 0);
+  assert.equal(parseBarWeight('0,0'), 0);
+  assert.equal(parseBarWeight(0), 0);
 });
 
 test('formatKg: deutsche Schreibweise ohne überflüssige Nullen', () => {

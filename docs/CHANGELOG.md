@@ -2,6 +2,11 @@
 
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag pro nennenswerter Änderung, neueste zuerst.
 
+## 2026-11-14 (Fix: Stangengewicht 0 kg im Scheiben-Rechner)
+
+### Fixed
+- Scheiben-Rechner: Im Stangenfeld ließ sich 0 kg nicht eingeben, das Feld sprang auf den letzten gültigen Wert (z. B. 2) zurück, weil `parseBarWeight()` Werte `<= 0` ablehnte. Jetzt sind 0 bis 50 kg gültig; leere Eingabe bleibt ungültig (sonst würde `Number('')` zu 0). Test ergänzt, ADR 0044 angepasst. `CACHE_NAME` auf `fitlog-v281`.
+
 ## 2026-11-13 (Fix: Ruckeln beim Öffnen der Tastatur im Scheiben-Rechner)
 
 ### Fixed
