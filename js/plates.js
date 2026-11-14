@@ -50,11 +50,13 @@ export function removePlate(platesPerSide, weight) {
 }
 
 // Stangengewicht aus dem Textfeld: akzeptiert Komma und Punkt, nur Zahlen
-// über 0 bis MAX_BAR_WEIGHT. Ungültig → null (Aufrufer behält den letzten
-// gültigen Wert).
+// von 0 (keine Stange, z. B. Kurzhantel-/Maschinen-Beladung) bis MAX_BAR_WEIGHT.
+// Leer oder ungültig → null (Aufrufer behält den letzten gültigen Wert).
 export function parseBarWeight(input) {
-  const n = Number(String(input).trim().replace(',', '.'));
-  if (!Number.isFinite(n) || n <= 0 || n > MAX_BAR_WEIGHT) return null;
+  const text = String(input).trim().replace(',', '.');
+  if (text === '') return null; // Number('') wäre 0
+  const n = Number(text);
+  if (!Number.isFinite(n) || n < 0 || n > MAX_BAR_WEIGHT) return null;
   return round2(n);
 }
 
