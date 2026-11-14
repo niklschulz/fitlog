@@ -1,8 +1,8 @@
 # 0044 – Scheiben-Rechner für die Langhantel
 
-**Status:** Teilweise überholt durch ADR 0045 (Tastatur-Behandlung des Stangenfelds)
+**Status:** Teilweise überholt durch ADR 0045 (Anordnung des Stangenfelds, Tastatur-Behandlung)
 
-> **Nachtrag 2026-11-14:** Die Punkte „Stangengewicht“ (Textfeld) und „Tastatur“ gelten nicht mehr. Das Stangenfeld nutzt seit [ADR 0045](0045-stangenfeld-eigene-ziffernleiste.md) eine eigene Ziffernleiste statt der Systemtastatur, die Visual-Viewport-Logik ist entfernt. Wertebereich (0 bis 50 kg), dauerhaftes Merken und alles übrige bleiben.
+> **Nachtrag 2026-11-14:** „Anordnung im Sheet“ und „Tastatur“ gelten nicht mehr. Das Stangenfeld liegt seit [ADR 0045](0045-stangenfeld-oben-ueber-der-tastatur.md) rechts neben dem Gesamtgewicht, die Tastatur-Behandlung per Visual-Viewport ist entfernt. Wertebereich (0 bis 50 kg), dauerhaftes Merken und alles übrige bleiben.
 
 ## Kontext
 
