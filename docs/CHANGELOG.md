@@ -7,6 +7,11 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/). Ein Eintrag
 ### Fixed
 - Scheiben-Rechner: Im Stangenfeld ließ sich 0 kg nicht eingeben, das Feld sprang auf den letzten gültigen Wert (z. B. 2) zurück, weil `parseBarWeight()` Werte `<= 0` ablehnte. Jetzt sind 0 bis 50 kg gültig; leere Eingabe bleibt ungültig (sonst würde `Number('')` zu 0). Test ergänzt, ADR 0044 angepasst. `CACHE_NAME` auf `fitlog-v281`.
 
+## 2026-11-14 (Fix: Springen des Scheiben-Rechners beim Stangenfeld, eigene Ziffernleiste)
+
+### Fixed
+- Scheiben-Rechner: Das Sheet sprang weiterhin beim Öffnen und Schließen der Tastatur. Bild-für-Bild-Auswertung (20 fps): Beim Öffnen verschiebt iOS die ganze Seite um rund 180 px nach unten und zurück, beim Schließen fällt das Sheet auf die Normalposition, während die Tastatur noch ausfährt. Ursache ist, dass iOS die Tastaturhöhe sofort meldet, die Tastatur aber animiert fährt; jede an sie gekoppelte Anpassung springt. Statt einer dritten Anpassung der Timings hat das Stangenfeld jetzt keine Systemtastatur mehr, sondern eine eigene Ziffernleiste an der Stelle der Scheiben-Auswahl (gleiche Höhe, [ADR 0045](decisions/0045-stangenfeld-eigene-ziffernleiste.md)). Der Visual-Viewport-Code entfällt. `typeBarKey()` mit Tests, `css/tailwind.css` neu gebaut, `CACHE_NAME` auf `fitlog-v282`.
+
 ## 2026-11-13 (Fix: Ruckeln beim Öffnen der Tastatur im Scheiben-Rechner)
 
 ### Fixed

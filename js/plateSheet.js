@@ -8,6 +8,7 @@ import {
   addPlate,
   removePlate,
   parseBarWeight,
+  typeBarKey,
   formatKg,
 } from './plates.js';
 
@@ -28,12 +29,17 @@ import {
 let container = null;
 let open = false;
 let closing = false;
-let removeViewportListener = null;
 // Scheiben je Seite, schwerste zuerst. Bei `synced` sind beide Listen gleich.
 let plates = { left: [], right: [] };
 let synced = true;
 let activeSide = 'left'; // nur relevant, wenn `synced` aus ist
 let barWeight = DEFAULT_BAR_WEIGHT;
+// Stangenfeld: Eingabe über die Ziffernleiste im Sheet, nicht über die
+// Systemtastatur (s. ADR 0045). `barText` ist der Text im Feld während der
+// Eingabe; `replaceOnType` lässt die erste Taste den alten Wert ersetzen.
+let editingBar = false;
+let barText = '';
+let replaceOnType = false;
 let onApplyCallback = null;
 
 // Grafik: Anzeige-Maße pro Scheibe (viewBox-Einheiten). Höhe und Dicke wachsen
@@ -73,10 +79,10 @@ export function unmountPlateSheet() {
   if (open) {
     open = false;
     closing = false;
-    removeViewportListener?.();
-    removeViewportListener = null;
     unlockBodyScroll();
   }
+  editingBar = false;
+  barText = '';
   plates = { left: [], right: [] };
   synced = true;
   activeSide = 'left';
@@ -167,6 +173,32 @@ function renderPlateButtons() {
   }).join('');
 }
 
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', 'back', '6', '7', '8', '9', '0', ','];
+
+// Ziffernleiste: ersetzt beim Bearbeiten des Stangenfelds die Scheiben-Auswahl,
+// zwei Reihen wie dort, damit das Sheet seine Höhe nicht ändert.
+function renderKeypad() {
+  const keys = KEYPAD_KEYS.map((key) => {
+    const label =
+      key === 'back'
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mx-auto"><path d="M21 5H9l-6 7 6 7h12z" /><path d="M16 9.5l-5 5M11 9.5l5 5" /></svg>`
+        : key;
+    const aria = key === 'back' ? 'Löschen' : key === ',' ? 'Komma' : key;
+    return `<button type="button" data-key="${key}" aria-label="${aria}" class="tap-feedback min-h-[56px] rounded-btn bg-surface text-card-title text-ink">${label}</button>`;
+  }).join('');
+  return `<div class="col-span-4 grid grid-cols-6 gap-x-2 gap-y-3">${keys}</div>`;
+}
+
+// Stangenfeld: ein Button, damit iOS keine Systemtastatur öffnet (die ließ das
+// Sheet beim Ein- und Ausfahren springen). Beim Bearbeiten mit Rahmen und Cursor.
+function renderBarField() {
+  const base = 'tap-feedback w-16 text-center bg-surface rounded-btn py-2 text-ink';
+  if (!editingBar) {
+    return `<button id="plate-bar-field" type="button" class="${base}" style="font-size: 16px;" aria-label="Stangengewicht ändern">${formatKg(barWeight)}</button>`;
+  }
+  return `<button id="plate-bar-field" type="button" class="${base} ring-1 ring-accent" style="font-size: 16px;" aria-label="Stangengewicht, Eingabe beenden">${barText}<span class="animate-pulse text-accent">|</span></button>`;
+}
+
 function renderSheet() {
   return `
     <div id="plate-sheet-backdrop" class="bottom-sheet-backdrop fixed inset-0 bg-black/50" style="z-index: 52;"></div>
@@ -199,29 +231,28 @@ function renderSheet() {
         </div>
 
         <div class="grid grid-cols-4 gap-3 items-center">
-          <label class="col-span-3 flex items-center justify-end gap-3">
+          <div class="col-span-3 flex items-center justify-end gap-3">
             <span class="text-label uppercase text-muted">Stange (kg)</span>
-            <input id="plate-bar-input" type="text" inputmode="decimal" autocomplete="off" value="${formatKg(barWeight)}" class="w-16 text-center bg-surface rounded-btn py-2 text-ink" style="font-size: 16px;" />
-          </label>
+            <span id="plate-bar-slot">${renderBarField()}</span>
+          </div>
           <button id="plate-clear-btn" type="button" class="tap-feedback w-full bg-surface rounded-btn px-3 py-2 min-h-[40px] text-body text-ink disabled:pointer-events-none">Leeren</button>
         </div>
 
-        <div id="plate-buttons" class="grid grid-cols-4 gap-3">${renderPlateButtons()}</div>
+        <div id="plate-buttons" class="grid grid-cols-4 gap-3">${editingBar ? renderKeypad() : renderPlateButtons()}</div>
       </div>
     </div>
   `;
 }
 
-// Nur die veränderlichen Teile neu zeichnen - das Stangen-Eingabefeld bleibt
-// unangetastet (Fokus und Cursor gehen sonst bei jedem Tipp verloren).
-function updateDynamic() {
+// Stangenfeld, Scheiben-Auswahl bzw. Ziffernleiste und Gesamtgewicht neu
+// zeichnen. Fasst Grafik und Schalter nicht an: Beim Beenden der Eingabe per
+// Tipp auf genau diese Elemente würde ein Neuzeichnen den Klick verschlucken.
+function updateEditUi() {
   if (!container) return;
-  const bar = container.querySelector('#plate-bar');
-  if (bar) bar.innerHTML = renderBar();
-  const sync = container.querySelector('#plate-sync');
-  if (sync) sync.innerHTML = renderSyncSwitch();
+  const slot = container.querySelector('#plate-bar-slot');
+  if (slot) slot.innerHTML = renderBarField();
   const buttons = container.querySelector('#plate-buttons');
-  if (buttons) buttons.innerHTML = renderPlateButtons();
+  if (buttons) buttons.innerHTML = editingBar ? renderKeypad() : renderPlateButtons();
   const total = container.querySelector('#plate-total');
   if (total) total.textContent = `${formatKg(totalWeight(barWeight, plates.left, plates.right))} kg`;
   const clear = container.querySelector('#plate-clear-btn');
@@ -230,6 +261,16 @@ function updateDynamic() {
     clear.disabled = empty;
     clear.classList.toggle('opacity-40', empty);
   }
+}
+
+// Alles neu zeichnen, was von den Scheiben abhängt.
+function updateDynamic() {
+  if (!container) return;
+  const bar = container.querySelector('#plate-bar');
+  if (bar) bar.innerHTML = renderBar();
+  const sync = container.querySelector('#plate-sync');
+  if (sync) sync.innerHTML = renderSyncSwitch();
+  updateEditUi();
 }
 
 // Auflegen: bei gleicher Beladung auf beide Seiten, sonst auf die aktive.
@@ -265,17 +306,34 @@ function toggleSynced() {
   synced = !synced;
 }
 
-// Liest das Textfeld: gültiger Wert wird übernommen (und mit `persist`
-// gemerkt), sonst gilt der letzte gültige Wert weiter. `normalize` schreibt
-// ihn zurück ins Feld (z. B. "20,0" → "20" oder nach ungültiger Eingabe).
-function readBarWeight({ persist = false, normalize = false } = {}) {
-  const input = container?.querySelector('#plate-bar-input');
-  const parsed = parseBarWeight(input?.value ?? '');
-  if (parsed !== null) {
-    barWeight = parsed;
-    if (persist) saveSettings({ ...getSettings(), plateBarWeight: barWeight });
+function startBarEdit() {
+  editingBar = true;
+  barText = formatKg(barWeight);
+  replaceOnType = true;
+  updateEditUi();
+}
+
+// Taste der Ziffernleiste: rechnet live mit, solange der Text gültig ist (sonst
+// gilt der letzte gültige Wert weiter, z. B. bei leerem Feld).
+function pressBarKey(key) {
+  if (replaceOnType) {
+    replaceOnType = false;
+    barText = key === 'back' ? '' : typeBarKey('', key);
+  } else {
+    barText = typeBarKey(barText, key);
   }
-  if (normalize && input) input.value = formatKg(barWeight);
+  const parsed = parseBarWeight(barText);
+  if (parsed !== null) barWeight = parsed;
+  updateEditUi();
+}
+
+// Eingabe beenden: der letzte gültige Wert bleibt und wird dauerhaft gemerkt.
+function endBarEdit() {
+  if (!editingBar) return;
+  editingBar = false;
+  barText = '';
+  saveSettings({ ...getSettings(), plateBarWeight: barWeight });
+  updateEditUi();
 }
 
 const closer = createSheetCloser({
@@ -285,7 +343,7 @@ const closer = createSheetCloser({
     closing = true;
   },
   animate: () => {
-    document.activeElement?.blur?.();
+    endBarEdit();
     const backdrop = container?.querySelector('#plate-sheet-backdrop');
     backdrop?.nextElementSibling?.classList.add('closing');
     backdrop?.classList.add('closing');
@@ -293,8 +351,6 @@ const closer = createSheetCloser({
   finalize: () => {
     open = false;
     closing = false;
-    removeViewportListener?.();
-    removeViewportListener = null;
     unlockBodyScroll();
     const backdrop = container?.querySelector('#plate-sheet-backdrop');
     backdrop?.nextElementSibling?.remove();
@@ -310,6 +366,8 @@ export function openPlateSheet({ container: containerEl, onApply }) {
   container = containerEl;
   onApplyCallback = onApply;
   barWeight = parseBarWeight(getSettings().plateBarWeight) ?? DEFAULT_BAR_WEIGHT;
+  editingBar = false;
+  barText = '';
   open = true;
   closing = false;
   lockBodyScroll();
@@ -319,87 +377,17 @@ export function openPlateSheet({ container: containerEl, onApply }) {
   const panel = container.querySelector('#plate-sheet-panel');
   const backdropEl = container.querySelector('#plate-sheet-backdrop');
 
-  // Tastatur (Stangen-Textfeld): iOS überdeckt nur den unteren Teil des
-  // Layout-Viewports. Das Sheet bleibt am unteren Rand verankert, sein
-  // Innenabstand unten wächst um die Tastaturhöhe; da das Sheet dadurch höher
-  // als der Bildschirm werden kann, ist der Inhalt scrollbar. Wichtig für ein
-  // ruckelfreies Ein-/Ausfahren (Bild-für-Bild-Auswertung einer iPhone-
-  // Aufnahme, s. ADR 0044): Der Abstand folgt NUR den Visual-Viewport-
-  // Ereignissen, die iOS während der Tastatur-Animation schickt - kein
-  // sofortiges Setzen beim Fokus/Blur (das ließ das Sheet erst nach oben
-  // springen und wieder zurückfallen) und kein Scrollen während der
-  // Animation. Das Stangenfeld wird erst gescrollt, wenn sich die Tastatur
-  // beruhigt hat, und nur, wenn es nicht schon sichtbar ist. Meldet iOS auch
-  // 700 ms nach dem Fokus keine Tastaturhöhe, gilt auf Touch-Geräten ein
-  // Schätzwert.
-  const barInput = container.querySelector('#plate-bar-input');
-  const vv = window.visualViewport;
-  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  let timers = [];
-  let fallbackArmed = false;
-  let settleTimer = null;
-  const clearTimers = () => {
-    timers.forEach(clearTimeout);
-    timers = [];
-    clearTimeout(settleTimer);
-    settleTimer = null;
-  };
-  const measuredKeyboard = () => (vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0);
-  const applyKeyboardInset = () => {
-    if (!panel || !open) return 0;
-    let keyboard = measuredKeyboard();
-    if (!keyboard && fallbackArmed && document.activeElement === barInput) keyboard = Math.round(window.innerHeight * 0.4);
-    const value = keyboard ? `${keyboard}px` : 'env(safe-area-inset-bottom)';
-    if (panel.style.paddingBottom !== value) panel.style.paddingBottom = value;
-    return keyboard;
-  };
-  // Erst nach der Animation: Feld nur dann in den sichtbaren Bereich scrollen,
-  // wenn es nicht ohnehin zu sehen ist.
-  const scheduleReveal = () => {
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      if (document.activeElement === barInput && applyKeyboardInset()) {
-        barInput.closest('label')?.scrollIntoView({ block: 'nearest' });
-      }
-    }, 250);
-  };
-  barInput?.addEventListener('focus', () => {
-    fallbackArmed = false;
-    timers.push(
-      setTimeout(() => {
-        fallbackArmed = coarse;
-        applyKeyboardInset();
-        scheduleReveal();
-      }, 700)
-    );
+  // Tipp irgendwo außerhalb von Feld und Ziffernleiste beendet die Eingabe (wie
+  // das Wegtippen einer Systemtastatur). pointerdown, damit die Aktion des
+  // getippten Elements danach ganz normal läuft.
+  panel?.addEventListener('pointerdown', (e) => {
+    if (editingBar && !e.target.closest('#plate-bar-slot, #plate-buttons')) endBarEdit();
   });
-  barInput?.addEventListener('blur', () => {
-    fallbackArmed = false;
-    // Kein sofortiges Zurücksetzen: Die Resize-Ereignisse der ausfahrenden
-    // Tastatur führen den Abstand mit. Nur zur Sicherheit am Ende abgleichen.
-    timers.push(setTimeout(applyKeyboardInset, 900));
+  container.querySelector('#plate-bar-slot')?.addEventListener('click', (e) => {
+    if (!e.target.closest('#plate-bar-field')) return;
+    if (editingBar) endBarEdit();
+    else startBarEdit();
   });
-  if (vv) {
-    const onViewportResize = () => {
-      applyKeyboardInset();
-      if (document.activeElement === barInput) scheduleReveal();
-    };
-    // Verschiebt iOS die Seite trotzdem (Tastatur schiebt den Viewport),
-    // wird sie zurückgesetzt, damit die Kopfzeile des Sheets sichtbar bleibt.
-    const onViewportScroll = () => {
-      if (window.scrollY !== 0 || vv.pageTop !== 0) window.scrollTo(0, 0);
-      applyKeyboardInset();
-    };
-    vv.addEventListener('resize', onViewportResize);
-    vv.addEventListener('scroll', onViewportScroll);
-    removeViewportListener = () => {
-      vv.removeEventListener('resize', onViewportResize);
-      vv.removeEventListener('scroll', onViewportScroll);
-      clearTimers();
-    };
-  } else {
-    removeViewportListener = clearTimers;
-  }
 
   container.querySelector('#plate-bar')?.addEventListener('click', (e) => {
     const group = e.target.closest('[data-plate]');
@@ -422,6 +410,11 @@ export function openPlateSheet({ container: containerEl, onApply }) {
   });
 
   container.querySelector('#plate-buttons')?.addEventListener('click', (e) => {
+    const key = e.target.closest('[data-key]');
+    if (key) {
+      pressBarKey(key.dataset.key);
+      return;
+    }
     const btn = e.target.closest('[data-add]');
     if (!btn) return;
     addToBar(Number(btn.dataset.add));
@@ -433,26 +426,11 @@ export function openPlateSheet({ container: containerEl, onApply }) {
     updateDynamic();
   });
 
-  // Live mitrechnen, solange der Text gültig ist; gemerkt wird erst beim
-  // Verlassen des Felds (change).
-  barInput?.addEventListener('input', () => {
-    readBarWeight();
-    updateDynamic();
-  });
-  barInput?.addEventListener('change', () => {
-    readBarWeight({ persist: true, normalize: true });
-    updateDynamic();
-  });
-  barInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') barInput.blur();
-  });
-
   backdropEl?.addEventListener('click', () => closer.close());
   container.querySelector('#plate-sheet-close-btn')?.addEventListener('click', () => closer.close());
   container.querySelector('#plate-sheet-apply-btn')?.addEventListener('click', () => {
     if (closing) return;
-    // Falls das Feld noch fokussiert ist (change noch nicht gefeuert).
-    readBarWeight({ persist: true, normalize: true });
+    endBarEdit();
     onApplyCallback?.(totalWeight(barWeight, plates.left, plates.right));
     closer.close();
   });

@@ -60,6 +60,25 @@ export function parseBarWeight(input) {
   return round2(n);
 }
 
+// Eine Taste der Ziffernleiste auf den Text des Stangenfelds anwenden (statt
+// der Systemtastatur, s. ADR 0045). `key`: '0'-'9', ',' oder 'back'. Gibt den
+// neuen Text zurück; Tasten, die ihn ungültig machen würden (zweites Komma,
+// mehr als zwei Nachkommastellen, Wert über MAX_BAR_WEIGHT), ändern nichts.
+export function typeBarKey(text, key) {
+  if (key === 'back') return text.slice(0, -1);
+  if (key === ',') {
+    if (text.includes(',')) return text;
+    return `${text === '' ? '0' : text},`;
+  }
+  if (!/^\d$/.test(key)) return text;
+  // Eine einzelne führende Null wird ersetzt: "0" + "5" → "5".
+  const next = `${text === '0' ? '' : text}${key}`;
+  const decimals = next.split(',')[1] ?? '';
+  if (decimals.length > 2) return text;
+  if (Number(next.replace(',', '.')) > MAX_BAR_WEIGHT) return text;
+  return next;
+}
+
 // Deutsche Schreibweise ohne überflüssige Nullen: 42,5 / 20 / 1,25.
 export function formatKg(value) {
   return String(round2(value)).replace('.', ',');

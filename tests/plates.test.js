@@ -10,6 +10,7 @@ import {
   addPlate,
   removePlate,
   parseBarWeight,
+  typeBarKey,
   formatKg,
 } from '../js/plates.js';
 
@@ -98,4 +99,36 @@ test('formatKg: deutsche Schreibweise ohne überflüssige Nullen', () => {
 
 test('Scheiben-Set: festes Set aus ADR 0044', () => {
   assert.deepEqual(PLATE_WEIGHTS, [1.25, 2.5, 5, 10, 15, 20, 25]);
+});
+
+test('typeBarKey: Ziffern anhängen, führende Null ersetzen', () => {
+  assert.equal(typeBarKey('', '2'), '2');
+  assert.equal(typeBarKey('2', '0'), '20');
+  assert.equal(typeBarKey('0', '5'), '5');
+  assert.equal(typeBarKey('0', '0'), '0');
+  assert.equal(typeBarKey('', '0'), '0');
+});
+
+test('typeBarKey: Komma nur einmal, am Anfang mit führender Null', () => {
+  assert.equal(typeBarKey('', ','), '0,');
+  assert.equal(typeBarKey('15', ','), '15,');
+  assert.equal(typeBarKey('15,', ','), '15,');
+  assert.equal(typeBarKey('15,5', ','), '15,5');
+});
+
+test('typeBarKey: höchstens zwei Nachkommastellen und höchstens MAX_BAR_WEIGHT', () => {
+  assert.equal(typeBarKey('1,25', '5'), '1,25');
+  assert.equal(typeBarKey('1,2', '5'), '1,25');
+  assert.equal(typeBarKey('50', '1'), '50');
+  assert.equal(typeBarKey('5', '1'), '5');
+  assert.equal(typeBarKey('5', '0'), '50');
+  assert.equal(typeBarKey('50', ','), '50,');
+  assert.equal(typeBarKey('50,', '1'), '50,');
+});
+
+test('typeBarKey: Löschen und unbekannte Tasten', () => {
+  assert.equal(typeBarKey('20', 'back'), '2');
+  assert.equal(typeBarKey('2', 'back'), '');
+  assert.equal(typeBarKey('', 'back'), '');
+  assert.equal(typeBarKey('20', 'x'), '20');
 });
